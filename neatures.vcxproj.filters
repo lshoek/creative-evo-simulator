@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{d8376475-7454-4a24-b08a-aac121d3ad6f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="addons">
+      <UniqueIdentifier>{71834F65-F3A9-211E-73B8-DC85}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs">
+      <UniqueIdentifier>{75bdc8b3-22da-4b6d-9c35-2eee3913d508}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\MultiNEAT">
+      <UniqueIdentifier>{af7aa803-ea62-4ce0-b55c-5bc0de8a1136}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="icon.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\main.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ofApp.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\XORFitnessFunc.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\GenomeBase.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\tools\MultiNEAT\src\Genome.cpp">
+      <Filter>libs\MultiNEAT</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\tools\MultiNEAT\src\Innovation.cpp">
+      <Filter>libs\MultiNEAT</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\tools\MultiNEAT\src\NeuralNetwork.cpp">
+      <Filter>libs\MultiNEAT</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\tools\MultiNEAT\src\Parameters.cpp">
+      <Filter>libs\MultiNEAT</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\tools\MultiNEAT\src\Population.cpp">
+      <Filter>libs\MultiNEAT</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\tools\MultiNEAT\src\Random.cpp">
+      <Filter>libs\MultiNEAT</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\tools\MultiNEAT\src\Species.cpp">
+      <Filter>libs\MultiNEAT</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\tools\MultiNEAT\src\Substrate.cpp">
+      <Filter>libs\MultiNEAT</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\tools\MultiNEAT\src\Traits.cpp">
+      <Filter>libs\MultiNEAT</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\tools\MultiNEAT\src\Utils.cpp">
+      <Filter>libs\MultiNEAT</Filter>
+    </ClCompile>
+    <ClCompile Include="src\NEATManager.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\MathUtils.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ofApp.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\toolbox.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\XORFitnessFunc.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\FitnessFunc.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\GenomeBase.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\Genes.h">
+      <Filter>libs\MultiNEAT</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\Genome.h">
+      <Filter>libs\MultiNEAT</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\Innovation.h">
+      <Filter>libs\MultiNEAT</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\MultiNEAT.h">
+      <Filter>libs\MultiNEAT</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\MultiNEATAssert.h">
+      <Filter>libs\MultiNEAT</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\NeuralNetwork.h">
+      <Filter>libs\MultiNEAT</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\Parameters.h">
+      <Filter>libs\MultiNEAT</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\PhenotypeBehavior.h">
+      <Filter>libs\MultiNEAT</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\Population.h">
+      <Filter>libs\MultiNEAT</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\Random.h">
+      <Filter>libs\MultiNEAT</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\Species.h">
+      <Filter>libs\MultiNEAT</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\Substrate.h">
+      <Filter>libs\MultiNEAT</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\Traits.h">
+      <Filter>libs\MultiNEAT</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\Utils.h">
+      <Filter>libs\MultiNEAT</Filter>
+    </ClInclude>
+    <ClInclude Include="src\NEATManager.h">
+      <Filter>src</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
