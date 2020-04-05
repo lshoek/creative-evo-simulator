@@ -24,15 +24,16 @@ bld/
 [Oo]bj/
 [Ll]og/
 
+bin/data/textures
+
 bin/creatures.exe
 bin/creatures.exp
 bin/creatures.lib
 bin/creatures.iobj
 bin/creatures.ipdb
 
-bin/fmodex64.dll
-bin/fmodexL64.dll
-bin/FreeImage.dll
+# Exclude all .dlls
+*.dll
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
