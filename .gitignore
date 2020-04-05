@@ -26,14 +26,13 @@ bld/
 
 bin/data/textures
 
-bin/creatures.exe
-bin/creatures.exp
-bin/creatures.lib
-bin/creatures.iobj
-bin/creatures.ipdb
-
-# Exclude all .dlls
+# Exclude binaries and etc
+*.exe
+*.exp
+*.lib
 *.dll
+*.iobj
+*.ipdb
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
