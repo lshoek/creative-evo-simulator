@@ -4,7 +4,7 @@
 double activate(GenomeBase& genome, double input_a, double input_b)
 {
     std::vector<double> inputs;
-    inputs.resize(2);
+    inputs.resize(3);
 
     inputs[0] = input_a;
     inputs[1] = input_b;
@@ -18,7 +18,7 @@ double activate(GenomeBase& genome, double input_a, double input_b)
 
 double xorTest(GenomeBase& genome)
 {
-    genome.buildNetwork();
+    genome.buildPhenotype();
 
     double errSum = 0;
     errSum += abs(activate(genome, 0.0, 0.0) - 0.0);

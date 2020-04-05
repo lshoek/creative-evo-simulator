@@ -9,18 +9,20 @@ class NEATManager : public ofThread
 {
 public:
 	void setup(bool threaded);
-    void draw();
     void exit();
 
     void startEvolution();
     void evolutionLoop();
-    void rtTick(bool, int&, int&);
 
-    void evaluatePopulation();
-    void replaceGenomeIds(unsigned int oldId, unsigned int newId);
+    bool tick();
+    bool evaluatePopulation();
 
     NEAT::Population* getPopulation();
     const NEAT::Parameters& getParams();
+
+    double getBestFitness();
+    double getTargetFitness();
+    const std::vector<double>& getFitnessResults();
 
 private:
     virtual void threadedFunction() override;
@@ -30,23 +32,23 @@ private:
 
     NEAT::Population* population;
     NEAT::Parameters params;
+    NEAT::Substrate substrate;
 
     int maxNumGenerations;
     double targetFitness;
     double bestFitness;
 
     bool bHasFitnessFunc;
-    bool bFirstEval;
     bool bThreaded;
-
-    std::vector<unsigned int> genomeIds;
 
     NEAT::Genome deadGenome;
     NEAT::Genome offspringGenome;
     GenomeBase* offspringGenomeBasePtr;
 
-    int lastKilledId;
+    int lastDeadId;
     int lastOffspringId;
 
     std::vector<double> fitnessResults;
+
+    uint64_t totalTimeMs = 0;
 };

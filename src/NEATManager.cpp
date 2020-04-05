@@ -1,75 +1,48 @@
 #include "NEATManager.h"
+#include "NEATUtils.h"
 #include "toolbox.h"
-#include <boost/assign/std.hpp>
-
-using namespace boost::assign;
 
 void NEATManager::setup(bool threaded)
 {
 	// create a fitness function
 	fitnessFuncPtr = &xorFitnessFunc;
 
-	// set parameters to NEAT defaults
-	params = NEAT::Parameters();
-	params.NeuronRecursionLimit = 8;
-
+	// load neat params from config file
 	std::ifstream paramFile("data/config/params_hyperneat_xor_test.conf", std::ifstream::in);
 	params.Load(paramFile);
 	paramFile.close();
 
-	// substrate
-	std::vector<std::vector<double>> substrateInputs(3);
-	std::vector<std::vector<double>> substrateHidden;
-	std::vector<std::vector<double>> substrateOutputs(1);
+	params.PopulationSize = 200;
+	params.NeuronRecursionLimit = 8;
 
-	substrateInputs[0] += -1.0, -1.0, 0.0;
-	substrateInputs[1] += 1.0, -1.0, 0.0;
-	substrateInputs[2] += 0.0, -1.0, 0.0;
-	substrateOutputs[0] += 0.0, 1.0, 0.0;
+	// create substrate
+	substrate = NEATUtils::CreateSubstrate(3);
+	substrate.PrintInfo();
 
-	NEAT::Substrate substrate = NEAT::Substrate(
-		substrateInputs, 
-		substrateHidden, 
-		substrateOutputs
+	// create cppn genome using substrate config
+	NEAT::Genome templateGenome(0,
+		substrate.GetMinCPPNInputs(), 0,
+		substrate.GetMinCPPNOutputs(), false,
+		NEAT::ActivationFunction::TANH,
+		NEAT::ActivationFunction::TANH,
+		0, params, 0
 	);
+	offspringGenomeBasePtr = new GenomeBase(templateGenome);
 
-	substrate.m_allow_input_hidden_links = true;
-	substrate.m_allow_input_output_links = false;
-	substrate.m_allow_hidden_output_links = true;
-	substrate.m_allow_hidden_hidden_links = false;
-	substrate.m_hidden_nodes_activation = NEAT::ActivationFunction::SIGNED_SIGMOID;
-	substrate.m_output_nodes_activation = NEAT::ActivationFunction::UNSIGNED_SIGMOID;
-	substrate.m_max_weight_and_bias = 8.0;
-
-	// initial net
-	int numInputs = 3;
-	int numHidden = 0;
-	int numOutputs = 2;
-
-	// init genotype
-	NEAT::Genome templateGenome(
-		0, numInputs, numHidden, numOutputs,
-		NEAT::UNSIGNED_SIGMOID,
-		NEAT::UNSIGNED_SIGMOID,
-		params
-	);
-
-	// init population and set genome ids
+	// init population and set genome ids that belong to the population
 	population = new NEAT::Population(templateGenome, params, true, 1.0, 0);
-	for (unsigned int i = 0; i < params.PopulationSize; ++i) {
-		genomeIds.push_back(i);
-	}
 
-	maxNumGenerations = 500;
+	maxNumGenerations = 200;
 	fitnessResults.reserve(maxNumGenerations);
 
-	targetFitness = 15.999;
-	bFirstEval = true;
+	targetFitness = 15.99;
 	bThreaded = threaded;
 }
 
 void NEATManager::startEvolution()
 {
+	totalTimeMs = ofGetElapsedTimeMillis();
+
 	if (bThreaded) {
 		startThread();
 	}
@@ -85,115 +58,81 @@ void NEATManager::threadedFunction()
 
 void NEATManager::evolutionLoop()
 {
+	bool bTargetReached = false;
+
 	while ((population->m_Generation < maxNumGenerations || maxNumGenerations == -1) &&
 		(bestFitness < targetFitness || targetFitness == -1))
 	{
-		bool bEvalInTick = bFirstEval; // prevent double eval in first frame
-		if (bEvalInTick) {
-			rtTick(true, lastKilledId, lastOffspringId);
+		bool bNewBest = false;
+
+		bNewBest = evaluatePopulation();
+		bNewBest |= tick();
+
+		if (bNewBest) {
+			GenomeBase g(population->GetBestGenome());
+			g.buildHyperNEATPhenotype(substrate);
 		}
-		else {
-			evaluatePopulation();
-		}
+
 		fitnessResults.push_back(bestFitness);
+
+		// check if converged
+		if (bestFitness >= targetFitness && targetFitness != -1) {
+			bTargetReached = true;
+			break;
+		}
+		// no solution found -> advance to next generation
 		population->Epoch();
 	}
-	ofLog() << ((bestFitness >= targetFitness && targetFitness != -1) ? "Target Reached" : "Evolution Stopped");
+
+	totalTimeMs = ofGetElapsedTimeMillis() - totalTimeMs;
+	ofLog() << (bTargetReached ? "Target Reached" : "Evolution Stopped");
+	ofLog() << "time: " << totalTimeMs / float(1000) << "s";
 }
 
-void NEATManager::rtTick(bool eval, int& deceased_id, int& new_baby_id)
+bool NEATManager::tick()
 {
-	if (bFirstEval) {
-		bFirstEval = false;
-		if (eval) {
-			evaluatePopulation();
-		}
-		// sustain best offspring
-		offspringGenome = *population->Tick(deadGenome);
-		offspringGenomeBasePtr = new GenomeBase(offspringGenome);
-	}
-	else {
-		// sustain best offspring
-		offspringGenome = *population->Tick(deadGenome);
-		offspringGenomeBasePtr->setGenome(offspringGenome);
-	}
-	if (eval) {
-		double f = fitnessFuncPtr->evaluate(*offspringGenomeBasePtr);
-		offspringGenomeBasePtr->getGenome().SetFitness(f);
-		bestFitness = (f > bestFitness) ? f : bestFitness;
-	}
-	lastKilledId = deadGenome.GetID();
-	lastOffspringId = offspringGenome.GetID();
-	replaceGenomeIds(lastKilledId, lastOffspringId);
+	bool bNewBest = false;
+
+	// replace worst genome with new and return it
+	offspringGenome = *population->Tick(deadGenome);
+
+	// get access to genome's network, substrate and params
+	offspringGenomeBasePtr->setGenome(offspringGenome);
+
+	// evaluate the newly created offspring in Tick()
+	double f = fitnessFuncPtr->evaluate(*offspringGenomeBasePtr);
+	offspringGenomeBasePtr->getGenome().SetFitness(f);
+	offspringGenomeBasePtr->getGenome().SetEvaluated();
+
+	bNewBest = f > bestFitness;
+	bestFitness = bNewBest ? f : bestFitness;
+
+	return bNewBest;
 }
 
-void NEATManager::evaluatePopulation()
+bool NEATManager::evaluatePopulation()
 {
 	double f_best = -DBL_MAX;
+	bool bNewBest = false;
 
 	for (unsigned int i = 0; i < population->m_Species.size(); ++i) {
 		for (unsigned int j = 0; j < population->m_Species[i].m_Individuals.size(); ++j) {
+
 			GenomeBase g(population->m_Species[i].m_Individuals[j]);
 			double f = fitnessFuncPtr->evaluate(g);
+
 			population->m_Species[i].m_Individuals[j].SetFitness(f);
-			population->m_Species[i].m_Individuals[j].m_Evaluated = true;
+			population->m_Species[i].m_Individuals[j].SetEvaluated();
+
 			f_best = (f > f_best) ? f : f_best;
 		}
 		population->m_Species[i].CalculateAverageFitness();
 	}
-	bestFitness = (f_best > bestFitness) ? f_best : bestFitness;
+	bNewBest = f_best > bestFitness;
+	bestFitness = bNewBest ? f_best : bestFitness;
+
 	ofLog() << population->m_Generation << " : " << f_best;
-}
-
-void NEATManager::replaceGenomeIds(unsigned int oldId, unsigned int newId)
-{
-	int pos = find(genomeIds.begin(), genomeIds.end(), oldId) - genomeIds.begin();
-	if (pos > params.PopulationSize) {
-		ofLog(OF_LOG_ERROR) << " Genome ID: " << oldId << " not found!!";
-	}
-	else {
-		genomeIds[pos] = newId;
-	}
-	std::sort(genomeIds.begin(), genomeIds.end());
-}
-
-void NEATManager::draw()
-{
-	ofPolyline poly;
-	poly.setClosed(false);
-
-	glm::vec3 pos;
-	double f = 0;
-	int n = fitnessResults.size();
-
-	// draw line
-	ofSetHexColor(0xffffff);
-	for (int i = 0; i < n; i++) {
-		f = fitnessResults[i];
-
-		pos = glm::vec3(i * ((double)ofGetWidth() / (double)n), tb::getHeight(f), 0);
-		poly.addVertex(pos);
-	}
-	poly.draw();
-
-	// mark improvements
-	ofFill();
-	for (int i=0; i < fitnessResults.size(); i++) {
-		f = fitnessResults[i];
-		pos = glm::vec3(i * ((double)ofGetWidth() / (double)n), tb::getHeight(f), 0);
-
-		if (i > 0) {
-			if (fitnessResults[i - 1] < f) ofSetHexColor(0xff0088);
-			else ofSetHexColor(0xffffff);
-
-			ofCircle(pos, 4.0f);
-		}
-	}
-	ofNoFill();
-
-	ofSetHexColor(0xffffff);
-	pos += glm::vec3(-52.0f, 24.0f, 0);
-	if (n!=0) ofDrawBitmapString(fitnessResults[n-1], pos);
+	return bNewBest;
 }
 
 NEAT::Population* NEATManager::getPopulation()
@@ -204,6 +143,21 @@ NEAT::Population* NEATManager::getPopulation()
 const NEAT::Parameters& NEATManager::getParams()
 {
 	return params;
+}
+
+double NEATManager::getBestFitness()
+{
+	return bestFitness;
+}
+
+double NEATManager::getTargetFitness()
+{
+	return targetFitness;
+}
+
+const std::vector<double>& NEATManager::getFitnessResults()
+{
+	return fitnessResults;
 }
 
 void NEATManager::exit()

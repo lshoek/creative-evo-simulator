@@ -170,14 +170,50 @@ public:
 	// ------------------------------------------------------------
 	static glm::vec3 randomPointOnSphere()
 	{
-		float lambda = ofRandom(1.0f);
-		float u = ofRandom(-1.0f, 1.0f);
-		float phi = ofRandom(2.0 * PI);
+		//float lambda = ofRandom(1.0f);
+		//float u = ofRandom(-1.0f, 1.0f);
+		//float phi = ofRandom(2.0 * PI);
+
+		//glm::vec3 p;
+		//p.x = pow(lambda, 1 / 3) * sqrt(1.0 - u * u) * cos(phi);
+		//p.y = pow(lambda, 1 / 3) * sqrt(1.0 - u * u) * sin(phi);
+		//p.z = pow(lambda, 1 / 3) * u;
+
+		double theta = 2 * PI * ofRandom(1.0f);
+		double phi = acos(1 - 2 * ofRandom(1.0f));
 
 		glm::vec3 p;
-		p.x = pow(lambda, 1 / 3) * sqrt(1.0 - u * u) * cos(phi);
-		p.y = pow(lambda, 1 / 3) * sqrt(1.0 - u * u) * sin(phi);
-		p.z = pow(lambda, 1 / 3) * u;
+		p.x = sin(phi) * cos(theta);
+		p.y = sin(phi) * sin(theta);
+		p.z = cos(phi);
+
+		return p;
+	}
+
+	// ------------------------------------------------------------
+	static glm::vec3 randomPointOnSphere(float lim)
+	{
+		double theta = PI * ofRandom(-1.0f, 1.0f) * lim;
+		double phi = acos(1 - 2 * ofRandom(1.0f));
+
+		glm::vec3 p;
+		p.x = sin(phi) * cos(theta);
+		p.y = sin(phi) * sin(theta);
+		p.z = cos(phi);
+
+		return p;
+	}
+
+	// ------------------------------------------------------------
+	static glm::vec3 randomPointOnHalfSphere()
+	{
+		double theta = PI * ofRandom(1.0f);
+		double phi = acos(1 - 2 * ofRandom(1.0f));
+
+		glm::vec3 p;
+		p.x = sin(phi) * cos(theta);
+		p.y = sin(phi) * sin(theta);
+		p.z = cos(phi);
 
 		return p;
 	}

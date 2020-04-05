@@ -16,13 +16,8 @@ public:
 		float max;
 	};
 
-    static const double getHeight(double fitness)
-    {
-        return ofGetHeight() - (fitness * ((double)ofGetHeight() / (double)16));
-    }
-
 	// uses normalized texcoords
-	static ofMesh gridMesh(int w, int h, float scale)
+	static ofMesh gridMesh(int w, int h, float scale, bool center)
 	{
 		ofMesh mesh;
 		mesh.setMode(OF_PRIMITIVE_TRIANGLES);
@@ -34,7 +29,7 @@ public:
 				float x_mesh = x * scale;
 				float y_mesh = y * scale;
 
-				mesh.addVertex(glm::vec3(x_mesh, 0, y_mesh));
+				mesh.addVertex(glm::vec3(x_mesh, 0, y_mesh) - (center ? size/2.0f:glm::vec3(0)));
 				mesh.addNormal(glm::vec3(0, 1, 0));
 				mesh.addTexCoord(glm::vec2((float)x / (float)w, (float)y / (float)h));
 			}
