@@ -111,6 +111,8 @@ void ofApp::draw()
 			ImGui::Separator();
 		}
 		if (bSimulate) {
+			ImGui::SliderFloat3("light_dir", &simulationManager.lightDirection[0], -1.0f, 1.0f);
+			ImGui::SliderFloat3("light_pos", &simulationManager.lightPosition[0], -100.0f, 100.0f);
 			ImGui::Text("#nodes: %d", simulationManager.getNumNodes());
 			ImGui::Text("cam_pos: x:%.02f, y:%.02f, z:%.02f", cam.getPosition().x, cam.getPosition().y, cam.getPosition().z);
 			ImGui::Text("dbg_draw: %s", simulationManager.bDebugDraw ? "on" : "off");

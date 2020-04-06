@@ -2,13 +2,16 @@
 
 uniform float alpha = 1.0;
 
+uniform mat4 viewMatrix;
+
 uniform vec4 mtl_ambient;
 uniform vec4 mtl_diffuse ;
 uniform vec4 mtl_specular;
 uniform vec4 mtl_emission ;
 uniform float mtl_shininess;
 
-uniform vec3 light_dir = vec3(0, -1.0, 0.75);
+uniform vec3 light_dir = vec3(0.5, -1.0, 0);
+uniform vec3 light_pos;
 
 uniform sampler2D tex;
 uniform vec4 color;

@@ -30,6 +30,9 @@ public:
     bool bDraw = true;
     bool bDebugDraw = false;
 
+    glm::vec3 lightPosition;
+    glm::vec3 lightDirection;
+
 private:
     void initPhysics();
     void initObjects();
@@ -49,7 +52,6 @@ private:
 
     ofShader _terrainShader;
     ofShader _nodeShader;
-
     ofTexture _nodeTexture;
     ofMaterial _material;
 

@@ -24,7 +24,10 @@ void main()
     eye = -view_vert;
 
 	texcoord_varying = texcoord;
-	normal_varying = vec4(normalize(normal.xyz), 0.0);
+	
+	mat3 normalMatrix = mat3(transpose(inverse(modelMatrix)));
+	vec3 normal_transformed = normalMatrix * normalize(normal.xyz);
+	normal_varying = vec4(normal_transformed, 0.0);
 
     gl_Position = modelViewProjectionMatrix * position;
 }

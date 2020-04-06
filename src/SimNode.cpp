@@ -49,7 +49,7 @@ void SimNode::draw()
     if (_shader) {
         ofPushMatrix();
         ofMultMatrix(getTransform());
-        
+
         _shader->begin();
         if (_texture) {
             _shader->setUniformTexture("tex", *_texture, 0);

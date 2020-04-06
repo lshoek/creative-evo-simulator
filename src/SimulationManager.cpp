@@ -34,6 +34,8 @@ void SimulationManager::init()
         _nodes[i]->setTexture(&_nodeTexture);
         _nodes[i]->setShader(&_nodeShader);
     }
+    lightPosition = glm::vec3(0.0f, 1.0f, 0.25f);
+    lightDirection = glm::vec3(0.0f, -1.0f, 0.75f);
 }
 
 void SimulationManager::initPhysics()
@@ -51,7 +53,7 @@ void SimulationManager::initPhysics()
     );
 
     _world = new btDiscreteDynamicsWorld(_dispatcher, _broadphase, _solver, _collisionConfiguration);
-    _world->setGravity(btVector3(0, -9.8, 0));
+    _world->setGravity(btVector3(0, -9.81, 0));
     _world->setDebugDrawer(_dbgDrawer);
 }
 
@@ -115,6 +117,17 @@ void SimulationManager::initDebugSnake()
 void SimulationManager::update(float delta)
 {
     _world->stepSimulation(delta);
+
+    // test lights
+    _terrainShader.begin();
+    _terrainShader.setUniform3f("light_pos", lightPosition);
+    _terrainShader.setUniform3f("light_dir", lightDirection);
+    _terrainShader.end();
+
+    _nodeShader.begin();
+    _nodeShader.setUniform3f("light_pos", lightPosition);
+    _nodeShader.setUniform3f("light_dir", lightDirection);
+    _nodeShader.end();
 }
 
 void SimulationManager::draw()
