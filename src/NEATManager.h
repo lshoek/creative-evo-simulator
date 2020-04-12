@@ -9,6 +9,7 @@ class NEATManager : public ofThread
 {
 public:
 	void setup(bool threaded);
+    void draw();
     void exit();
 
     void startEvolution();
@@ -23,6 +24,8 @@ public:
     double getBestFitness();
     double getTargetFitness();
     const std::vector<double>& getFitnessResults();
+
+    ofEvent<void> onNewBestFound;
 
 private:
     virtual void threadedFunction() override;
@@ -43,7 +46,9 @@ private:
 
     NEAT::Genome deadGenome;
     NEAT::Genome offspringGenome;
+
     GenomeBase* offspringGenomeBasePtr;
+    GenomeBase* bestGenomeBasePtr;
 
     int lastDeadId;
     int lastOffspringId;

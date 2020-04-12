@@ -14,7 +14,7 @@ uniform vec3 light_dir = vec3(0.5, -1.0, 0);
 uniform vec3 light_pos;
 
 uniform sampler2D tex;
-uniform vec4 color;
+uniform vec4 color = vec4(1.0);
 
 in vec4 eye;
 
@@ -57,6 +57,9 @@ void main()
 {
 	vec4 texcol = texture(tex, texcoord_varying) * color;
 	vec4 outcol = mtl_emission * texcol + directional_light(normal_varying.xyz, texcol);
+
+	// float gamma = 2.2;
+	// outcol.rgb = pow(outcol.rgb, vec3(1.0/gamma));
 	outcol.a *= alpha;
 
 	fragColor = outcol;

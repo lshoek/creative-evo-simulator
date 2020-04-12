@@ -224,14 +224,18 @@
     <ClCompile Include="..\..\..\addons\ofxImGui\src\Helpers.cpp" />
     <ClCompile Include="..\..\..\addons\ofxImGui\src\ofxImGuiLoggerChannel.cpp" />
     <ClCompile Include="..\..\..\addons\ofxIniSettings\src\ofxIniSettings.cpp" />
+    <ClCompile Include="src\ImageSaverThread.cpp" />
+    <ClCompile Include="src\SimCanvasNode.cpp" />
     <ClCompile Include="src\GenomeBase.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\NEATManager.cpp" />
     <ClCompile Include="src\ofApp.cpp" />
     <ClCompile Include="src\SimCam.cpp" />
+    <ClCompile Include="src\SimCreature.cpp" />
     <ClCompile Include="src\SimNode.cpp" />
     <ClCompile Include="src\SimDebugDrawer.cpp" />
     <ClCompile Include="src\SimulationManager.cpp" />
+    <ClCompile Include="src\WalkFitnessFunc.cpp" />
     <ClCompile Include="src\XORFitnessFunc.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -267,6 +271,8 @@
     <ClInclude Include="..\..\..\addons\ofxImGui\src\ofxImGui.h" />
     <ClInclude Include="..\..\..\addons\ofxImGui\src\ofxImGuiLoggerChannel.h" />
     <ClInclude Include="..\..\..\addons\ofxIniSettings\src\ofxIniSettings.h" />
+    <ClInclude Include="src\ImageSaverThread.h" />
+    <ClInclude Include="src\SimCanvasNode.h" />
     <ClInclude Include="src\FitnessFunc.h" />
     <ClInclude Include="src\GenomeBase.h" />
     <ClInclude Include="src\MathUtils.h" />
@@ -274,11 +280,13 @@
     <ClInclude Include="src\NEATUtils.h" />
     <ClInclude Include="src\ofApp.h" />
     <ClInclude Include="src\SimCam.h" />
+    <ClInclude Include="src\SimCreature.h" />
     <ClInclude Include="src\SimNode.h" />
     <ClInclude Include="src\SimDebugDrawer.h" />
     <ClInclude Include="src\SimulationManager.h" />
     <ClInclude Include="src\SimUtils.h" />
     <ClInclude Include="src\toolbox.h" />
+    <ClInclude Include="src\WalkFitnessFunc.h" />
     <ClInclude Include="src\XORFitnessFunc.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

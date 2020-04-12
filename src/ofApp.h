@@ -22,21 +22,29 @@ public:
 	void windowResized(int w, int h);
 	void keyPressed(int key);
 
+	void queueRenderEvent();
+
+private:
     NEATManager neatManager;
 	SimulationManager simulationManager;
 
+	ofEventListener renderEventQueuedListener;
+
 	ofRectangle previewRect;
 	ofRectangle viewRect;
+
 	ofFbo frameFbo;
+	ofFbo cppnFbo;
 
 	ofxGrabCam cam;
 	ofxImGui::Gui gui;
 	ofxIniSettings settings;
 
-	int focusNodeIndex = 0;
+	bool bRenderEventQueued = false;
 
 	bool bEvolve = true;
 	bool bSimulate = true;
 	bool bCameraSnapFocus = true;
 	bool bDebugGrid = true;
+	bool bGui = true;
 };

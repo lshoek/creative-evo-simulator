@@ -1,19 +1,16 @@
 #pragma once
 #include "bullet/btBulletDynamicsCommon.h"
 #include "SimNode.h"
+#include "SimCreature.h"
 #include "SimDebugDrawer.h"
+#include "ImageSaverThread.h"
 #include "ofMain.h"
-
-#define NodeTag 0
-#define JointTag 1
-#define BrushTag 2
-#define TerrainTag 3
 
 class SimulationManager
 {
 public:
     void init();
-    void update(float delta);
+    void update(double timestep);
     void draw();
     void reset();
     void dealloc();
@@ -21,11 +18,14 @@ public:
     void applyForce(bool bEnable);
     void loadShaders();
 
-    bool isMainCreatureAvailable();
-    glm::vec3 getMainCreatureOrigin();
+    void saveCanvas();
+    bool isInitialized();
 
-    unsigned int getNumNodes();
-    const std::vector<SimNode*>& getNodes();
+    ofFbo* getCanvasFbo();
+
+    SimCreature* getFocusCreature();
+    glm::vec3 getFocusOrigin();
+    void shiftFocus();
 
     bool bDraw = true;
     bool bDebugDraw = false;
@@ -33,12 +33,11 @@ public:
     glm::vec3 lightPosition;
     glm::vec3 lightDirection;
 
+    void initCreatures();
+
 private:
     void initPhysics();
-    void initObjects();
-
-    void initDebugSnake();
-    void disableCollisionOnLinkedNodes();
+    void initTerrain();
 
     btBroadphaseInterface* _broadphase;
     btDefaultCollisionConfiguration* _collisionConfiguration;
@@ -46,32 +45,46 @@ private:
     btSequentialImpulseConstraintSolver* _solver;
     btDiscreteDynamicsWorld* _world;
 
-    btHingeConstraint* _hingeConstraint;
-
     SimDebugDrawer* _dbgDrawer;
 
     ofShader _terrainShader;
     ofShader _nodeShader;
+    ofShader _unlitShader;
+    ofShader _canvasUpdateShader;
+
     ofTexture _nodeTexture;
+    ofTexture _terrainTexture;
     ofMaterial _material;
 
     SimNode* _terrainNode;
-    std::vector<SimNode*> _nodes;
+    SimCanvasNode* _canvasNode;
+    SimCreature* _creature;
+    SimCreature* _debugSnakeCreature;
 
-    float maxBoxExtents = 4.0f;
-    float boxExtents = 4.0f;
-    float defaultMass = 0.5f;
-    float terrainSize = 500.0f;
-    float spawnAreaPct = 0.125f;
+    std::vector<SimCreature*> _creatures;
 
-    float maxDistBetweenNodes = 100.0f;
-    float distPct = 0.5f;
-
-    unsigned int maxNodes = 32;
+    float terrainSize = 48.0f;
+    float canvasSize = 8.0f;
 
     bool bRandomSize = false;
 
+    bool bTerrainInitialized = false;
+    bool bCreaturesInitialized = false;
+
+    const int numCreatures = 2;
+    int focusIndex = 0;
+
+    // pbo
+    ImageSaverThread _imageSaverThread;
+    ofBufferObject pixelWriteBuffers[2];
+    ofBufferObject* pboPtr;
+    ofPixels writePixels;
+    ofBuffer writeBuffer;
+    int iPBO;
+
+    glm::ivec2 _canvasRes;
+
     const glm::vec3 right = glm::vec3(1, 0, 0);
-    const glm::vec3 up = glm::vec3(0, 1, 0);
-    const glm::vec3 fwd = glm::vec3(0, 0, 1);
+    const glm::vec3 up =    glm::vec3(0, 1, 0);
+    const glm::vec3 fwd =   glm::vec3(0, 0, 1);
 };

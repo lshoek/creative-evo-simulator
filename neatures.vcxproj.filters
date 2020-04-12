@@ -34,6 +34,9 @@
     <Filter Include="addons\ofxGrabCam">
       <UniqueIdentifier>{91f9dc10-9745-480c-9244-cbb1d6bf7520}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\Utils">
+      <UniqueIdentifier>{c04f159c-5a9d-470d-af65-fdabb0e6b4f4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="icon.rc" />
@@ -138,15 +141,21 @@
     <ClCompile Include="..\..\..\addons\ofxGrabCam\src\ofxGrabCam.cpp">
       <Filter>addons\ofxGrabCam</Filter>
     </ClCompile>
+    <ClCompile Include="src\WalkFitnessFunc.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SimCreature.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SimCanvasNode.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ImageSaverThread.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\MathUtils.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="src\ofApp.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\toolbox.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="src\XORFitnessFunc.h">
@@ -203,9 +212,6 @@
     <ClInclude Include="src\NEATManager.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="src\NEATUtils.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\addons\ofxImGui\libs\imgui\src\imgui.h">
       <Filter>addons\ofxImGui\libs\imgui\src</Filter>
     </ClInclude>
@@ -260,9 +266,6 @@
     <ClInclude Include="src\SimNode.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="src\SimUtils.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="src\SimDebugDrawer.h">
       <Filter>src</Filter>
     </ClInclude>
@@ -274,6 +277,30 @@
     </ClInclude>
     <ClInclude Include="..\..\..\addons\ofxGrabCam\src\ofxGrabCam.h">
       <Filter>addons\ofxGrabCam</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WalkFitnessFunc.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SimCreature.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MathUtils.h">
+      <Filter>src\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SimUtils.h">
+      <Filter>src\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\NEATUtils.h">
+      <Filter>src\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\toolbox.h">
+      <Filter>src\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SimCanvasNode.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ImageSaverThread.h">
+      <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

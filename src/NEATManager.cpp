@@ -12,7 +12,7 @@ void NEATManager::setup(bool threaded)
 	params.Load(paramFile);
 	paramFile.close();
 
-	params.PopulationSize = 200;
+	params.PopulationSize = 4;
 	params.NeuronRecursionLimit = 8;
 
 	// create substrate
@@ -28,15 +28,64 @@ void NEATManager::setup(bool threaded)
 		0, params, 0
 	);
 	offspringGenomeBasePtr = new GenomeBase(templateGenome);
+	bestGenomeBasePtr = new GenomeBase(templateGenome);
 
 	// init population and set genome ids that belong to the population
 	population = new NEAT::Population(templateGenome, params, true, 1.0, 0);
 
-	maxNumGenerations = 200;
+	maxNumGenerations = 500;
 	fitnessResults.reserve(maxNumGenerations);
 
 	targetFitness = 15.99;
 	bThreaded = threaded;
+}
+
+void NEATManager::draw()
+{
+	glm::ivec2 rect = glm::ivec2(512, 512);
+
+	ofPushMatrix();
+	ofScale(rect.x/2, rect.y/2, 0);
+	ofTranslate(rect.x/2, rect.y/2, 0);
+
+	const std::vector<NEAT::Neuron>& neurons = bestGenomeBasePtr->getNN().m_neurons;
+	const std::vector<NEAT::Connection>& conns = bestGenomeBasePtr->getNN().m_connections;
+
+	std::vector<glm::vec3> ncoords;
+	ncoords.resize(neurons.size());
+
+	for (int i = 0; i < neurons.size(); i++) {
+		if (neurons[i].m_substrate_coords.size() > 0) {
+			ncoords[i] = glm::vec3(neurons[i].m_substrate_coords[0], neurons[i].m_substrate_coords[1], neurons[i].m_substrate_coords[2]);
+		}
+	}
+	for (const NEAT::Connection& c : conns) {
+		if (c.m_source_neuron_idx != c.m_target_neuron_idx) {
+			ofDrawLine(ncoords[c.m_source_neuron_idx], ncoords[c.m_target_neuron_idx]);
+		}
+		else { /* handle recurrent connection */ }
+	}
+	ofFill();
+	ofSetHexColor(0xff0088);
+
+	for (glm::vec3& v : ncoords) {
+		ofDrawCircle(v, 0.05f);
+	}
+
+	//ofColor typecol;
+	//for (int i=0; i < neurons.size(); i++) {
+	//	if (neurons[i].m_type == NEAT::INPUT)		typecol = ofColor::fromHex(0xff0088);
+	//	else if (neurons[i].m_type == NEAT::HIDDEN) typecol = ofColor::fromHex(0x88ff00);
+	//	else if (neurons[i].m_type == NEAT::OUTPUT) typecol = ofColor::fromHex(0x0088ff);
+
+	//	ofSetColor(typecol);
+	//	ofDrawCircle(ncoords[i], 0.05f);
+	//}
+
+	ofNoFill();
+	ofSetHexColor(0xffffff);
+
+	ofPopMatrix();
 }
 
 void NEATManager::startEvolution()
@@ -69,8 +118,9 @@ void NEATManager::evolutionLoop()
 		bNewBest |= tick();
 
 		if (bNewBest) {
-			GenomeBase g(population->GetBestGenome());
-			g.buildHyperNEATPhenotype(substrate);
+			bestGenomeBasePtr->setGenome(population->GetBestGenome());
+			bestGenomeBasePtr->buildHyperNEATPhenotype(substrate);
+			onNewBestFound.notify();
 		}
 
 		fitnessResults.push_back(bestFitness);
@@ -166,5 +216,6 @@ void NEATManager::exit()
 		waitForThread();
 	}
 	delete population;
+	delete bestGenomeBasePtr;
 	delete offspringGenomeBasePtr;
 }

@@ -1,4 +1,5 @@
 #version 450
+#define inv(x) 1.0-x
 
 uniform float alpha = 1.0;
 
@@ -11,7 +12,9 @@ uniform float mtl_shininess;
 uniform vec3 light_dir = vec3(0.5, -1.0, 0);
 uniform vec3 light_pos;
 
-//uniform sampler2D tex;
+uniform sampler2D tex;
+uniform vec3 checkers_col0 = vec3(0.913, 0.309, 0.215);
+uniform vec3 checkers_col1 = vec3(0.878, 0.878, 0.886);
 
 in vec4 eye;
 
@@ -52,18 +55,25 @@ vec4 directional_light(vec3 normal, vec4 texcol)
 
 vec4 checkers(vec2 st)
 {
-	vec2 p = floor(st*64.0);
+	vec2 p = floor(st*32.0);
 	float f = mod(p.x + p.y, 2.0);
 
-	vec3 col = mix(vec3(1.0, 1.0, 1.0), vec3(1.0, 0.0, 0.5), f);
+	vec3 col = mix(checkers_col0, checkers_col1, f);
 	return vec4(col.rgb, 1.0);
 }
 
 void main(void)
 {
-	vec4 texcol = checkers(texcoord_varying);
+	vec4 texcol = texture(tex, texcoord_varying*32.0);
+	texcol.rgb = mix(checkers_col0, checkers_col1, texcol.r);
+
 	vec4 outcol = mtl_emission * texcol + directional_light(normal_varying.xyz, texcol);
-	outcol.a *= alpha;
+	
+	// float gamma = 2.2;
+	// outcol.rgb = pow(outcol.rgb, vec3(1.0/gamma));
+
+	float alpha_radial = 0.5 - distance(vec2(0.5), texcoord_varying);
+	outcol.a *= alpha * smoothstep(0.0, 0.1, alpha_radial);
 
 	fragColor = outcol;
 }

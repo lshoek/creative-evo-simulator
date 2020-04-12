@@ -2,25 +2,42 @@
 #include "SimUtils.h"
 #include "toolbox.h"
 
-void SimNode::init(std::string name, glm::vec3 position, glm::vec3 size, float mass, bool box, int tag)
+SimNode::SimNode(int tag) : _tag(tag) 
 {
-    _name = name;
-    _tag = tag;
-    _size = SimUtils::glmToBullet(size);
-    _color = ofColor::fromHsb(ofRandom(255), 0.75f*255, 1.0f*255, 1.0f*255);
+    _color = ofColor::fromHsb(ofRandom(255), 0.75f * 255, 1.0f * 255, 1.0f * 255);
+}
 
-    // create shape and body
-    if (box) {
-        _shape = new btBoxShape(_size);
-        _mesh = ofMesh::box(size.x * 2, size.y * 2, size.z * 2);
-    }
-    else {
-        _shape = new btStaticPlaneShape(btVector3(0, 1, 0), 0);
-        _mesh = tb::gridMesh(4, 4, size.x * 2, true);
-        //_mesh = ofMesh::box(size.x * 2, size.y * 2, size.z*2);
-        //position += glm::vec3(0, size.y/2.0f, 0);
-    }
-    tb::flipNormals(_mesh);
+SimNode::SimNode(int tag, ofColor color) : _tag(tag)
+{
+    _color = color;
+}
+
+void SimNode::setRigidBody(btRigidBody* body)
+{
+    _body = body;
+    _body->setUserIndex(_tag);
+
+    _shape = _body->getCollisionShape();
+}
+
+void SimNode::initBox(glm::vec3 position, glm::vec3 size, float mass)
+{
+    _shape = new btBoxShape(btVector3(size.x, size.y, size.z));
+    _mesh = new ofMesh(ofMesh::box(size.x * 2, size.y * 2, size.z * 2));
+    createBody(position, mass);
+}
+
+void SimNode::initCapsule(glm::vec3 position, float radius, float height, float mass)
+{
+    _shape = new btCapsuleShape(radius, height);
+    _mesh = new ofMesh(ofMesh::cylinder(radius, height));
+    createBody(position, mass);
+}
+
+void SimNode::initPlane(glm::vec3 position, float size, float mass)
+{
+    _shape = new btStaticPlaneShape(btVector3(0, 1, 0), 0);
+    _mesh = new ofMesh(tb::gridMesh(2, 2, size*2, true));
     createBody(position, mass);
 }
 
@@ -42,6 +59,7 @@ void SimNode::createBody(glm::vec3 position, float mass)
 
     _body = new btRigidBody(bodyConstrInfo);
     _body->setUserPointer(this);
+    _body->setUserIndex(_tag);
 }
 
 void SimNode::draw()
@@ -51,7 +69,7 @@ void SimNode::draw()
         ofMultMatrix(getTransform());
 
         _shader->begin();
-        if (_texture) {
+        if (bUseTexture) {
             _shader->setUniformTexture("tex", *_texture, 0);
         }
         _shader->setUniform4f("color", _color);
@@ -61,7 +79,7 @@ void SimNode::draw()
         _shader->setUniform4f("mtl_emission", _material->getEmissiveColor());
         _shader->setUniform1f("mtl_shininess", _material->getShininess());
 
-        _mesh.draw();
+        _mesh->draw();
         _shader->end();
 
         ofPopMatrix();
@@ -119,6 +137,9 @@ glm::quat SimNode::getRotation()
 btRigidBody* SimNode::getRigidBody() { return _body; }
 bool SimNode::hasBody() { return _body != nullptr; }
 
+// shape
+btCollisionShape* SimNode::getShape() { return _shape; }
+
 // meta
 std::string SimNode::getName() { return _name; }
 int SimNode::getTag() { return _tag; }
@@ -127,14 +148,21 @@ int SimNode::getTag() { return _tag; }
 void SimNode::setShader(ofShader* shader) { _shader = shader; }
 ofShader* SimNode::getShader() { return _shader; }
 
-// texture
-void SimNode::setTexture(ofTexture* texture) { _texture = texture; }
+void SimNode::setTexture(ofTexture* texture) { 
+    _texture = texture; 
+    bUseTexture = true;
+}
 void SimNode::setMaterial(ofMaterial* mtl) { _material = mtl; }
+void SimNode::setMesh(ofMesh* mesh) { _mesh = mesh; }
 
-void SimNode::dealloc()
+SimNode::~SimNode()
 {
     delete _body->getMotionState();
     delete _body;
     delete _shape;
+
     delete _shader;
+    delete _texture;
+    delete _material;
+    delete _mesh;
 }

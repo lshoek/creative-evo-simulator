@@ -1,6 +1,8 @@
 #pragma once
 #include "ofMain.h"
 
+#define SWAP(x) (x + 1) % 2
+
 class tb
 {
 public:
@@ -22,16 +24,16 @@ public:
 		ofMesh mesh;
 		mesh.setMode(OF_PRIMITIVE_TRIANGLES);
 
-		glm::vec3 size = glm::vec3(w, 0, h) * scale;
+		glm::vec3 correctCenter = center ? (scale/2.0f)*glm::vec3(1, 0, 1) : glm::vec3(0);
 
 		for (int y = 0; y < h; y++) {
 			for (int x = 0; x < w; x++) {
-				float x_mesh = x * scale;
-				float y_mesh = y * scale;
+				float x_mesh = x/float(w-1) * scale;
+				float y_mesh = y/float(h-1) * scale;
 
-				mesh.addVertex(glm::vec3(x_mesh, 0, y_mesh) - (center ? size/2.0f:glm::vec3(0)));
+				mesh.addVertex(glm::vec3(x_mesh, 0, y_mesh) - correctCenter);
 				mesh.addNormal(glm::vec3(0, 1, 0));
-				mesh.addTexCoord(glm::vec2((float)x / (float)w, (float)y / (float)h));
+				mesh.addTexCoord(glm::vec2(x/float(w-1), y/float(h-1)));
 			}
 		}
 

@@ -5,14 +5,17 @@
 #include "ofMath.h"
 #include "toolbox.h"
 
+#define NTRS_ARTWORK_PATH "output/artworks/"
+
 void SimulationManager::init()
 {
-    bRandomSize = true;
-    boxExtents = maxBoxExtents;
-    maxDistBetweenNodes = ofLerp(0, sqrt((maxBoxExtents * 2) * (maxBoxExtents * 2) * 3), distPct);
+    _canvasRes = glm::ivec2(1024, 1024);
 
     initPhysics();
-    initObjects();
+    initTerrain();
+
+    // initialization called from app
+    //initCreatures();
 
     // rendering
     _material.setDiffuseColor(ofFloatColor(1.0f, 1.0f));
@@ -22,20 +25,26 @@ void SimulationManager::init()
     _material.setShininess(50.0f);
 
     loadShaders();
-    ofLoadImage(_nodeTexture, "textures/box.png");
+    ofLoadImage(_nodeTexture, "textures/box_256.png");
+    ofLoadImage(_terrainTexture, "textures/checkers_64.png");
+
     _nodeTexture.generateMipmap();
     _nodeTexture.setTextureMinMagFilter(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
+    _terrainTexture.generateMipmap();
+    _terrainTexture.setTextureMinMagFilter(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
+    _terrainTexture.setTextureWrap(GL_REPEAT, GL_REPEAT);
 
-    _terrainNode->setMaterial(&_material);
-    _terrainNode->setShader(&_terrainShader);
-
-    for (int i = 0; i < maxNodes; i++) {
-        _nodes[i]->setMaterial(&_material);
-        _nodes[i]->setTexture(&_nodeTexture);
-        _nodes[i]->setShader(&_nodeShader);
-    }
     lightPosition = glm::vec3(0.0f, 1.0f, 0.25f);
-    lightDirection = glm::vec3(0.0f, -1.0f, 0.75f);
+    lightDirection = glm::vec3(0.0f, 1.0f, 0.75f);
+
+    // pbo
+    _imageSaverThread.setup(NTRS_ARTWORK_PATH);
+    writePixels.allocate(_canvasRes.x, _canvasRes.y, GL_RGBA);
+    for (int i = 0; i < 2; i++) {
+        pixelWriteBuffers[i].allocate(_canvasRes.x*_canvasRes.y*4, GL_DYNAMIC_READ);
+    }
+    int iPBO = 0;
+    pboPtr = &pixelWriteBuffers[iPBO];
 }
 
 void SimulationManager::initPhysics()
@@ -51,74 +60,69 @@ void SimulationManager::initPhysics()
         btIDebugDraw::DBG_DrawConstraints | 
         btIDebugDraw::DBG_DrawContactPoints
     );
-
+    
     _world = new btDiscreteDynamicsWorld(_dispatcher, _broadphase, _solver, _collisionConfiguration);
     _world->setGravity(btVector3(0, -9.81, 0));
     _world->setDebugDrawer(_dbgDrawer);
+
+    // for later
+    //_world->setInternalTickCallback(&tickCallback, this, true);
 }
 
-void SimulationManager::initObjects()
+void SimulationManager::initTerrain()
 {
-    _terrainNode = new SimNode();
-    _terrainNode->init("terrainNode", glm::vec3(0), glm::vec3(terrainSize, 1, terrainSize), 0, false, TerrainTag);
+    _terrainNode = new SimNode(TerrainTag);
+    _terrainNode->initPlane(glm::vec3(0), terrainSize, 0);
     _terrainNode->setShader(&_terrainShader);
-    _world->addRigidBody(_terrainNode->getRigidBody());
+    _terrainNode->setMaterial(&_material);
+    _terrainNode->setTexture(&_terrainTexture);
 
-    _nodes.resize(maxNodes);
-    initDebugSnake();
+    _canvasNode = new SimCanvasNode(CanvasTag, canvasSize, _canvasRes.x, _canvasRes.y);
+    _canvasNode->setPosition(glm::vec3(0, 0.1f, 0));
+    _canvasNode->setCanvasUpdateShader(&_canvasUpdateShader);
+    _canvasNode->setShader(&_unlitShader);
+    _canvasNode->setMaterial(&_material);
+    _canvasNode->setTexture(&_nodeTexture);
+
+    _world->addRigidBody(_terrainNode->getRigidBody());
+    _world->addRigidBody(_canvasNode->getRigidBody());
+
+    bTerrainInitialized = true;
 }
 
-void SimulationManager::initDebugSnake()
+void SimulationManager::initCreatures()
 {
-    glm::vec3 start = glm::vec3(
-        ofRandom(-terrainSize * spawnAreaPct, terrainSize * spawnAreaPct), boxExtents,
-        ofRandom(-terrainSize * spawnAreaPct, terrainSize * spawnAreaPct)
-    );
+    btVector3 offset(0, 1.0f, 0);
+    _creature = new SimCreature(btVector3(0, 0, 0), 6, _world, offset, true);
+    _creature->setAppearance(&_nodeShader, &_material, &_nodeTexture);
+    _creature->addToWorld();
 
-    glm::vec3 size = glm::vec3(boxExtents);
-    glm::vec3 dir = right;
-    glm::vec3 cur, prev = start;
-    glm::quat lookatRot;
+    _debugSnakeCreature = new SimCreature(btVector3(0, 0, 0), 0, _world, offset, false);
+    _debugSnakeCreature->initSnake(btVector3(0, 0, 24), 32, 1.0f, 0.75f, true);
+    _debugSnakeCreature->setAppearance(&_nodeShader, &_material, &_nodeTexture);
 
-    cur = start;
-    for (int i = 0; i < maxNodes; i++)
-    {
-        char id[32];
-        sprintf_s(id, "testNode_%d", i);
+    _creatures.push_back(_creature);
+    _creatures.push_back(_debugSnakeCreature);
+    
+    bCreaturesInitialized = true;
+}
 
-        lookatRot = tb::quatDiff(right, glm::rotation(right, dir) * glm::rotate(right, 0.125f, up));
-        dir = glm::normalize(lookatRot * right);
+void SimulationManager::update(double timeStep)
+{
+    _world->stepSimulation(timeStep);
 
-        prev = cur;
-        cur = prev + dir * maxDistBetweenNodes;
-
-        if (bRandomSize) {
-            size = glm::vec3(ofRandom(1, maxBoxExtents), maxBoxExtents, ofRandom(1, maxBoxExtents));
+    if (bCreaturesInitialized) {
+        for (SimCreature*& c : _creatures) {
+            c->update(timeStep);
         }
-        _nodes[i] = new SimNode();
-        _nodes[i]->init(id, cur, size, defaultMass, true, NodeTag);
-        _nodes[i]->setRotation(lookatRot);
-
-        _world->addRigidBody(_nodes[i]->getRigidBody());
-
-        if (i > 0) {
-            btVector3 pivotInA(0, 0, 0);
-            btVector3 pivotInB =
-                _nodes[i - 1]->getRigidBody()->getWorldTransform().inverse()(_nodes[i]->getRigidBody()->getWorldTransform()(pivotInA));
-
-            btTypedConstraint* p2p = new btPoint2PointConstraint(
-                *_nodes[i]->getRigidBody(), *_nodes[i - 1]->getRigidBody(), pivotInA, pivotInB);
-            _world->addConstraint(p2p);
+        if (bTerrainInitialized) {
+            _canvasNode->update();
         }
     }
-    disableCollisionOnLinkedNodes();
 }
 
-void SimulationManager::update(float delta)
+void SimulationManager::draw()
 {
-    _world->stepSimulation(delta);
-
-    // test lights
     _terrainShader.begin();
     _terrainShader.setUniform3f("light_pos", lightPosition);
     _terrainShader.setUniform3f("light_dir", lightDirection);
@@ -128,14 +132,15 @@ void SimulationManager::update(float delta)
     _nodeShader.setUniform3f("light_pos", lightPosition);
     _nodeShader.setUniform3f("light_dir", lightDirection);
     _nodeShader.end();
-}
 
-void SimulationManager::draw()
-{
     if (bDraw) {
-        _terrainNode->draw();
-        for (int i = 0; i < maxNodes; i++) {
-            _nodes[i]->draw();
+        if (bTerrainInitialized) {
+            _terrainNode->draw();
+            _canvasNode->draw();
+        }
+        if (bCreaturesInitialized) {
+            _creature->draw();
+            _debugSnakeCreature->draw();
         }
     }
     if (bDebugDraw) {
@@ -143,64 +148,84 @@ void SimulationManager::draw()
     }
 }
 
-void SimulationManager::disableCollisionOnLinkedNodes()
+// apply upward force to root node (use for debug only)
+void SimulationManager::applyForce(bool bEnable)
 {
-    for (int i = 1; i < maxNodes-1; i++) {
-        _nodes[i]->getRigidBody()->setIgnoreCollisionCheck(_nodes[i - 1]->getRigidBody(), true);
-        _nodes[i]->getRigidBody()->setIgnoreCollisionCheck(_nodes[i + 1]->getRigidBody(), true);
+    if (bEnable) {
+        _creature->getRigidBodies()[0]->setActivationState(DISABLE_DEACTIVATION);
+        _creature->getRigidBodies()[0]->applyCentralForce(btVector3(0, 500, 0));
+        _debugSnakeCreature->getSimNodes()[0]->getRigidBody()->setActivationState(DISABLE_DEACTIVATION);
+        _debugSnakeCreature->getSimNodes()[0]->getRigidBody()->applyCentralForce(btVector3(0, 500, 0));
+    }
+    else {
+        _creature->getRigidBodies()[0]->clearForces();
+        _debugSnakeCreature->getSimNodes()[0]->getRigidBody()->clearForces();
     }
 }
 
-void SimulationManager::applyForce(bool bEnable)
+SimCreature* SimulationManager::getFocusCreature()
 {
-    if (isMainCreatureAvailable()) {
-        if (bEnable) {
-            _nodes[0]->getRigidBody()->setActivationState(DISABLE_DEACTIVATION);
-            _nodes[0]->getRigidBody()->applyCentralForce(btVector3(0, 500, 0));
-        }
-        else {
-            _nodes[0]->getRigidBody()->clearForces();
-        }
-    }
+    return _creatures[focusIndex];
+}
+
+glm::vec3 SimulationManager::getFocusOrigin()
+{
+    return SimUtils::bulletToGlm(_creatures[focusIndex]->getPosition());
+}
+
+ofFbo* SimulationManager::getCanvasFbo()
+{
+    return _canvasNode->getCanvasFbo();
+}
+
+void SimulationManager::shiftFocus()
+{
+    focusIndex = (focusIndex + 1) % _creatures.size();
+}
+
+void SimulationManager::saveCanvas()
+{
+    _canvasNode->getCanvasFbo()->getTexture().copyTo(pixelWriteBuffers[iPBO]);
+
+    pboPtr->bind(GL_PIXEL_UNPACK_BUFFER);
+    unsigned char* p = pboPtr->map<unsigned char>(GL_READ_ONLY);
+    writePixels.setFromExternalPixels(p, _canvasRes.x, _canvasRes.y, OF_PIXELS_RGBA);
+
+    ofSaveImage(writePixels, writeBuffer, OF_IMAGE_FORMAT_JPEG, OF_IMAGE_QUALITY_BEST);
+    _imageSaverThread.send(&writeBuffer);
+
+    pboPtr->unmap();
+    pboPtr->unbind(GL_PIXEL_UNPACK_BUFFER);
+
+    iPBO = SWAP(iPBO);
+    pboPtr = &pixelWriteBuffers[iPBO];
 }
 
 void SimulationManager::loadShaders()
 {
     _terrainShader.load("shaders/checkers");
     _nodeShader.load("shaders/phong");
+    _unlitShader.load("shaders/unlit");
+    _canvasUpdateShader.load("shaders/canvas");
 }
 
-bool SimulationManager::isMainCreatureAvailable()
+bool SimulationManager::isInitialized()
 {
-    return !_nodes.empty() && _nodes[0]->hasBody();
-}
-
-glm::vec3 SimulationManager::getMainCreatureOrigin()
-{
-    if (isMainCreatureAvailable()) {
-        return _nodes[0]->getPosition();
-    }
-    else return glm::vec3(0);
-}
-
-const std::vector<SimNode*>& SimulationManager::getNodes()
-{
-    return _nodes;
-}
-
-unsigned int SimulationManager::getNumNodes()
-{
-    return _nodes.size();
+    return bTerrainInitialized && bCreaturesInitialized;
 }
 
 void SimulationManager::reset()
 {
-    initObjects();
+    initTerrain();
+    initCreatures();
 }
 
 void SimulationManager::dealloc()
 {
-    delete _terrainNode;
+    if (_terrainNode)           delete _terrainNode;
+    if (_canvasNode)            delete _canvasNode;
+    if (_creature)              delete _creature;
+    if (_debugSnakeCreature)    delete _debugSnakeCreature;
 
     delete _world;
     delete _solver;

@@ -30,12 +30,14 @@ void ofApp::setup()
 		CONSOLE_SIZE, CONSOLE_SIZE, TRUE
 	);
 	viewRect = ofRectangle(0, 0, ofGetWindowWidth(), ofGetWindowHeight());
-	frameFbo.allocate(ofGetWindowWidth(), ofGetWindowHeight(), GL_RGBA8);
+	frameFbo.allocate(ofGetWindowWidth(), ofGetWindowHeight(), GL_RGBA);
+	cppnFbo.allocate(512, 512, GL_RGB);
+
 	gui.setup();
 
 	cam.setNearClip(0.01f);
 	cam.setFarClip(1000.0f);
-	cam.setPosition(0.0f, 40.0f, 24.0f);
+	cam.setPosition(8.0f, 8.0f, 4.0f);
 	cam.lookAt(glm::vec3(0));
 
 	if (bSimulate) {
@@ -45,18 +47,19 @@ void ofApp::setup()
 	if (bEvolve) {
 		neatManager.setup(true);
 		neatManager.startEvolution();
+		renderEventQueuedListener = neatManager.onNewBestFound.newListener([this] {
+			bRenderEventQueued = true;
+		});
 	}
 }
 
 void ofApp::update()
 {
-	float delta = ofGetLastFrameTime();
-
 	if (bSimulate) {
-		simulationManager.update(delta);
+		simulationManager.update(1/60.0);
 
-		if (bCameraSnapFocus) {
-			cam.lookAt(simulationManager.getNodes()[focusNodeIndex]->getPosition());
+		if (bCameraSnapFocus && simulationManager.isInitialized()) {
+			cam.lookAt(simulationManager.getFocusOrigin());
 		}
 	}
 }
@@ -66,11 +69,16 @@ void ofApp::draw()
 	ofBackground(0x222222);
 	ofSetHexColor(0xffffff);
 
-	glEnable(GL_DEPTH_TEST);
-
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+	if (bRenderEventQueued) {
+		cppnFbo.begin();
+		ofClear(0, 1.0f);
+		neatManager.draw();
+		cppnFbo.end();
+		bRenderEventQueued = false;
+	}
 	if (bSimulate) 
 	{
 		frameFbo.begin();
@@ -84,43 +92,54 @@ void ofApp::draw()
 		frameFbo.draw(viewRect);
 	}
 	glDisable(GL_BLEND);
-	glDisable(GL_DEPTH_TEST);
 
-	ofSetHexColor(0xffffff);
-	gui.begin();
+	if (bGui) 
 	{
-		ImVec2 size(240, 240);
-		ImGui::SetNextWindowPos(ImVec2(24, 24));
-		ImGui::SetNextWindowSize(size);
-		ImGui::SetNextWindowBgAlpha(0.5f);
+		gui.begin();
+		{
+			ImVec2 size(240, 640);
+			ImGui::SetNextWindowPos(ImVec2(24, 24));
+			ImGui::SetNextWindowSize(size);
+			ImGui::SetNextWindowBgAlpha(0.5f);
 
-		ImGui::Begin(APP_ID);
+			ImGui::Begin(APP_ID);
 
-		if (bEvolve) {
-			std::vector<float> fitnessFloats(
-				neatManager.getFitnessResults().begin(), 
-				neatManager.getFitnessResults().end()
-			);
-			if (!fitnessFloats.empty()) {
-				ImGui::PlotLines(
-					"Fitness", &fitnessFloats[0], fitnessFloats.size(), 0, 0,
-					0, neatManager.getTargetFitness(), ImVec2(size.x, 96)
+			if (bEvolve) {
+				std::vector<float> fitnessFloats(
+					neatManager.getFitnessResults().begin(),
+					neatManager.getFitnessResults().end()
 				);
+				if (!fitnessFloats.empty()) {
+					ImGui::PlotLines(
+						"Fitness", &fitnessFloats[0], fitnessFloats.size(), 0, 0,
+						0, neatManager.getTargetFitness(), ImVec2(size.x, 96)
+					);
+				}
+				ImGui::Image((void*)(intptr_t)cppnFbo.getTexture().getTextureData().textureID, ImVec2(size.x, size.x));
+				ImGui::Text("fitness: %.03f/%.03f", neatManager.getBestFitness(), neatManager.getTargetFitness());
+				ImGui::Separator();
 			}
-			ImGui::Text("fitness: %.03f/%.03f", neatManager.getBestFitness(), neatManager.getTargetFitness());
-			ImGui::Separator();
+			if (bSimulate) {
+				ImGui::Text("cam_pos: x:%.02f, y:%.02f, z:%.02f", cam.getPosition().x, cam.getPosition().y, cam.getPosition().z);
+				if (simulationManager.isInitialized()) {
+					ImGui::SliderFloat("motor_strength", &simulationManager.getFocusCreature()->m_motorStrength, 0, 50);
+					ImGui::SliderFloat("target_freq", &simulationManager.getFocusCreature()->m_targetFrequency, 1, 60);
+					ImGui::SliderFloat3("light_dir", &simulationManager.lightDirection[0], -1.0f, 1.0f);
+					ImGui::SliderFloat3("light_pos", &simulationManager.lightPosition[0], -100.0f, 100.0f);
+					ImGui::Image((void*)(intptr_t)simulationManager.getCanvasFbo()->getTexture().getTextureData().textureID, ImVec2(size.x, size.x));
+					ImGui::Text("dbg_draw: %s", simulationManager.bDebugDraw ? "on" : "off");
+				}
+			}
+			ImGui::Text("fps: %.02f", ofGetFrameRate());
+			ImGui::End();
 		}
-		if (bSimulate) {
-			ImGui::SliderFloat3("light_dir", &simulationManager.lightDirection[0], -1.0f, 1.0f);
-			ImGui::SliderFloat3("light_pos", &simulationManager.lightPosition[0], -100.0f, 100.0f);
-			ImGui::Text("#nodes: %d", simulationManager.getNumNodes());
-			ImGui::Text("cam_pos: x:%.02f, y:%.02f, z:%.02f", cam.getPosition().x, cam.getPosition().y, cam.getPosition().z);
-			ImGui::Text("dbg_draw: %s", simulationManager.bDebugDraw ? "on" : "off");
-		}
-		ImGui::Text("fps: %.02f", ofGetFrameRate());
-		ImGui::End();
+		gui.end();
 	}
-	gui.end();
+}
+
+void ofApp::queueRenderEvent()
+{
+	bRenderEventQueued = true;
 }
 
 void ofApp::windowResized(int w, int h)
@@ -133,26 +152,34 @@ void ofApp::windowResized(int w, int h)
 void ofApp::keyPressed(int key)
 {
 	if (bSimulate) {
-		if (key == 'd') {
-			simulationManager.bDebugDraw = !simulationManager.bDebugDraw;
+		if (key == 'i') {
+			simulationManager.initCreatures();
 		}
-		if (key == 'D') {
-			simulationManager.bDraw = !simulationManager.bDraw;
+		if (key == 'g') {
+			bGui = !bGui;
 		}
-		if (key == 's') {
-			simulationManager.loadShaders();
-		}
-		if (key == 'r') {
-			simulationManager.reset();
-		}
-		if (key == 'f') {
-			simulationManager.applyForce(true);
-		}
-		if (key == 'F') {
-			simulationManager.applyForce(false);
-		}
-		if (key == 'c') {
-			focusNodeIndex = (focusNodeIndex+1)%simulationManager.getNodes().size();
+		if (simulationManager.isInitialized()) {
+			if (key == 'd') {
+				simulationManager.bDebugDraw = !simulationManager.bDebugDraw;
+			}
+			if (key == 'D') {
+				simulationManager.bDraw = !simulationManager.bDraw;
+			}
+			if (key == 's') {
+				simulationManager.saveCanvas();
+			}
+			if (key == 'r') {
+				simulationManager.loadShaders();
+			}
+			if (key == 'f') {
+				simulationManager.applyForce(true);
+			}
+			if (key == 'F') {
+				simulationManager.applyForce(false);
+			}
+			if (key == 'c') {
+				simulationManager.shiftFocus();
+			}
 		}
 	}
 }
