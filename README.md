@@ -1,6 +1,5 @@
 ## neatures
-
-# Evolving virtual embodied agents by evaluating their creative output
+Evolving virtual embodied agents by evaluating their creative output
 
 Master's thesis project
 
