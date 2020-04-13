@@ -1,5 +1,7 @@
 ## neatures
 
+# Evolving virtual embodied agents by evaluating their creative output
+
 Master's thesis project
 
 Lesley van Hoek / Leiden University / Media Technology MSc
