@@ -9,6 +9,7 @@ Uses a modified version of openFrameworks 0.11 using boost 1.72 (instead of 1.65
 
 - openFrameworks 0.11
 - Bullet Physics 2.89-1
+- Boost 1.72
 - MultiNEAT (https://github.com/lshoek/MultiNEAT)
 
 ![Preview](preview/preview-app.jpg)
