@@ -235,7 +235,7 @@
     <ClCompile Include="src\SimNode.cpp" />
     <ClCompile Include="src\SimDebugDrawer.cpp" />
     <ClCompile Include="src\SimulationManager.cpp" />
-    <ClCompile Include="src\WalkFitnessFunc.cpp" />
+    <ClCompile Include="src\PaintFitnessFunc.cpp" />
     <ClCompile Include="src\XORFitnessFunc.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -281,12 +281,13 @@
     <ClInclude Include="src\ofApp.h" />
     <ClInclude Include="src\SimCam.h" />
     <ClInclude Include="src\SimCreature.h" />
+    <ClInclude Include="src\SimFitnessFunc.h" />
     <ClInclude Include="src\SimNode.h" />
     <ClInclude Include="src\SimDebugDrawer.h" />
     <ClInclude Include="src\SimulationManager.h" />
     <ClInclude Include="src\SimUtils.h" />
     <ClInclude Include="src\toolbox.h" />
-    <ClInclude Include="src\WalkFitnessFunc.h" />
+    <ClInclude Include="src\PaintFitnessFunc.h" />
     <ClInclude Include="src\XORFitnessFunc.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

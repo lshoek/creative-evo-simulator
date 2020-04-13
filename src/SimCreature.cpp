@@ -413,7 +413,7 @@ void SimCreature::randomizeSensoryMotorWeights()
 	m_sensoryMotorWeights.resize(m_numBodyParts * m_numJoints);
 	for (int i = 0; i < m_numBodyParts; i++) {
 		for (int j = 0; j < m_numJoints; j++) {
-			m_sensoryMotorWeights[i + j * m_numBodyParts] = ((double)ofRandom(1.0) / (RAND_MAX)) * 2.0f - 1.0f;
+			m_sensoryMotorWeights[i + j * m_numBodyParts] = (double)ofRandom(1.0f) * 2.0f - 1.0f;
 		}
 	}
 }

@@ -14,9 +14,6 @@ void SimulationManager::init()
     initPhysics();
     initTerrain();
 
-    // initialization called from app
-    //initCreatures();
-
     // rendering
     _material.setDiffuseColor(ofFloatColor(1.0f, 1.0f));
     _material.setAmbientColor(ofFloatColor(0.375f, 1.0f));
@@ -77,21 +74,20 @@ void SimulationManager::initTerrain()
     _terrainNode->setMaterial(&_material);
     _terrainNode->setTexture(&_terrainTexture);
 
+    _world->addRigidBody(_terrainNode->getRigidBody());
+    bTerrainInitialized = true;
+}
+
+void SimulationManager::initTestEnvironment()
+{
     _canvasNode = new SimCanvasNode(CanvasTag, canvasSize, _canvasRes.x, _canvasRes.y);
     _canvasNode->setPosition(glm::vec3(0, 0.1f, 0));
     _canvasNode->setCanvasUpdateShader(&_canvasUpdateShader);
     _canvasNode->setShader(&_unlitShader);
     _canvasNode->setMaterial(&_material);
     _canvasNode->setTexture(&_nodeTexture);
-
-    _world->addRigidBody(_terrainNode->getRigidBody());
     _world->addRigidBody(_canvasNode->getRigidBody());
 
-    bTerrainInitialized = true;
-}
-
-void SimulationManager::initCreatures()
-{
     btVector3 offset(0, 1.0f, 0);
     _creature = new SimCreature(btVector3(0, 0, 0), 6, _world, offset, true);
     _creature->setAppearance(&_nodeShader, &_material, &_nodeTexture);
@@ -105,6 +101,29 @@ void SimulationManager::initCreatures()
     _creatures.push_back(_debugSnakeCreature);
     
     bCreaturesInitialized = true;
+    bTestMode = true;
+}
+
+void SimulationManager::runSimulationInstance(GenomeBase genome)
+{
+    _canvasNode = new SimCanvasNode(CanvasTag, canvasSize, _canvasRes.x, _canvasRes.y);
+    _canvasNode->setPosition(glm::vec3(0, 0.1f, 0));
+    _canvasNode->setCanvasUpdateShader(&_canvasUpdateShader);
+    _canvasNode->setShader(&_unlitShader);
+    _canvasNode->setMaterial(&_material);
+    _canvasNode->setTexture(&_nodeTexture);
+    _world->addRigidBody(_canvasNode->getRigidBody());
+
+    btVector3 offset(0, 1.0f, 0);
+    _creature = new SimCreature(btVector3(0, 0, 0), 6, _world, offset, true);
+    _creature->setAppearance(&_nodeShader, &_material, &_nodeTexture);
+    _creature->addToWorld();
+
+    _creatures.push_back(_creature);
+    bCreaturesInitialized = true;
+
+    //std::vector<double> input;
+    //std::vector<double> output = genome.activate(input);
 }
 
 void SimulationManager::update(double timeStep)
@@ -136,9 +155,9 @@ void SimulationManager::draw()
     if (bDraw) {
         if (bTerrainInitialized) {
             _terrainNode->draw();
-            _canvasNode->draw();
         }
         if (bCreaturesInitialized) {
+            _canvasNode->draw();
             _creature->draw();
             _debugSnakeCreature->draw();
         }
@@ -212,12 +231,6 @@ void SimulationManager::loadShaders()
 bool SimulationManager::isInitialized()
 {
     return bTerrainInitialized && bCreaturesInitialized;
-}
-
-void SimulationManager::reset()
-{
-    initTerrain();
-    initCreatures();
 }
 
 void SimulationManager::dealloc()

@@ -26,9 +26,6 @@ bld/
 
 bin/data/textures
 
-bin/neatures.exe
-bin/neatures_debug.exe
-
 # Exclude binaries and etc
 *.exe
 *.exp

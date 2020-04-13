@@ -141,9 +141,6 @@
     <ClCompile Include="..\..\..\addons\ofxGrabCam\src\ofxGrabCam.cpp">
       <Filter>addons\ofxGrabCam</Filter>
     </ClCompile>
-    <ClCompile Include="src\WalkFitnessFunc.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="src\SimCreature.cpp">
       <Filter>src</Filter>
     </ClCompile>
@@ -151,6 +148,9 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\ImageSaverThread.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PaintFitnessFunc.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
@@ -278,9 +278,6 @@
     <ClInclude Include="..\..\..\addons\ofxGrabCam\src\ofxGrabCam.h">
       <Filter>addons\ofxGrabCam</Filter>
     </ClInclude>
-    <ClInclude Include="src\WalkFitnessFunc.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="src\SimCreature.h">
       <Filter>src</Filter>
     </ClInclude>
@@ -300,6 +297,12 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="src\ImageSaverThread.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PaintFitnessFunc.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SimFitnessFunc.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

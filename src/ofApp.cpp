@@ -152,8 +152,8 @@ void ofApp::windowResized(int w, int h)
 void ofApp::keyPressed(int key)
 {
 	if (bSimulate) {
-		if (key == 'i') {
-			simulationManager.initCreatures();
+		if (key == 't') {
+			simulationManager.initTestEnvironment();
 		}
 		if (key == 'g') {
 			bGui = !bGui;

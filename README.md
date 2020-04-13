@@ -1,4 +1,4 @@
-##neutures
+## neatures
 
 Master's thesis project
 

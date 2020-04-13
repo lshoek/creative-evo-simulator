@@ -4,6 +4,7 @@
 #include "SimCreature.h"
 #include "SimDebugDrawer.h"
 #include "ImageSaverThread.h"
+#include "GenomeBase.h"
 #include "ofMain.h"
 
 class SimulationManager
@@ -12,8 +13,9 @@ public:
     void init();
     void update(double timestep);
     void draw();
-    void reset();
     void dealloc();
+
+    void runSimulationInstance(GenomeBase genome);
 
     void applyForce(bool bEnable);
     void loadShaders();
@@ -29,11 +31,12 @@ public:
 
     bool bDraw = true;
     bool bDebugDraw = false;
+    bool bTestMode = false;
 
     glm::vec3 lightPosition;
     glm::vec3 lightDirection;
 
-    void initCreatures();
+    void initTestEnvironment();
 
 private:
     void initPhysics();

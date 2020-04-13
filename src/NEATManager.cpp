@@ -168,6 +168,7 @@ bool NEATManager::evaluatePopulation()
 	for (unsigned int i = 0; i < population->m_Species.size(); ++i) {
 		for (unsigned int j = 0; j < population->m_Species[i].m_Individuals.size(); ++j) {
 
+			// activate simulation here
 			GenomeBase g(population->m_Species[i].m_Individuals[j]);
 			double f = fitnessFuncPtr->evaluate(g);
 
