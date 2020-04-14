@@ -272,6 +272,7 @@
     <ClInclude Include="..\..\..\addons\ofxImGui\src\ofxImGuiLoggerChannel.h" />
     <ClInclude Include="..\..\..\addons\ofxIniSettings\src\ofxIniSettings.h" />
     <ClInclude Include="src\ImageSaverThread.h" />
+    <ClInclude Include="src\Scheduler.h" />
     <ClInclude Include="src\SimCanvasNode.h" />
     <ClInclude Include="src\FitnessFunc.h" />
     <ClInclude Include="src\GenomeBase.h" />
@@ -284,6 +285,7 @@
     <ClInclude Include="src\SimFitnessFunc.h" />
     <ClInclude Include="src\SimNode.h" />
     <ClInclude Include="src\SimDebugDrawer.h" />
+    <ClInclude Include="src\SimResult.h" />
     <ClInclude Include="src\SimulationManager.h" />
     <ClInclude Include="src\SimUtils.h" />
     <ClInclude Include="src\toolbox.h" />

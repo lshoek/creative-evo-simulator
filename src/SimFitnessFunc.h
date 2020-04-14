@@ -3,7 +3,7 @@
 #include "GenomeBase.h"
 #include "SimulationManager.h"
 
-class SimFitnessFunc : FitnessFunc
+class SimFitnessFunc : public FitnessFunc
 {
 public:
 	virtual void init(SimulationManager* _manager) { _sim = _manager; }

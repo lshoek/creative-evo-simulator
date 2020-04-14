@@ -10,15 +10,13 @@
 class SimCanvasNode
 {
 public:
-	SimCanvasNode(int tag, float size, int x_res, int y_res);
+	SimCanvasNode(int tag, float size, int x_res, int y_res, btDynamicsWorld* ownerWorld);
 	~SimCanvasNode();
 
 	void update();
 	void draw();
 
 	void addBrushStroke(btVector3 location, float impulse);
-
-	ofFbo* getCanvasFbo();
 
 	void setRigidBody(btRigidBody* body);
 	btRigidBody* getRigidBody();
@@ -31,6 +29,11 @@ public:
 	bool hasBody();
 
 	glm::ivec2 getCanvasResolution();
+	ofFbo* getCanvasFbo();
+
+	// This should obviously be made consistent across node types
+	void addToWorld();
+	void removeFromWorld();
 
 	void setTransform(glm::mat4 transform);
 	glm::mat4 getTransform();
@@ -41,13 +44,13 @@ public:
 	void setRotation(glm::quat rotation);
 	glm::quat getRotation();
 
-	void setCanvasUpdateShader(ofShader* shader);
-	void setShader(ofShader* shader);
-	ofShader* getShader();
+	void setCanvasUpdateShader(std::shared_ptr<ofShader> shader);
+	void setShader(std::shared_ptr<ofShader> shader);
+	std::shared_ptr<ofShader> getShader();
 
-	void setTexture(ofTexture* texture);
-	void setMaterial(ofMaterial* mtl);
-	void setMesh(ofMesh* mesh);
+	void setTexture(std::shared_ptr<ofTexture> texture);
+	void setMaterial(std::shared_ptr<ofMaterial> mtl);
+	void setMesh(std::shared_ptr<ofMesh> mesh);
 
 	bool bUseTexture = false;
 
@@ -65,6 +68,8 @@ private:
 	void initPlane(glm::vec3 position, float size, float mass);
 	void createBody(glm::vec3 position, float mass);
 
+	btDynamicsWorld* _ownerWorld;
+
 	glm::ivec2 _canvasRes;
 	float _canvasSize;
 
@@ -80,20 +85,17 @@ private:
 	std::vector<BrushCoord> _brushCoordQueue;
 	unsigned int _brushQueueSize = 0;
 
-	// public canvas
-	ofFbo _canvasFinalFbo;
-
 	// render buffers
-	ofFbo* _canvasFboPtr;
+	ofFbo _canvasFinalFbo;
 	ofFbo _canvasFbo[2];
 	int iFbo = 0;
 
 	ofColor _brushColor;
 	ofColor _canvasClearColor;
 
-	ofShader* _canvasUpdateShader;
-	ofShader* _shader;
-	ofTexture* _texture;
-	ofMaterial* _material;
-	ofMesh* _mesh;
+	std::shared_ptr<ofShader> _canvasUpdateShader;
+	std::shared_ptr<ofShader> _shader;
+	std::shared_ptr<ofTexture> _texture;
+	std::shared_ptr<ofMaterial> _material;
+	std::shared_ptr<ofMesh> _mesh;
 };

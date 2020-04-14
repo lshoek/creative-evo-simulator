@@ -3,12 +3,13 @@
 #include "ofMain.h"
 
 #include "GenomeBase.h"
-#include "XORFitnessFunc.h"
+#include "PaintFitnessFunc.h"
+#include "SimulationManager.h"
 
 class NEATManager : public ofThread
 {
 public:
-	void setup(bool threaded);
+	void setup(SimulationManager* sim, bool threaded);
     void draw();
     void exit();
 
@@ -30,7 +31,7 @@ public:
 private:
     virtual void threadedFunction() override;
 
-    XORFitnessFunc xorFitnessFunc;
+    PaintFitnessFunc paintFitnessFunc;
     FitnessFunc* fitnessFuncPtr;
 
     NEAT::Population* population;

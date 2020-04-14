@@ -38,12 +38,12 @@ public:
 	void setRotation(glm::quat rotation);
 	glm::quat getRotation();
 
-	void setShader(ofShader* shader);
-	ofShader* getShader();
+	void setShader(std::shared_ptr<ofShader> shader);
+	std::shared_ptr<ofShader> getShader();
 
-	void setTexture(ofTexture* texture);
-	void setMaterial(ofMaterial* mtl);
-	void setMesh(ofMesh* mesh);
+	void setTexture(std::shared_ptr<ofTexture> texture);
+	void setMaterial(std::shared_ptr<ofMaterial> mtl);
+	void setMesh(std::shared_ptr<ofMesh> mesh);
 
 	bool bUseTexture = false;
 
@@ -57,8 +57,8 @@ private:
 	int _tag;
 
 	ofColor _color;
-	ofShader* _shader;
-	ofTexture* _texture;
-	ofMaterial* _material;
-	ofMesh* _mesh;
+	std::shared_ptr<ofShader> _shader;
+	std::shared_ptr<ofTexture> _texture;
+	std::shared_ptr<ofMaterial> _material;
+	std::shared_ptr<ofMesh> _mesh;
 };

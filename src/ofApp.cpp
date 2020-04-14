@@ -41,16 +41,26 @@ void ofApp::setup()
 	cam.lookAt(glm::vec3(0));
 
 	if (bSimulate) {
-		simulationManager.init();
-		simulationManager.bDebugDraw = settings.get("mode.debugdraw", true);
+		startSimulation();
 	}
 	if (bEvolve) {
-		neatManager.setup(true);
-		neatManager.startEvolution();
-		renderEventQueuedListener = neatManager.onNewBestFound.newListener([this] {
-			bRenderEventQueued = true;
-		});
+		startEvolution();
 	}
+}
+
+void ofApp::startSimulation()
+{
+	simulationManager.init();
+	simulationManager.bDebugDraw = settings.get("mode.debugdraw", true);
+}
+
+void ofApp::startEvolution()
+{
+	neatManager.setup(&simulationManager, true);
+	neatManager.startEvolution();
+	renderEventQueuedListener = neatManager.onNewBestFound.newListener([this] {
+		bRenderEventQueued = true;
+	});
 }
 
 void ofApp::update()
@@ -58,7 +68,7 @@ void ofApp::update()
 	if (bSimulate) {
 		simulationManager.update(1/60.0);
 
-		if (bCameraSnapFocus && simulationManager.isInitialized()) {
+		if (bCameraSnapFocus && simulationManager.isSimulationInstanceActive()) {
 			cam.lookAt(simulationManager.getFocusOrigin());
 		}
 	}
@@ -122,11 +132,13 @@ void ofApp::draw()
 			if (bSimulate) {
 				ImGui::Text("cam_pos: x:%.02f, y:%.02f, z:%.02f", cam.getPosition().x, cam.getPosition().y, cam.getPosition().z);
 				if (simulationManager.isInitialized()) {
-					ImGui::SliderFloat("motor_strength", &simulationManager.getFocusCreature()->m_motorStrength, 0, 50);
-					ImGui::SliderFloat("target_freq", &simulationManager.getFocusCreature()->m_targetFrequency, 1, 60);
 					ImGui::SliderFloat3("light_dir", &simulationManager.lightDirection[0], -1.0f, 1.0f);
 					ImGui::SliderFloat3("light_pos", &simulationManager.lightPosition[0], -100.0f, 100.0f);
-					ImGui::Image((void*)(intptr_t)simulationManager.getCanvasFbo()->getTexture().getTextureData().textureID, ImVec2(size.x, size.x));
+					if (simulationManager.isSimulationInstanceActive()) {
+						ImGui::SliderFloat("motor_strength", &simulationManager.getFocusCreature()->m_motorStrength, 0, 50);
+						ImGui::SliderFloat("target_freq", &simulationManager.getFocusCreature()->m_targetFrequency, 1, 60);
+						ImGui::Image((void*)(intptr_t)simulationManager.getCanvasFbo()->getTexture().getTextureData().textureID, ImVec2(size.x, size.x));
+					}
 					ImGui::Text("dbg_draw: %s", simulationManager.bDebugDraw ? "on" : "off");
 				}
 			}
@@ -152,6 +164,12 @@ void ofApp::windowResized(int w, int h)
 void ofApp::keyPressed(int key)
 {
 	if (bSimulate) {
+		if (key == 'e') {
+			if (!bEvolve) {
+				startEvolution();
+				bEvolve = true;
+			}
+		}
 		if (key == 't') {
 			simulationManager.initTestEnvironment();
 		}
@@ -165,17 +183,11 @@ void ofApp::keyPressed(int key)
 			if (key == 'D') {
 				simulationManager.bDraw = !simulationManager.bDraw;
 			}
-			if (key == 's') {
-				simulationManager.saveCanvas();
-			}
+			//if (key == 's') {
+			//	simulationManager.saveCanvas();
+			//}
 			if (key == 'r') {
 				simulationManager.loadShaders();
-			}
-			if (key == 'f') {
-				simulationManager.applyForce(true);
-			}
-			if (key == 'F') {
-				simulationManager.applyForce(false);
 			}
 			if (key == 'c') {
 				simulationManager.shiftFocus();

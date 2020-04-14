@@ -1,5 +1,6 @@
 #pragma once
 #include "PaintFitnessFunc.h"
+#include "SimResult.h"
 
 double PaintFitnessFunc::evaluate(GenomeBase& genome)
 {
@@ -7,8 +8,18 @@ double PaintFitnessFunc::evaluate(GenomeBase& genome)
     
     // run an instance of a simulation and acquire the fitness result
     // a neural network phenotype (or cppn) should be passed on to the sim
-    // something like this
-    // _sim->runSimulationInstance(genome.getNN());
+    int id = _sim->queueSimulationInstance(genome, 5.0f);
 
-    return 1.0;
+    // automatically unregisters itself when out of scope
+    SimResult simres;
+    ofEventListener listener = _sim->onSimulationInstanceFinished.newListener([&simres](SimResult res) {
+        simres = res;
+    });
+    
+    // wait for simulation to return sim ticket
+    while (simres.instanceId != id) {
+        ofSleepMillis(1000);
+    }
+
+    return simres.fitness;
 }

@@ -3,9 +3,12 @@
 #include "SimNode.h"
 #include "SimCreature.h"
 #include "SimDebugDrawer.h"
+#include "SimResult.h"
 #include "ImageSaverThread.h"
 #include "GenomeBase.h"
 #include "ofMain.h"
+
+typedef std::function<void(uint32_t)> simRunCallback_t;
 
 class SimulationManager
 {
@@ -15,13 +18,14 @@ public:
     void draw();
     void dealloc();
 
-    void runSimulationInstance(GenomeBase genome);
+    // Returns ticket that listener can use to check when sim is finished and genome fitness is updated
+    int queueSimulationInstance(const GenomeBase& genome, float duration);
+    ofEvent<SimResult> onSimulationInstanceFinished;
 
-    void applyForce(bool bEnable);
     void loadShaders();
 
-    void saveCanvas();
     bool isInitialized();
+    bool isSimulationInstanceActive();
 
     ofFbo* getCanvasFbo();
 
@@ -39,8 +43,31 @@ public:
     void initTestEnvironment();
 
 private:
+    struct SimInstance {
+        int instanceId;
+        float startTime, duration;
+        SimCreature* creature;
+        SimCanvasNode* canvas;
+
+        SimInstance(int id, SimCreature* crtr, SimCanvasNode* canv, float startTime, float duration) :
+            instanceId(id), creature(crtr), canvas(canv), startTime(startTime), duration(duration) {}
+        ~SimInstance() {
+            delete creature;
+            delete canvas;
+        }
+    };
     void initPhysics();
     void initTerrain();
+
+    void writeToPixels(const ofTexture& tex, ofPixels& pix);
+    void saveToDisk(const ofPixels& pix);
+
+    int runSimulationInstance(const GenomeBase& genome, int ticket, float duration);
+    std::vector<simRunCallback_t> _simulationInstanceCallbackQueue;
+    std::vector<SimInstance*> _simulationInstances;
+
+    SimNode* _terrainNode;
+    SimCreature* _debugSnakeCreature;
 
     btBroadphaseInterface* _broadphase;
     btDefaultCollisionConfiguration* _collisionConfiguration;
@@ -50,32 +77,23 @@ private:
 
     SimDebugDrawer* _dbgDrawer;
 
-    ofShader _terrainShader;
-    ofShader _nodeShader;
-    ofShader _unlitShader;
-    ofShader _canvasUpdateShader;
+    std::shared_ptr<ofShader> _terrainShader;
+    std::shared_ptr<ofShader> _nodeShader;
+    std::shared_ptr<ofShader> _unlitShader;
+    std::shared_ptr<ofShader> _canvasUpdateShader;
 
-    ofTexture _nodeTexture;
-    ofTexture _terrainTexture;
-    ofMaterial _material;
-
-    SimNode* _terrainNode;
-    SimCanvasNode* _canvasNode;
-    SimCreature* _creature;
-    SimCreature* _debugSnakeCreature;
-
-    std::vector<SimCreature*> _creatures;
+    std::shared_ptr<ofTexture> _nodeTexture;
+    std::shared_ptr<ofTexture> _terrainTexture;
+    std::shared_ptr<ofMaterial> _material;
 
     float terrainSize = 48.0f;
     float canvasSize = 8.0f;
 
-    bool bRandomSize = false;
-
     bool bTerrainInitialized = false;
-    bool bCreaturesInitialized = false;
 
-    const int numCreatures = 2;
     int focusIndex = 0;
+    int simInstanceId = 0;
+    int simInstanceLimit = 100;
 
     // pbo
     ImageSaverThread _imageSaverThread;

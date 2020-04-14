@@ -305,5 +305,11 @@
     <ClInclude Include="src\SimFitnessFunc.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="src\Scheduler.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SimResult.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

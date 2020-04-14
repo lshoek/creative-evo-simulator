@@ -1,11 +1,13 @@
 #include "NEATManager.h"
 #include "NEATUtils.h"
 #include "toolbox.h"
+#include <boost/thread.hpp>
 
-void NEATManager::setup(bool threaded)
+void NEATManager::setup(SimulationManager* sim, bool threaded)
 {
 	// create a fitness function
-	fitnessFuncPtr = &xorFitnessFunc;
+	paintFitnessFunc.init(sim);
+	fitnessFuncPtr = &paintFitnessFunc;
 
 	// load neat params from config file
 	std::ifstream paramFile("data/config/params_hyperneat_xor_test.conf", std::ifstream::in);
@@ -36,7 +38,7 @@ void NEATManager::setup(bool threaded)
 	maxNumGenerations = 500;
 	fitnessResults.reserve(maxNumGenerations);
 
-	targetFitness = 15.99;
+	targetFitness = 1.0;
 	bThreaded = threaded;
 }
 
@@ -119,10 +121,11 @@ void NEATManager::evolutionLoop()
 
 		if (bNewBest) {
 			bestGenomeBasePtr->setGenome(population->GetBestGenome());
-			bestGenomeBasePtr->buildHyperNEATPhenotype(substrate);
+			
+			//bestGenomeBasePtr->buildHyperNEATPhenotype(substrate);
+			bestGenomeBasePtr->buildPhenotype();
 			onNewBestFound.notify();
 		}
-
 		fitnessResults.push_back(bestFitness);
 
 		// check if converged
@@ -151,6 +154,7 @@ bool NEATManager::tick()
 
 	// evaluate the newly created offspring in Tick()
 	double f = fitnessFuncPtr->evaluate(*offspringGenomeBasePtr);
+
 	offspringGenomeBasePtr->getGenome().SetFitness(f);
 	offspringGenomeBasePtr->getGenome().SetEvaluated();
 
@@ -162,19 +166,32 @@ bool NEATManager::tick()
 
 bool NEATManager::evaluatePopulation()
 {
-	double f_best = -DBL_MAX;
-	bool bNewBest = false;
+	// start evaluation threads
+	//boost::thread_group threadGroup;
 
 	for (unsigned int i = 0; i < population->m_Species.size(); ++i) {
 		for (unsigned int j = 0; j < population->m_Species[i].m_Individuals.size(); ++j) {
 
 			// activate simulation here
 			GenomeBase g(population->m_Species[i].m_Individuals[j]);
+
+			//threadGroup.create_thread(boost::bind(&FitnessFunc::evaluate, &g));
 			double f = fitnessFuncPtr->evaluate(g);
 
 			population->m_Species[i].m_Individuals[j].SetFitness(f);
 			population->m_Species[i].m_Individuals[j].SetEvaluated();
+			//f_best = (f > f_best) ? f : f_best;
+		}
+		//population->m_Species[i].CalculateAverageFitness();
+	}
+	// join evaluation threads
 
+	double f_best = -DBL_MAX;
+	bool bNewBest = false;
+
+	for (unsigned int i = 0; i < population->m_Species.size(); ++i) {
+		for (unsigned int j = 0; j < population->m_Species[i].m_Individuals.size(); ++j) {
+			double f = population->m_Species[i].m_Individuals[j].GetFitness();
 			f_best = (f > f_best) ? f : f_best;
 		}
 		population->m_Species[i].CalculateAverageFitness();
@@ -182,7 +199,7 @@ bool NEATManager::evaluatePopulation()
 	bNewBest = f_best > bestFitness;
 	bestFitness = bNewBest ? f_best : bestFitness;
 
-	ofLog() << population->m_Generation << " : " << f_best;
+	ofLog() << "gen_" << population->m_Generation << ": " << f_best;
 	return bNewBest;
 }
 

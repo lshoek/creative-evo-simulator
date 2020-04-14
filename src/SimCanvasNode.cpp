@@ -7,7 +7,8 @@
 #define BRUSH_COORD_BUF_MAXSIZE 8
 
 // TODO: Refactoring/inheritance
-SimCanvasNode::SimCanvasNode(int tag, float size, int x_res, int y_res) : _tag(tag), _canvasSize(size)
+SimCanvasNode::SimCanvasNode(int tag, float size, int x_res, int y_res, btDynamicsWorld* ownerWorld) :
+    _tag(tag), _canvasSize(size), _ownerWorld(ownerWorld)
 {
     _canvasRes = glm::ivec2(x_res, y_res);
     _canvasDrawQuad = tb::rectMesh(0, 0, _canvasRes.x, _canvasRes.y, true);
@@ -20,7 +21,6 @@ SimCanvasNode::SimCanvasNode(int tag, float size, int x_res, int y_res) : _tag(t
     for (int i = 0; i < 2; i++) {
         _canvasFbo[i].allocate(_canvasRes.x, _canvasRes.y, GL_RGBA32F);
     }
-    _canvasFboPtr = &_canvasFbo[iFbo];
     _canvasFinalFbo.allocate(_canvasRes.x, _canvasRes.y, GL_RGBA);
 
     _brushCoordQueue.resize(BRUSH_COORD_BUF_MAXSIZE);
@@ -36,7 +36,7 @@ SimCanvasNode::SimCanvasNode(int tag, float size, int x_res, int y_res) : _tag(t
 void SimCanvasNode::initPlane(glm::vec3 position, float size, float mass)
 {
     _shape = new btStaticPlaneShape(btVector3(0, 1, 0), 0);
-    _mesh = new ofMesh(tb::gridMesh(2, 2, size * 2, true));
+    _mesh = std::make_shared<ofMesh>(tb::gridMesh(2, 2, size * 2, true));
     createBody(position, mass);
 }
 
@@ -71,7 +71,6 @@ void SimCanvasNode::update()
 
         // update shader
         iFbo = SWAP(iFbo);
-        _canvasFboPtr = &_canvasFbo[iFbo];
 
         glEnable(GL_BLEND);
         glBlendEquationSeparate(GL_FUNC_ADD, GL_MAX);
@@ -107,7 +106,7 @@ void SimCanvasNode::update()
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    _canvasFboPtr->draw(0, 0);
+    _canvasFbo[iFbo].draw(0, 0);
     glDisable(GL_BLEND);
 
     _canvasFinalFbo.end();
@@ -121,7 +120,7 @@ void SimCanvasNode::draw()
 
         _shader->begin();
         if (bUseTexture) {
-            _shader->setUniformTexture("tex", _canvasFboPtr->getTexture(), 0);
+            _shader->setUniformTexture("tex", _canvasFbo[iFbo].getTexture(), 0);
         }
         _mesh->draw();
         _shader->end();
@@ -157,6 +156,16 @@ glm::ivec2 SimCanvasNode::getCanvasResolution()
 ofFbo* SimCanvasNode::getCanvasFbo()
 {
     return &_canvasFinalFbo;
+}
+
+void SimCanvasNode::addToWorld()
+{
+    _ownerWorld->addRigidBody(_body);
+}
+
+void SimCanvasNode::removeFromWorld()
+{
+    _ownerWorld->removeRigidBody(_body);
 }
 
 void SimCanvasNode::setRigidBody(btRigidBody* body)
@@ -225,25 +234,22 @@ std::string SimCanvasNode::getName() { return _name; }
 int SimCanvasNode::getTag() { return _tag; }
 
 // shader
-void SimCanvasNode::setCanvasUpdateShader(ofShader* shader) { _canvasUpdateShader = shader; }
-void SimCanvasNode::setShader(ofShader* shader) { _shader = shader; }
-ofShader* SimCanvasNode::getShader() { return _shader; }
+void SimCanvasNode::setCanvasUpdateShader(std::shared_ptr<ofShader> shader) { _canvasUpdateShader = shader; }
+void SimCanvasNode::setShader(std::shared_ptr<ofShader> shader) { _shader = shader; }
+std::shared_ptr<ofShader> SimCanvasNode::getShader() { return _shader; }
 
-void SimCanvasNode::setTexture(ofTexture* texture) {
+void SimCanvasNode::setTexture(std::shared_ptr<ofTexture> texture) {
     _texture = texture;
     bUseTexture = true;
 }
-void SimCanvasNode::setMaterial(ofMaterial* mtl) { _material = mtl; }
-void SimCanvasNode::setMesh(ofMesh* mesh) { _mesh = mesh; }
+void SimCanvasNode::setMaterial(std::shared_ptr<ofMaterial> mtl) { _material = mtl; }
+void SimCanvasNode::setMesh(std::shared_ptr<ofMesh> mesh) { _mesh = mesh; }
 
 SimCanvasNode::~SimCanvasNode()
 {
+    _ownerWorld->removeRigidBody(_body);
+
     delete _body->getMotionState();
     delete _body;
     delete _shape;
-
-    delete _shader;
-    delete _texture;
-    delete _material;
-    delete _mesh;
 }

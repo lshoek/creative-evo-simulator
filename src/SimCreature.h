@@ -47,10 +47,10 @@ public:
 	void setReaped(bool reaped);
 	int getIndex() const;
 
-	void setShader(ofShader* shader);
-	void setMaterial(ofMaterial* mtl);
-	void setTexture(ofTexture* tex);
-	void setAppearance(ofShader* shader, ofMaterial* mtl, ofTexture* tex);
+	void setShader(std::shared_ptr<ofShader> shader);
+	void setMaterial(std::shared_ptr<ofMaterial> mtl);
+	void setTexture(std::shared_ptr<ofTexture> tex);
+	void setAppearance(std::shared_ptr<ofShader> shader, std::shared_ptr<ofMaterial> mtl, std::shared_ptr<ofTexture> tex);
 
 	float m_motorStrength;
 	float m_targetFrequency;
@@ -69,19 +69,19 @@ private:
 	std::vector<btTypedConstraint*> m_joints;
 
 	// ball pointers are collision shapes that detect contact with a canvas
-	std::vector <btCollisionShape*> m_ballPointerShapes;
-	std::vector <btRigidBody*> m_ballPointerBodies;
+	std::vector<btCollisionShape*> m_ballPointerShapes;
+	std::vector<btRigidBody*> m_ballPointerBodies;
 	std::vector<SimNode*> m_ballPointerNodes;
 	std::vector<btFixedConstraint*> m_ballPointerJoints;
 
-	ofShader* m_shader;
-	ofTexture* m_texture;
-	ofMaterial* m_material;
+	std::shared_ptr<ofShader> m_shader;
+	std::shared_ptr<ofTexture> m_texture;
+	std::shared_ptr<ofMaterial> m_material;
 
-	ofMesh* m_legMesh;
-	ofMesh* m_foreLegMesh;
-	ofMesh* m_bodyMesh;
-	ofMesh* m_ballPointMesh;
+	std::shared_ptr<ofMesh> m_legMesh;
+	std::shared_ptr<ofMesh> m_foreLegMesh;
+	std::shared_ptr<ofMesh> m_bodyMesh;
+	std::shared_ptr<ofMesh> m_ballPointMesh;
 
 	uint32_t m_numLegs;
 	uint32_t m_numBodyParts;

@@ -23,21 +23,21 @@ void SimNode::setRigidBody(btRigidBody* body)
 void SimNode::initBox(glm::vec3 position, glm::vec3 size, float mass)
 {
     _shape = new btBoxShape(btVector3(size.x, size.y, size.z));
-    _mesh = new ofMesh(ofMesh::box(size.x * 2, size.y * 2, size.z * 2));
+    _mesh = std::make_shared<ofMesh>(ofMesh::box(size.x * 2, size.y * 2, size.z * 2));
     createBody(position, mass);
 }
 
 void SimNode::initCapsule(glm::vec3 position, float radius, float height, float mass)
 {
     _shape = new btCapsuleShape(radius, height);
-    _mesh = new ofMesh(ofMesh::cylinder(radius, height));
+    _mesh = std::make_shared<ofMesh>(ofMesh::cylinder(radius, height));
     createBody(position, mass);
 }
 
 void SimNode::initPlane(glm::vec3 position, float size, float mass)
 {
     _shape = new btStaticPlaneShape(btVector3(0, 1, 0), 0);
-    _mesh = new ofMesh(tb::gridMesh(2, 2, size*2, true));
+    _mesh = std::make_shared<ofMesh>(tb::gridMesh(2, 2, size*2, true));
     createBody(position, mass);
 }
 
@@ -145,24 +145,25 @@ std::string SimNode::getName() { return _name; }
 int SimNode::getTag() { return _tag; }
 
 // shader
-void SimNode::setShader(ofShader* shader) { _shader = shader; }
-ofShader* SimNode::getShader() { return _shader; }
+void SimNode::setShader(std::shared_ptr<ofShader> shader) { _shader = shader; }
+std::shared_ptr<ofShader> SimNode::getShader() { return _shader; }
 
-void SimNode::setTexture(ofTexture* texture) { 
+void SimNode::setTexture(std::shared_ptr<ofTexture> texture) {
     _texture = texture; 
     bUseTexture = true;
 }
-void SimNode::setMaterial(ofMaterial* mtl) { _material = mtl; }
-void SimNode::setMesh(ofMesh* mesh) { _mesh = mesh; }
+void SimNode::setMaterial(std::shared_ptr<ofMaterial> mtl) { _material = mtl; }
+void SimNode::setMesh(std::shared_ptr<ofMesh> mesh) { _mesh = mesh; }
 
 SimNode::~SimNode()
 {
-    delete _body->getMotionState();
-    delete _body;
-    delete _shape;
-
-    delete _shader;
-    delete _texture;
-    delete _material;
-    delete _mesh;
+    if (hasBody()) {
+        delete _body->getMotionState();
+        delete _body;
+        delete _shape;
+    }
+    //if (_shader)    delete _shader;
+    //if (_texture)   delete _texture;
+    //if (_material)  delete _material;
+    //if (_mesh)      delete _mesh;
 }

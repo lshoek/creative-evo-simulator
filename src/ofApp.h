@@ -19,6 +19,9 @@ public:
     void draw();
     void exit();
 
+	void startSimulation();
+	void startEvolution();
+
 	void windowResized(int w, int h);
 	void keyPressed(int key);
 

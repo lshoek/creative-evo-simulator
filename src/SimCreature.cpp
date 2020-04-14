@@ -37,10 +37,10 @@ void SimCreature::init(btVector3 position, uint32_t numLegs, btDynamicsWorld* ow
 	btVector3 vUp = SimUtils::glmToBullet(up);
 
 	// build meshes for rendering
-	m_bodyMesh = new ofMesh(ofMesh::sphere(gRootBodyRadius));
-	m_foreLegMesh = new ofMesh(ofMesh::cylinder(gForeLegRadius, gForeLegLength));
-	m_legMesh = new ofMesh(ofMesh::cylinder(gLegRadius, gLegLength));
-	m_ballPointMesh = new ofMesh(ofMesh::sphere(gLegRadius));
+	m_bodyMesh = std::make_shared<ofMesh>(ofMesh::sphere(gRootBodyRadius));
+	m_foreLegMesh = std::make_shared<ofMesh>(ofMesh::cylinder(gForeLegRadius, gForeLegLength));
+	m_legMesh = std::make_shared<ofMesh>(ofMesh::cylinder(gLegRadius, gLegLength));
+	m_ballPointMesh = std::make_shared<ofMesh>(ofMesh::sphere(gLegRadius));
 
 	// Setup geometry
 	m_nodes.reserve(m_numBodyParts);
@@ -536,7 +536,7 @@ void SimCreature::resetAt(const btVector3& position)
 	clearTouchSensors();
 }
 
-void SimCreature::setAppearance(ofShader* shader, ofMaterial* mtl, ofTexture* tex)
+void SimCreature::setAppearance(std::shared_ptr<ofShader> shader, std::shared_ptr<ofMaterial> mtl, std::shared_ptr<ofTexture> tex)
 {
 	m_shader = shader;
 	m_material = mtl;
@@ -554,7 +554,7 @@ void SimCreature::setAppearance(ofShader* shader, ofMaterial* mtl, ofTexture* te
 	}
 }
 
-void SimCreature::setShader(ofShader* shader)
+void SimCreature::setShader(std::shared_ptr<ofShader> shader)
 {
 	m_shader = shader;
 
@@ -563,7 +563,7 @@ void SimCreature::setShader(ofShader* shader)
 	}
 }
 
-void SimCreature::setMaterial(ofMaterial* mtl)
+void SimCreature::setMaterial(std::shared_ptr<ofMaterial> mtl)
 {
 	m_material = mtl;
 
@@ -572,7 +572,7 @@ void SimCreature::setMaterial(ofMaterial* mtl)
 	}
 }
 
-void SimCreature::setTexture(ofTexture* tex)
+void SimCreature::setTexture(std::shared_ptr<ofTexture> tex)
 {
 	m_texture = tex;
 
@@ -618,31 +618,26 @@ int SimCreature::getIndex() const
 
 SimCreature::~SimCreature()
 {
-	int i;
-
 	// Remove all constraints
-	for (i = 0; i < m_numJoints; ++i) {
+	for (int i = 0; i < m_numJoints; ++i) {
 		m_ownerWorld->removeConstraint(m_joints[i]);
 		delete m_joints[i];
 		m_joints[i] = 0;
 	}
-
-	// Remove all shapes and nodes
-	for (i = 0; i < m_numBodyParts; ++i) {
-		m_ownerWorld->removeRigidBody(m_bodies[i]);
-
-		delete m_bodies[i]->getMotionState();
-
-		delete m_bodies[i];
-		m_bodies[i] = 0;
-		delete m_shapes[i];
-		m_shapes[i] = 0;
+	for (int i = 0; i < m_numBallPointers; ++i) {
+		m_ownerWorld->removeConstraint(m_ballPointerJoints[i]);
+		delete m_ballPointerJoints[i];
+		m_ballPointerJoints[i] = 0;
 	}
-	for (i = 0; i < m_nodes.size(); ++i) {
+	// Remove all nodes and their corresponding bodies and shapes
+	for (int i = 0; i < m_nodes.size(); ++i) {
+		m_ownerWorld->removeRigidBody(m_nodes[i]->getRigidBody());
 		delete m_nodes[i];
 		m_nodes[i] = 0;
 	}
-	delete m_bodyMesh;
-	delete m_foreLegMesh;
-	delete m_legMesh;
+	for (int i = 0; i < m_ballPointerNodes.size(); ++i) {
+		m_ownerWorld->removeRigidBody(m_ballPointerNodes[i]->getRigidBody());
+		delete m_ballPointerNodes[i];
+		m_ballPointerNodes[i] = 0;
+	}
 }

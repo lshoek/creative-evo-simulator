@@ -16,6 +16,8 @@ public:
 	
 	const std::vector<double> activate(std::vector<double> inputs);
 
+	void updateFitness(double fitness);
+
 	void setGenome(NEAT::Genome genome);
 	NEAT::Genome& getGenome();
 	NEAT::NeuralNetwork& getNN();

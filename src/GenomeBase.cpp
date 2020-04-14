@@ -30,6 +30,12 @@ const std::vector<double> GenomeBase::activate(std::vector<double> inputs)
     return m_network.Output();
 }
 
+void GenomeBase::updateFitness(double fitness)
+{
+    m_genome.SetFitness(fitness);
+    m_genome.SetEvaluated();
+}
+
 void GenomeBase::setGenome(NEAT::Genome genome)
 { 
     m_genome = genome; 
