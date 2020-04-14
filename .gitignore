@@ -25,6 +25,7 @@ bld/
 [Ll]og/
 
 bin/data/textures
+bin/data/output
 
 # Exclude binaries and etc
 *.exe
