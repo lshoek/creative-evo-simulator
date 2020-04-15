@@ -196,6 +196,7 @@ bool NEATManager::evaluatePopulation()
 		int index = 0;
 		for (unsigned int i = 0; i < population->m_Species.size(); ++i) {
 			for (unsigned int j = 0; j < population->m_Species[i].m_Individuals.size(); ++j) {
+				pctGenEvaluated = index / float(population->NumGenomes());
 				evalThreads.push_back(std::thread([this, &tempGenomes, i, j, index]
 				{
 					double f = fitnessFuncPtr->evaluate(tempGenomes[index]);
@@ -208,7 +209,6 @@ bool NEATManager::evaluatePopulation()
 					}
 					evalThreads.clear();
 				}
-				pctGenEvaluated = (index+1) / float(population->NumGenomes());
 				index++;
 			}
 		}
@@ -222,12 +222,12 @@ bool NEATManager::evaluatePopulation()
 		int index = 0;
 		for (unsigned int i = 0; i < population->m_Species.size(); ++i) {
 			for (unsigned int j = 0; j < population->m_Species[i].m_Individuals.size(); ++j) {
+				pctGenEvaluated = index / float(population->NumGenomes());
+
 				GenomeBase g(population->m_Species[i].m_Individuals[j]);
 				double f = fitnessFuncPtr->evaluate(g);
 				population->m_Species[i].m_Individuals[j].SetFitness(f);
 				population->m_Species[i].m_Individuals[j].SetEvaluated();
-
-				pctGenEvaluated = (index+1) / float(population->NumGenomes());
 				index++;
 			}
 		}
