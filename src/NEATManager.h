@@ -5,6 +5,7 @@
 #include "GenomeBase.h"
 #include "PaintFitnessFunc.h"
 #include "SimulationManager.h"
+#include "SimSharedData.h"
 
 class NEATManager : public ofThread
 {
@@ -26,6 +27,9 @@ public:
     double getTargetFitness();
     const std::vector<double>& getFitnessResults();
 
+    int getNumGeneration();
+    float getPctGenEvaluated();
+
     ofEvent<void> onNewBestFound;
 
 private:
@@ -39,11 +43,16 @@ private:
     NEAT::Substrate substrate;
 
     int maxNumGenerations;
+    int maxSimultaneousEvaluations;
+
     double targetFitness;
     double bestFitness;
 
+    float pctGenEvaluated = 0.0f;
+
     bool bHasFitnessFunc;
     bool bThreaded;
+    bool bThreadedEvaluation;
 
     NEAT::Genome deadGenome;
     NEAT::Genome offspringGenome;

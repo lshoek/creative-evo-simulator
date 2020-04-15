@@ -308,7 +308,7 @@
     <ClInclude Include="src\Scheduler.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="src\SimResult.h">
+    <ClInclude Include="src\SimSharedData.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

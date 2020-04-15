@@ -285,7 +285,7 @@
     <ClInclude Include="src\SimFitnessFunc.h" />
     <ClInclude Include="src\SimNode.h" />
     <ClInclude Include="src\SimDebugDrawer.h" />
-    <ClInclude Include="src\SimResult.h" />
+    <ClInclude Include="src\SimSharedData.h" />
     <ClInclude Include="src\SimulationManager.h" />
     <ClInclude Include="src\SimUtils.h" />
     <ClInclude Include="src\toolbox.h" />

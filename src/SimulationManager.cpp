@@ -132,9 +132,14 @@ int SimulationManager::queueSimulationInstance(const GenomeBase& genome, float d
     return ticket;
 }
 
-int SimulationManager::runSimulationInstance(const GenomeBase& genome, int ticket, float duration)
+int SimulationManager::runSimulationInstance(GenomeBase& genome, int ticket, float duration)
 {
-    // may change depending on simulation id
+    // todo: locate based on ticket id
+    //int gridSize = 2;
+    //int grid_x = ticket % gridSize;
+    //int grid_z = ticket / gridSize;
+
+    //btVector3 position(grid_x * canvasSize*2.0f, 0, grid_z * canvasSize*2.0f);
     btVector3 position(0, 0, 0);
 
     // some fixed offset that works (may later be based on creature size)
@@ -151,12 +156,10 @@ int SimulationManager::runSimulationInstance(const GenomeBase& genome, int ticke
     canv->addToWorld();
 
     SimCreature* crtr;
-    crtr = new SimCreature(position, 6, _world, offset, true);
+    crtr = new SimCreature(position, _numWalkerLegs, _world, offset, true);
     crtr->setAppearance(_nodeShader, _material, _nodeTexture);
+    crtr->setControlPolicyGenome(genome);
     crtr->addToWorld();
-
-    //std::vector<double> input;
-    //std::vector<double> output = genome.activate(input);
 
     _simulationInstances.push_back(new SimInstance(ticket, crtr, canv, ofGetElapsedTimef(), duration));
 
@@ -172,6 +175,7 @@ void SimulationManager::update(double timeStep)
     _simulationInstanceCallbackQueue.clear();
 
     // close simulation instances that are finished
+    // TODO: Make this simulated runtime, not app runtime
     for (int i=0; i<_simulationInstances.size(); i++) {
         if (ofGetElapsedTimef() - _simulationInstances[i]->startTime > _simulationInstances[i]->duration) {
 
@@ -261,6 +265,15 @@ ofFbo* SimulationManager::getCanvasFbo()
 void SimulationManager::shiftFocus()
 {
     focusIndex = (focusIndex + 1) % _simulationInstances.size();
+}
+
+// As morphology is fixed this will only work for the walker creature for now
+MorphologyInfo SimulationManager::getWalkerMorphologyInfo()
+{
+    int numBodyParts = 2 * _numWalkerLegs + 1;
+    int numJoints = numBodyParts - 1;
+
+    return MorphologyInfo(numBodyParts, numJoints);
 }
 
 void SimulationManager::writeToPixels(const ofTexture& tex, ofPixels& pix)

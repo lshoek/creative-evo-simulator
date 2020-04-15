@@ -359,18 +359,23 @@ void SimCreature::update(double timeStep)
 		{
 			m_targetAccumulator = 0;
 
+			// activate network
+			const std::vector<double> outputs = m_controlPolicyGenome->activate(m_touchSensors);
+
 			for (int i = 0; i < 2 * m_numLegs; i++)
 			{
 				btScalar targetAngle = 0;
 				btHingeConstraint* joint = static_cast<btHingeConstraint*>(getJoints()[i]);
 
-				// neural network movement
-				// accumulate sensor inputs with weights
-				for (int j = 0; j < m_numJoints; j++) {
-					targetAngle += getSensoryMotorWeights()[i + j * m_numBodyParts] * getTouchSensor(i);
-				}
-				// apply the activation function
-				targetAngle = (std::tanh(targetAngle) + 1.0f) * 0.5f;
+				//// neural network movement
+				//// accumulate sensor inputs with weights
+				//for (int j = 0; j < m_numJoints; j++) {
+				//	targetAngle += getSensoryMotorWeights()[i + j * m_numBodyParts] * getTouchSensor(i);
+				//}
+				//// apply the activation function
+				//targetAngle = (std::tanh(targetAngle) + 1.0f) * 0.5f;
+
+				targetAngle = outputs[i];
 
 				btScalar targetLimitAngle = joint->getLowerLimit() + targetAngle * (joint->getUpperLimit() - joint->getLowerLimit());
 				btScalar currentAngle = joint->getHingeAngle();
@@ -443,19 +448,24 @@ SimNode** SimCreature::getSimNodes()
 	return &m_nodes[0];
 }
 
+void SimCreature::setControlPolicyGenome(const GenomeBase& genome)
+{
+	m_controlPolicyGenome = new GenomeBase(genome);
+}
+
 void SimCreature::setTouchSensor(void* bodyPointer)
 {
-	m_touchSensors[*m_bodyTouchSensorIndexMap.find(btHashPtr(bodyPointer))] = true;
+	m_touchSensors[*m_bodyTouchSensorIndexMap.find(btHashPtr(bodyPointer))] = 1.0;
 }
 
 void SimCreature::clearTouchSensors()
 {
 	for (int i = 0; i < m_numBodyParts; i++) {
-		m_touchSensors[i] = false;
+		m_touchSensors[i] = 0.0;
 	}
 }
 
-bool SimCreature::getTouchSensor(int i)
+double SimCreature::getTouchSensor(int i)
 {
 	return m_touchSensors[i];
 }
@@ -640,4 +650,5 @@ SimCreature::~SimCreature()
 		delete m_ballPointerNodes[i];
 		m_ballPointerNodes[i] = 0;
 	}
+	if (m_controlPolicyGenome) delete m_controlPolicyGenome;
 }

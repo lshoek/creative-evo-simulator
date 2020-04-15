@@ -4,10 +4,14 @@
 class GenomeBase
 {
 public:
-	GenomeBase(NEAT::Genome genome)
-	{
+	GenomeBase(NEAT::Genome genome) {
 		m_genome = genome;
 	};
+	GenomeBase(const GenomeBase& genome) {
+		m_genome = genome.m_genome;
+		m_network = genome.m_network;
+	};
+
 	~GenomeBase() {};
 
 	void buildPhenotype();

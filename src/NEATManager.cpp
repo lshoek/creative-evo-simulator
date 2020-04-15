@@ -10,36 +10,50 @@ void NEATManager::setup(SimulationManager* sim, bool threaded)
 	fitnessFuncPtr = &paintFitnessFunc;
 
 	// load neat params from config file
-	std::ifstream paramFile("data/config/params_hyperneat_xor_test.conf", std::ifstream::in);
+	std::ifstream paramFile("data/config/params_paint.conf", std::ifstream::in);
 	params.Load(paramFile);
 	paramFile.close();
 
-	params.PopulationSize = 4;
 	params.NeuronRecursionLimit = 8;
 
 	// create substrate
 	substrate = NEATUtils::CreateSubstrate(3);
-	substrate.PrintInfo();
+	//substrate.PrintInfo();
 
 	// create cppn genome using substrate config
-	NEAT::Genome templateGenome(0,
-		substrate.GetMinCPPNInputs(), 0,
-		substrate.GetMinCPPNOutputs(), false,
+	//NEAT::Genome templateGenome(0,
+	//	substrate.GetMinCPPNInputs(), 0,
+	//	substrate.GetMinCPPNOutputs(), false,
+	//	NEAT::ActivationFunction::TANH,
+	//	NEAT::ActivationFunction::TANH,
+	//	0, params, 0
+	//);
+
+	MorphologyInfo info = sim->getWalkerMorphologyInfo();
+	NEAT::Genome templateGenome(
+		0, info.numSensors, 0, info.numJoints, false,
 		NEAT::ActivationFunction::TANH,
 		NEAT::ActivationFunction::TANH,
 		0, params, 0
 	);
+	ofLog() << "genome" <<
+		"\ninputs:" << templateGenome.NumInputs() <<
+		"\noutputs:" << templateGenome.NumOutputs() << "\n";
+
 	offspringGenomeBasePtr = new GenomeBase(templateGenome);
 	bestGenomeBasePtr = new GenomeBase(templateGenome);
 
 	// init population and set genome ids that belong to the population
 	population = new NEAT::Population(templateGenome, params, true, 1.0, 0);
 
-	maxNumGenerations = 500;
+	maxNumGenerations = 100;
 	fitnessResults.reserve(maxNumGenerations);
 
+	maxSimultaneousEvaluations = 4;
 	targetFitness = 1.0;
+
 	bThreaded = threaded;
+	bThreadedEvaluation = false;
 }
 
 void NEATManager::draw()
@@ -166,25 +180,58 @@ bool NEATManager::tick()
 
 bool NEATManager::evaluatePopulation()
 {
-	// start evaluation threads
-	//boost::thread_group threadGroup;
+	if (bThreadedEvaluation) 
+	{
+		std::vector<GenomeBase> tempGenomes;
+		std::vector<std::thread> evalThreads;
+		tempGenomes.reserve(population->NumGenomes());
+		evalThreads.reserve(maxSimultaneousEvaluations);
 
-	for (unsigned int i = 0; i < population->m_Species.size(); ++i) {
-		for (unsigned int j = 0; j < population->m_Species[i].m_Individuals.size(); ++j) {
-
-			// activate simulation here
-			GenomeBase g(population->m_Species[i].m_Individuals[j]);
-
-			//threadGroup.create_thread(boost::bind(&FitnessFunc::evaluate, &g));
-			double f = fitnessFuncPtr->evaluate(g);
-
-			population->m_Species[i].m_Individuals[j].SetFitness(f);
-			population->m_Species[i].m_Individuals[j].SetEvaluated();
-			//f_best = (f > f_best) ? f : f_best;
+		for (unsigned int i = 0; i < population->m_Species.size(); ++i) {
+			for (unsigned int j = 0; j < population->m_Species[i].m_Individuals.size(); ++j) {
+				tempGenomes.push_back(GenomeBase(population->m_Species[i].m_Individuals[j]));
+			}
 		}
-		//population->m_Species[i].CalculateAverageFitness();
+
+		int index = 0;
+		for (unsigned int i = 0; i < population->m_Species.size(); ++i) {
+			for (unsigned int j = 0; j < population->m_Species[i].m_Individuals.size(); ++j) {
+				evalThreads.push_back(std::thread([this, &tempGenomes, i, j, index]
+				{
+					double f = fitnessFuncPtr->evaluate(tempGenomes[index]);
+					population->m_Species[i].m_Individuals[j].SetFitness(f);
+					population->m_Species[i].m_Individuals[j].SetEvaluated();
+				}));
+				if (evalThreads.size() >= maxSimultaneousEvaluations) {
+					for (std::thread& t : evalThreads) {
+						t.join();
+					}
+					evalThreads.clear();
+				}
+				pctGenEvaluated = (index+1) / float(population->NumGenomes());
+				index++;
+			}
+		}
+		// Really make sure all evaluations are finished
+		for (std::thread& t : evalThreads) {
+			t.join();
+		}
 	}
-	// join evaluation threads
+	else
+	{
+		int index = 0;
+		for (unsigned int i = 0; i < population->m_Species.size(); ++i) {
+			for (unsigned int j = 0; j < population->m_Species[i].m_Individuals.size(); ++j) {
+				GenomeBase g(population->m_Species[i].m_Individuals[j]);
+				double f = fitnessFuncPtr->evaluate(g);
+				population->m_Species[i].m_Individuals[j].SetFitness(f);
+				population->m_Species[i].m_Individuals[j].SetEvaluated();
+
+				pctGenEvaluated = (index+1) / float(population->NumGenomes());
+				index++;
+			}
+		}
+	}
 
 	double f_best = -DBL_MAX;
 	bool bNewBest = false;
@@ -226,6 +273,16 @@ double NEATManager::getTargetFitness()
 const std::vector<double>& NEATManager::getFitnessResults()
 {
 	return fitnessResults;
+}
+
+int NEATManager::getNumGeneration()
+{
+	return population->m_Generation;
+}
+
+float NEATManager::getPctGenEvaluated()
+{
+	return pctGenEvaluated;
 }
 
 void NEATManager::exit()

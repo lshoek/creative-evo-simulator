@@ -5,6 +5,7 @@
 #include "ofGraphics.h"
 #include "ofMaterial.h"
 #include "ofMesh.h"
+#include "GenomeBase.h"
 
 #define DRAW_INTERPENETRATIONS false
 
@@ -25,9 +26,12 @@ public:
 	btRigidBody** getRigidBodies();
 	SimNode** getSimNodes();
 
+	// Makes a deep copy of the genome and stores/uses it until the simulation instance is finished.
+	void setControlPolicyGenome(const GenomeBase& genome);
+
 	void setTouchSensor(void* bodyPointer);
 	void clearTouchSensors();
-	bool getTouchSensor(int i);
+	double getTouchSensor(int i);
 	btScalar* getSensoryMotorWeights();
 
 	void addToWorld();
@@ -60,6 +64,7 @@ private:
 	bool bHasBallPointers = false;
 
 	btDynamicsWorld* m_ownerWorld;
+	GenomeBase* m_controlPolicyGenome;
 
 	// standard rigid bodies and shapes for creature
 	std::vector<btCollisionShape*> m_shapes;
@@ -90,7 +95,7 @@ private:
 
 	// body part hash, touch sensor index
 	btHashMap<btHashPtr, int> m_bodyTouchSensorIndexMap;
-	std::vector<bool> m_touchSensors;
+	std::vector<double> m_touchSensors;
 
 	std::vector<btScalar> m_sensoryMotorWeights;
 

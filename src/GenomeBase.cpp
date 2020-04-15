@@ -50,4 +50,3 @@ NEAT::NeuralNetwork& GenomeBase::getNN()
 { 
     return m_network; 
 }
-

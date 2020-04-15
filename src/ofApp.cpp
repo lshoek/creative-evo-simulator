@@ -110,7 +110,7 @@ void ofApp::draw()
 			ImVec2 size(240, 640);
 			ImGui::SetNextWindowPos(ImVec2(24, 24));
 			ImGui::SetNextWindowSize(size);
-			ImGui::SetNextWindowBgAlpha(0.5f);
+			ImGui::SetNextWindowBgAlpha(0.75f);
 
 			ImGui::Begin(APP_ID);
 
@@ -125,19 +125,24 @@ void ofApp::draw()
 						0, neatManager.getTargetFitness(), ImVec2(size.x, 96)
 					);
 				}
-				ImGui::Image((void*)(intptr_t)cppnFbo.getTexture().getTextureData().textureID, ImVec2(size.x, size.x));
-				ImGui::Text("fitness: %.03f/%.03f", neatManager.getBestFitness(), neatManager.getTargetFitness());
+				//ImGui::Image((void*)(intptr_t)cppnFbo.getTexture().getTextureData().textureID, ImVec2(size.x, size.x));
+				ImGui::Text("current_gen: %d", neatManager.getNumGeneration());
+				ImGui::Text("evaluated: %.02f%%", neatManager.getPctGenEvaluated() * 100.0f);
+				ImGui::Text("best_fitness: %.03f/%.03f", neatManager.getBestFitness(), neatManager.getTargetFitness());
 				ImGui::Separator();
 			}
 			if (bSimulate) {
 				ImGui::Text("cam_pos: x:%.02f, y:%.02f, z:%.02f", cam.getPosition().x, cam.getPosition().y, cam.getPosition().z);
+				ImGui::Separator();
 				if (simulationManager.isInitialized()) {
 					ImGui::SliderFloat3("light_dir", &simulationManager.lightDirection[0], -1.0f, 1.0f);
 					ImGui::SliderFloat3("light_pos", &simulationManager.lightPosition[0], -100.0f, 100.0f);
+					ImGui::Separator();
 					if (simulationManager.isSimulationInstanceActive()) {
 						ImGui::SliderFloat("motor_strength", &simulationManager.getFocusCreature()->m_motorStrength, 0, 50);
 						ImGui::SliderFloat("target_freq", &simulationManager.getFocusCreature()->m_targetFrequency, 1, 60);
 						ImGui::Image((void*)(intptr_t)simulationManager.getCanvasFbo()->getTexture().getTextureData().textureID, ImVec2(size.x, size.x));
+						ImGui::Separator();
 					}
 					ImGui::Text("dbg_draw: %s", simulationManager.bDebugDraw ? "on" : "off");
 				}

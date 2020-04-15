@@ -3,7 +3,7 @@
 #include "SimNode.h"
 #include "SimCreature.h"
 #include "SimDebugDrawer.h"
-#include "SimResult.h"
+#include "SimSharedData.h"
 #include "ImageSaverThread.h"
 #include "GenomeBase.h"
 #include "ofMain.h"
@@ -40,6 +40,7 @@ public:
     glm::vec3 lightPosition;
     glm::vec3 lightDirection;
 
+    MorphologyInfo getWalkerMorphologyInfo();
     void initTestEnvironment();
 
 private:
@@ -56,13 +57,14 @@ private:
             delete canvas;
         }
     };
+
     void initPhysics();
     void initTerrain();
 
     void writeToPixels(const ofTexture& tex, ofPixels& pix);
     void saveToDisk(const ofPixels& pix);
 
-    int runSimulationInstance(const GenomeBase& genome, int ticket, float duration);
+    int runSimulationInstance(GenomeBase& genome, int ticket, float duration);
     std::vector<simRunCallback_t> _simulationInstanceCallbackQueue;
     std::vector<SimInstance*> _simulationInstances;
 
@@ -94,6 +96,9 @@ private:
     int focusIndex = 0;
     int simInstanceId = 0;
     int simInstanceLimit = 100;
+
+    // for fixed walker creature
+    int _numWalkerLegs = 6;
 
     // pbo
     ImageSaverThread _imageSaverThread;

@@ -120,7 +120,8 @@ void SimCanvasNode::draw()
 
         _shader->begin();
         if (bUseTexture) {
-            _shader->setUniformTexture("tex", _canvasFbo[iFbo].getTexture(), 0);
+            //_shader->setUniformTexture("tex", _canvasFbo[iFbo].getTexture(), 0);
+            _shader->setUniformTexture("tex", _canvasFinalFbo.getTexture(), 0);
         }
         _mesh->draw();
         _shader->end();
