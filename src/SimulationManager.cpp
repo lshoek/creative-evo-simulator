@@ -9,7 +9,7 @@
 
 void SimulationManager::init()
 {
-    _canvasRes = glm::ivec2(512, 512);
+    _canvasRes = glm::ivec2(256, 256);
     _simulationInstances.reserve(simInstanceLimit);
     _simulationInstanceCallbackQueue.reserve(simInstanceLimit);
 
@@ -122,9 +122,12 @@ int SimulationManager::queueSimulationInstance(const GenomeBase& genome, float d
 
     int ticket = simInstanceId;
 
-    _simulationInstanceCallbackQueue.push_back(
-        std::bind(&SimulationManager::runSimulationInstance, this, genome, ticket, duration)
-    );
+    {
+        std::lock_guard<std::mutex> guard(_cbQueueMutex);
+        _simulationInstanceCallbackQueue.push_back(
+            std::bind(&SimulationManager::runSimulationInstance, this, genome, ticket, duration)
+        );
+    }
 
     // todo: prevent duplicates; requires a more sophisticated mechanism
     simInstanceId = (simInstanceId+1) % simInstanceLimit;
@@ -168,16 +171,21 @@ int SimulationManager::runSimulationInstance(GenomeBase& genome, int ticket, flo
 
 void SimulationManager::update(double timeStep)
 {
-    // create new simulation instances on main thread
-    for (simRunCallback_t cb : _simulationInstanceCallbackQueue) {
-        cb(0);
+    {
+        // create new simulation instances on main thread
+        std::lock_guard<std::mutex> guard(_cbQueueMutex);
+        for (simRunCallback_t cb : _simulationInstanceCallbackQueue) {
+            cb(0);
+        }
+        _simulationInstanceCallbackQueue.clear();
     }
-    _simulationInstanceCallbackQueue.clear();
 
     // close simulation instances that are finished
     // TODO: Make this simulated runtime, not app runtime
     for (int i=0; i<_simulationInstances.size(); i++) {
         if (ofGetElapsedTimef() - _simulationInstances[i]->startTime > _simulationInstances[i]->duration) {
+
+            ofLog() << "ended : " << _simulationInstances[i]->instanceId;
 
             ofPixels pix;
             writeToPixels(_simulationInstances[i]->canvas->getCanvasFbo()->getTexture(), pix);
@@ -198,7 +206,7 @@ void SimulationManager::update(double timeStep)
             _simulationInstances.erase(_simulationInstances.begin() + i);
 
             // optional
-            saveToDisk(pix);
+            //saveToDisk(pix);
         }
     }
 

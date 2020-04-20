@@ -68,6 +68,8 @@ private:
     std::vector<simRunCallback_t> _simulationInstanceCallbackQueue;
     std::vector<SimInstance*> _simulationInstances;
 
+    std::mutex _cbQueueMutex;
+
     SimNode* _terrainNode;
     SimCreature* _debugSnakeCreature;
 
@@ -89,16 +91,16 @@ private:
     std::shared_ptr<ofMaterial> _material;
 
     float terrainSize = 48.0f;
-    float canvasSize = 8.0f;
+    float canvasSize = 4.0f;
 
     bool bTerrainInitialized = false;
 
     int focusIndex = 0;
     int simInstanceId = 0;
-    int simInstanceLimit = 100;
+    int simInstanceLimit = 256;
 
     // for fixed walker creature
-    int _numWalkerLegs = 6;
+    int _numWalkerLegs = 8;
 
     // pbo
     ImageSaverThread _imageSaverThread;

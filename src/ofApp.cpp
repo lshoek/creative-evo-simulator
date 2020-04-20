@@ -139,7 +139,7 @@ void ofApp::draw()
 					ImGui::SliderFloat3("light_pos", &simulationManager.lightPosition[0], -100.0f, 100.0f);
 					ImGui::Separator();
 					if (simulationManager.isSimulationInstanceActive()) {
-						ImGui::SliderFloat("motor_strength", &simulationManager.getFocusCreature()->m_motorStrength, 0, 50);
+						ImGui::SliderFloat("motor_strength", &simulationManager.getFocusCreature()->m_motorStrength, 0, 1);
 						ImGui::SliderFloat("target_freq", &simulationManager.getFocusCreature()->m_targetFrequency, 1, 60);
 						ImGui::Image((void*)(intptr_t)simulationManager.getCanvasFbo()->getTexture().getTextureData().textureID, ImVec2(size.x, size.x));
 						ImGui::Separator();

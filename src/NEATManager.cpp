@@ -53,7 +53,7 @@ void NEATManager::setup(SimulationManager* sim, bool threaded)
 	targetFitness = 1.0;
 
 	bThreaded = threaded;
-	bThreadedEvaluation = false;
+	bThreadedEvaluation = true;
 }
 
 void NEATManager::draw()
@@ -167,7 +167,8 @@ bool NEATManager::tick()
 	offspringGenomeBasePtr->setGenome(offspringGenome);
 
 	// evaluate the newly created offspring in Tick()
-	double f = fitnessFuncPtr->evaluate(*offspringGenomeBasePtr);
+	int id = fitnessFuncPtr->queueEval(*offspringGenomeBasePtr);
+	double f = fitnessFuncPtr->awaitEval(id);
 
 	offspringGenomeBasePtr->getGenome().SetFitness(f);
 	offspringGenomeBasePtr->getGenome().SetEvaluated();
@@ -184,6 +185,8 @@ bool NEATManager::evaluatePopulation()
 	{
 		std::vector<GenomeBase> tempGenomes;
 		std::vector<std::thread> evalThreads;
+		std::mutex populationMutex;
+
 		tempGenomes.reserve(population->NumGenomes());
 		evalThreads.reserve(maxSimultaneousEvaluations);
 
@@ -196,14 +199,20 @@ bool NEATManager::evaluatePopulation()
 		int index = 0;
 		for (unsigned int i = 0; i < population->m_Species.size(); ++i) {
 			for (unsigned int j = 0; j < population->m_Species[i].m_Individuals.size(); ++j) {
+
 				pctGenEvaluated = index / float(population->NumGenomes());
-				evalThreads.push_back(std::thread([this, &tempGenomes, i, j, index]
+				GenomeBase gb = GenomeBase(population->m_Species[i].m_Individuals[j]);
+				int id = fitnessFuncPtr->queueEval(gb);
+
+				evalThreads.push_back(std::thread([this, &populationMutex, id, i, j, index]
 				{
-					double f = fitnessFuncPtr->evaluate(tempGenomes[index]);
+					double f = fitnessFuncPtr->awaitEval(id);
+
+					std::lock_guard<std::mutex> guard(populationMutex);
 					population->m_Species[i].m_Individuals[j].SetFitness(f);
 					population->m_Species[i].m_Individuals[j].SetEvaluated();
 				}));
-				if (evalThreads.size() >= maxSimultaneousEvaluations) {
+				if (evalThreads.size() >= maxSimultaneousEvaluations || index >= population->NumGenomes()-1) {
 					for (std::thread& t : evalThreads) {
 						t.join();
 					}
@@ -212,20 +221,19 @@ bool NEATManager::evaluatePopulation()
 				index++;
 			}
 		}
-		// Really make sure all evaluations are finished
-		for (std::thread& t : evalThreads) {
-			t.join();
-		}
 	}
 	else
 	{
 		int index = 0;
 		for (unsigned int i = 0; i < population->m_Species.size(); ++i) {
 			for (unsigned int j = 0; j < population->m_Species[i].m_Individuals.size(); ++j) {
-				pctGenEvaluated = index / float(population->NumGenomes());
 
+				pctGenEvaluated = index / float(population->NumGenomes());
 				GenomeBase g(population->m_Species[i].m_Individuals[j]);
-				double f = fitnessFuncPtr->evaluate(g);
+
+				int id = fitnessFuncPtr->queueEval(g);
+				double f = fitnessFuncPtr->awaitEval(id);
+
 				population->m_Species[i].m_Individuals[j].SetFitness(f);
 				population->m_Species[i].m_Individuals[j].SetEvaluated();
 				index++;

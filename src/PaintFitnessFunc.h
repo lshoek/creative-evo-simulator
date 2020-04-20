@@ -4,5 +4,6 @@
 class PaintFitnessFunc : public SimFitnessFunc
 {
 public:
-	virtual double evaluate(GenomeBase& genome) override;
+	virtual isim_ticket queueEval(GenomeBase& genome) override;
+	virtual double awaitEval(isim_ticket id) override;
 };

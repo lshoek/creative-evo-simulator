@@ -36,7 +36,7 @@ private:
     virtual void threadedFunction() override;
 
     PaintFitnessFunc paintFitnessFunc;
-    FitnessFunc* fitnessFuncPtr;
+    SimFitnessFunc* fitnessFuncPtr;
 
     NEAT::Population* population;
     NEAT::Parameters params;
