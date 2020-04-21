@@ -15,14 +15,14 @@ void ofApp::setup()
 	ofSetFrameRate(60);
 	ofSetWindowPosition(32, 128);
 	ofSetLogLevel("ofThread", OF_LOG_VERBOSE);
-	ofLogToConsole();
+	ofEnableGLDebugLog();
+	//ofLogToConsole();
 	ofNoFill();
 
 	settings = ofxIniSettings("settings.ini");
 	bEvolve = settings.get("mode.evolve", true);
 	bSimulate = settings.get("mode.simulate", true);
 	bDebugGrid = settings.get("mode.debuggrid", true);
-	bCameraSnapFocus = settings.get("mode.snapfocus", true);
 
 	HWND hwnd = GetConsoleWindow();
 	MoveWindow(
@@ -34,11 +34,6 @@ void ofApp::setup()
 	cppnFbo.allocate(512, 512, GL_RGB);
 
 	gui.setup();
-
-	cam.setNearClip(0.01f);
-	cam.setFarClip(1000.0f);
-	cam.setPosition(8.0f, 8.0f, 4.0f);
-	cam.lookAt(glm::vec3(0));
 
 	if (bSimulate) {
 		startSimulation();
@@ -52,6 +47,7 @@ void ofApp::startSimulation()
 {
 	simulationManager.init();
 	simulationManager.bDebugDraw = settings.get("mode.debugdraw", true);
+	simulationManager.bCameraSnapFocus = settings.get("mode.snapfocus", true);
 }
 
 void ofApp::startEvolution()
@@ -67,10 +63,6 @@ void ofApp::update()
 {
 	if (bSimulate) {
 		simulationManager.update(1/60.0);
-
-		if (bCameraSnapFocus && simulationManager.isSimulationInstanceActive()) {
-			cam.lookAt(simulationManager.getFocusOrigin());
-		}
 	}
 }
 
@@ -94,64 +86,67 @@ void ofApp::draw()
 		frameFbo.begin();
 		ofClear(0, 0);
 
-		cam.begin();
 		simulationManager.draw();
-		cam.end();
 
 		frameFbo.end();
 		frameFbo.draw(viewRect);
 	}
 	glDisable(GL_BLEND);
 
-	if (bGui) 
-	{
-		gui.begin();
-		{
-			ImVec2 size(240, 640);
-			ImGui::SetNextWindowPos(ImVec2(24, 24));
-			ImGui::SetNextWindowSize(size);
-			ImGui::SetNextWindowBgAlpha(0.75f);
-
-			ImGui::Begin(APP_ID);
-
-			if (bEvolve) {
-				std::vector<float> fitnessFloats(
-					neatManager.getFitnessResults().begin(),
-					neatManager.getFitnessResults().end()
-				);
-				if (!fitnessFloats.empty()) {
-					ImGui::PlotLines(
-						"Fitness", &fitnessFloats[0], fitnessFloats.size(), 0, 0,
-						0, neatManager.getTargetFitness(), ImVec2(size.x, 96)
-					);
-				}
-				//ImGui::Image((void*)(intptr_t)cppnFbo.getTexture().getTextureData().textureID, ImVec2(size.x, size.x));
-				ImGui::Text("current_gen: %d", neatManager.getNumGeneration());
-				ImGui::Text("evaluated: %.02f%%", neatManager.getPctGenEvaluated() * 100.0f);
-				ImGui::Text("best_fitness: %.03f/%.03f", neatManager.getBestFitness(), neatManager.getTargetFitness());
-				ImGui::Separator();
-			}
-			if (bSimulate) {
-				ImGui::Text("cam_pos: x:%.02f, y:%.02f, z:%.02f", cam.getPosition().x, cam.getPosition().y, cam.getPosition().z);
-				ImGui::Separator();
-				if (simulationManager.isInitialized()) {
-					ImGui::SliderFloat3("light_dir", &simulationManager.lightDirection[0], -1.0f, 1.0f);
-					ImGui::SliderFloat3("light_pos", &simulationManager.lightPosition[0], -100.0f, 100.0f);
-					ImGui::Separator();
-					if (simulationManager.isSimulationInstanceActive()) {
-						ImGui::SliderFloat("motor_strength", &simulationManager.getFocusCreature()->m_motorStrength, 0, 1);
-						ImGui::SliderFloat("target_freq", &simulationManager.getFocusCreature()->m_targetFrequency, 1, 60);
-						ImGui::Image((void*)(intptr_t)simulationManager.getCanvasFbo()->getTexture().getTextureData().textureID, ImVec2(size.x, size.x));
-						ImGui::Separator();
-					}
-					ImGui::Text("dbg_draw: %s", simulationManager.bDebugDraw ? "on" : "off");
-				}
-			}
-			ImGui::Text("fps: %.02f", ofGetFrameRate());
-			ImGui::End();
-		}
-		gui.end();
+	if (bGui) {
+		imGui();
 	}
+}
+
+void ofApp::imGui()
+{
+	gui.begin();
+	{
+		ImVec2 size(240, 640);
+		ImGui::SetNextWindowPos(ImVec2(24, 24));
+		ImGui::SetNextWindowSize(size);
+		ImGui::SetNextWindowBgAlpha(0.75f);
+
+		ImGui::Begin(APP_ID);
+
+		if (bEvolve) {
+			std::vector<float> fitnessFloats(
+				neatManager.getFitnessResults().begin(),
+				neatManager.getFitnessResults().end()
+			);
+			if (!fitnessFloats.empty()) {
+				ImGui::PlotLines(
+					"Fitness", &fitnessFloats[0], fitnessFloats.size(), 0, 0,
+					0, neatManager.getTargetFitness(), ImVec2(size.x, 96)
+				);
+			}
+			//ImGui::Image((void*)(intptr_t)cppnFbo.getTexture().getTextureData().textureID, ImVec2(size.x, size.x));
+			ImGui::Text("current_gen: %d", neatManager.getNumGeneration());
+			ImGui::Text("evaluated: %.02f%%", neatManager.getPctGenEvaluated() * 100.0f);
+			ImGui::Text("best_fitness: %.03f/%.03f", neatManager.getBestFitness(), neatManager.getTargetFitness());
+			ImGui::Separator();
+		}
+		if (bSimulate) {
+			glm::vec3 cpos = simulationManager.getCamera()->getPosition();
+			ImGui::Text("cam_pos: x:%.02f, y:%.02f, z:%.02f", cpos.x, cpos.y, cpos.z);
+			ImGui::Separator();
+			if (simulationManager.isInitialized()) {
+				ImGui::SliderFloat3("light_dir", &simulationManager.lightDirection[0], -1.0f, 1.0f);
+				ImGui::SliderFloat3("light_pos", &simulationManager.lightPosition[0], -100.0f, 100.0f);
+				ImGui::Separator();
+				if (simulationManager.isSimulationInstanceActive()) {
+					ImGui::SliderFloat("motor_strength", &simulationManager.getFocusCreature()->m_motorStrength, 0, 1);
+					ImGui::SliderFloat("target_freq", &simulationManager.getFocusCreature()->m_targetFrequency, 1, 60);
+					ImGui::Image((void*)(intptr_t)simulationManager.getCanvasFbo()->getTexture().getTextureData().textureID, ImVec2(size.x, size.x));
+					ImGui::Separator();
+				}
+				ImGui::Text("dbg_draw: %s", simulationManager.bDebugDraw ? "on" : "off");
+			}
+		}
+		ImGui::Text("fps: %.02f", ofGetFrameRate());
+		ImGui::End();
+	}
+	gui.end();
 }
 
 void ofApp::queueRenderEvent()

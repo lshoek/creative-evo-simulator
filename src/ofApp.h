@@ -19,6 +19,8 @@ public:
     void draw();
     void exit();
 
+	void imGui();
+
 	void startSimulation();
 	void startEvolution();
 
@@ -39,7 +41,6 @@ private:
 	ofFbo frameFbo;
 	ofFbo cppnFbo;
 
-	ofxGrabCam cam;
 	ofxImGui::Gui gui;
 	ofxIniSettings settings;
 
@@ -47,7 +48,6 @@ private:
 
 	bool bEvolve = true;
 	bool bSimulate = true;
-	bool bCameraSnapFocus = true;
 	bool bDebugGrid = true;
 	bool bGui = true;
 };

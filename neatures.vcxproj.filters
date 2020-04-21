@@ -153,6 +153,9 @@
     <ClCompile Include="src\PaintFitnessFunc.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\SimNodeBase.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ofApp.h">
@@ -309,6 +312,9 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="src\SimSharedData.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SimNodeBase.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

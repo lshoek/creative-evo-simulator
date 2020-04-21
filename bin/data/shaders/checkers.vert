@@ -13,6 +13,7 @@ in vec4 normal;
 in vec2 texcoord;
 
 out vec4 eye;
+out vec4 fragPos; 
 
 out vec4 normal_varying;
 out vec4 color_varying;
@@ -20,8 +21,10 @@ out vec2 texcoord_varying;
 
 void main()
 {
-    vec4 view_vert = modelViewMatrix * position;
-    eye = -view_vert;
+	vec4 view_vert = modelViewMatrix * position;
+	eye = -view_vert;
+
+	fragPos = modelMatrix * position;
 
 	texcoord_varying = texcoord;
 	
@@ -29,5 +32,5 @@ void main()
 	vec3 normal_transformed = normalMatrix * normalize(normal.xyz);
 	normal_varying = vec4(normal_transformed, 0.0);
 
-    gl_Position = modelViewProjectionMatrix * position;
+	gl_Position = modelViewProjectionMatrix * position;
 }

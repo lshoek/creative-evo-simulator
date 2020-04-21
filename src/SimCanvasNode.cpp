@@ -6,17 +6,17 @@
 // This number should be synced with BRUSH_COORD_BUF_MAXSIZE in canvas.frag.
 #define BRUSH_COORD_BUF_MAXSIZE 8
 
-// TODO: Refactoring/inheritance
-SimCanvasNode::SimCanvasNode(int tag, float size, int x_res, int y_res, btDynamicsWorld* ownerWorld) :
-    _tag(tag), _canvasSize(size), _ownerWorld(ownerWorld)
+SimCanvasNode::SimCanvasNode(int tag, float size, int x_res, int y_res, btDynamicsWorld* owner) : 
+    SimNodeBase(tag, owner), _canvasSize(size)
 {
-    _canvasRes = glm::ivec2(x_res, y_res);
-    _canvasDrawQuad = tb::rectMesh(0, 0, _canvasRes.x, _canvasRes.y, true);
-
+    _color = ofColor::white;
     _brushColor = ofColor::black;
     _canvasClearColor = ofColor::white;
 
-    initPlane(glm::vec3(0), _canvasSize, 0);
+    _canvasRes = glm::ivec2(x_res, y_res);
+    _canvasDrawQuad = tb::rectMesh(0, 0, _canvasRes.x, _canvasRes.y, true);
+
+    initPlane(glm::vec3(0), _canvasSize);
 
     for (int i = 0; i < 2; i++) {
         _canvasFbo[i].allocate(_canvasRes.x, _canvasRes.y, GL_RGBA32F);
@@ -33,32 +33,11 @@ SimCanvasNode::SimCanvasNode(int tag, float size, int x_res, int y_res, btDynami
     _brushCoordBuffer.setData(BrushCoord::size()*BRUSH_COORD_BUF_MAXSIZE, NULL, GL_DYNAMIC_DRAW);
 }
 
-void SimCanvasNode::initPlane(glm::vec3 position, float size, float mass)
+void SimCanvasNode::initPlane(glm::vec3 position, float size)
 {
     _shape = new btStaticPlaneShape(btVector3(0, 1, 0), 0);
     _mesh = std::make_shared<ofMesh>(tb::gridMesh(2, 2, size * 2, true));
-    createBody(position, mass);
-}
-
-void SimCanvasNode::createBody(glm::vec3 position, float mass)
-{
-    btTransform trans = btTransform::getIdentity();
-    trans.setOrigin(SimUtils::glmToBullet(position));
-
-    btDefaultMotionState* motionState = new btDefaultMotionState(trans);
-
-    btScalar bodyMass = mass;
-    btVector3 bodyInertia;
-    _shape->calculateLocalInertia(bodyMass, bodyInertia);
-
-    btRigidBody::btRigidBodyConstructionInfo bodyConstrInfo =
-        btRigidBody::btRigidBodyConstructionInfo(bodyMass, motionState, _shape, bodyInertia);
-    bodyConstrInfo.m_restitution = 0.5f;
-    bodyConstrInfo.m_friction = 0.5f;
-
-    _body = new btRigidBody(bodyConstrInfo);
-    _body->setUserPointer(this);
-    _body->setUserIndex(_tag);
+    createBody(position, 0);
 }
 
 void SimCanvasNode::update()
@@ -123,6 +102,13 @@ void SimCanvasNode::draw()
             //_shader->setUniformTexture("tex", _canvasFbo[iFbo].getTexture(), 0);
             _shader->setUniformTexture("tex", _canvasFinalFbo.getTexture(), 0);
         }
+        _shader->setUniform4f("color", _color);
+        _shader->setUniform4f("mtl.ambient", _material->getAmbientColor());
+        _shader->setUniform4f("mtl.diffuse", _material->getDiffuseColor());
+        _shader->setUniform4f("mtl.specular", _material->getSpecularColor());
+        _shader->setUniform4f("mtl.emission", _material->getEmissiveColor());
+        _shader->setUniform1f("mtl.shininess", _material->getShininess());
+
         _mesh->draw();
         _shader->end();
 
@@ -159,98 +145,11 @@ ofFbo* SimCanvasNode::getCanvasFbo()
     return &_canvasFinalFbo;
 }
 
-void SimCanvasNode::addToWorld()
-{
-    _ownerWorld->addRigidBody(_body);
+void SimCanvasNode::setCanvasUpdateShader(std::shared_ptr<ofShader> shader) { 
+    _canvasUpdateShader = shader; 
 }
-
-void SimCanvasNode::removeFromWorld()
-{
-    _ownerWorld->removeRigidBody(_body);
-}
-
-void SimCanvasNode::setRigidBody(btRigidBody* body)
-{
-    _body = body;
-    _body->setUserIndex(_tag);
-    _shape = _body->getCollisionShape();
-}
-
-void SimCanvasNode::setTransform(glm::mat4 transform)
-{
-    if (_body) {
-        _body->setWorldTransform(SimUtils::glmToBullet(transform));
-    }
-}
-
-glm::mat4 SimCanvasNode::getTransform()
-{
-    if (_body) {
-        return SimUtils::bulletToGlm(_body->getWorldTransform());
-    }
-    else return glm::identity<glm::mat4>();
-}
-
-void SimCanvasNode::setPosition(glm::vec3 position)
-{
-    if (_body) {
-        btTransform trans = _body->getWorldTransform();
-        trans.setOrigin(SimUtils::glmToBullet(position));
-        _body->setWorldTransform(trans);
-    }
-}
-
-glm::vec3 SimCanvasNode::getPosition()
-{
-    if (_body) {
-        return SimUtils::bulletToGlm(_body->getWorldTransform().getOrigin());
-    }
-    else return glm::vec3();
-}
-
-void SimCanvasNode::setRotation(glm::quat rotation)
-{
-    if (_body) {
-        _body->getWorldTransform().setRotation(SimUtils::glmToBullet(rotation));
-    }
-}
-
-glm::quat SimCanvasNode::getRotation()
-{
-    if (_body) {
-        return SimUtils::bulletToGlm(_body->getWorldTransform().getRotation());
-    }
-    else return glm::identity<glm::quat>();
-}
-
-// rigidbody
-btRigidBody* SimCanvasNode::getRigidBody() { return _body; }
-bool SimCanvasNode::hasBody() { return _body != nullptr; }
-
-// shape
-btCollisionShape* SimCanvasNode::getShape() { return _shape; }
-
-// meta
-std::string SimCanvasNode::getName() { return _name; }
-int SimCanvasNode::getTag() { return _tag; }
-
-// shader
-void SimCanvasNode::setCanvasUpdateShader(std::shared_ptr<ofShader> shader) { _canvasUpdateShader = shader; }
-void SimCanvasNode::setShader(std::shared_ptr<ofShader> shader) { _shader = shader; }
-std::shared_ptr<ofShader> SimCanvasNode::getShader() { return _shader; }
-
-void SimCanvasNode::setTexture(std::shared_ptr<ofTexture> texture) {
-    _texture = texture;
-    bUseTexture = true;
-}
-void SimCanvasNode::setMaterial(std::shared_ptr<ofMaterial> mtl) { _material = mtl; }
-void SimCanvasNode::setMesh(std::shared_ptr<ofMesh> mesh) { _mesh = mesh; }
 
 SimCanvasNode::~SimCanvasNode()
 {
-    _ownerWorld->removeRigidBody(_body);
-
-    delete _body->getMotionState();
-    delete _body;
-    delete _shape;
+    removeFromWorld();
 }

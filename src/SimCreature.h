@@ -53,6 +53,7 @@ public:
 
 	void setShader(std::shared_ptr<ofShader> shader);
 	void setMaterial(std::shared_ptr<ofMaterial> mtl);
+	void setLight(std::shared_ptr<ofLight> light);
 	void setTexture(std::shared_ptr<ofTexture> tex);
 	void setAppearance(std::shared_ptr<ofShader> shader, std::shared_ptr<ofMaterial> mtl, std::shared_ptr<ofTexture> tex);
 
@@ -82,6 +83,7 @@ private:
 	std::shared_ptr<ofShader> m_shader;
 	std::shared_ptr<ofTexture> m_texture;
 	std::shared_ptr<ofMaterial> m_material;
+	std::shared_ptr<ofLight> m_light;
 
 	std::shared_ptr<ofMesh> m_legMesh;
 	std::shared_ptr<ofMesh> m_foreLegMesh;

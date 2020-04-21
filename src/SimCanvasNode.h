@@ -1,58 +1,23 @@
 #pragma once
-#include "bullet/btBulletDynamicsCommon.h"
-#include "ofGraphics.h"
-#include "ofShader.h"
-#include "ofMesh.h"
-#include "ofTypes.h"
+#include "SimNodeBase.h"
 #include "ofBufferObject.h"
 #include "ofFbo.h"
 
-class SimCanvasNode
+class SimCanvasNode : public SimNodeBase
 {
 public:
 	SimCanvasNode(int tag, float size, int x_res, int y_res, btDynamicsWorld* ownerWorld);
 	~SimCanvasNode();
 
 	void update();
-	void draw();
+	virtual void draw() override;
 
 	void addBrushStroke(btVector3 location, float impulse);
-
-	void setRigidBody(btRigidBody* body);
-	btRigidBody* getRigidBody();
-
-	btCollisionShape* getShape();
-
-	std::string getName();
-	int getTag();
-
-	bool hasBody();
 
 	glm::ivec2 getCanvasResolution();
 	ofFbo* getCanvasFbo();
 
-	// This should obviously be made consistent across node types
-	void addToWorld();
-	void removeFromWorld();
-
-	void setTransform(glm::mat4 transform);
-	glm::mat4 getTransform();
-
-	void setPosition(glm::vec3 position);
-	glm::vec3 getPosition();
-
-	void setRotation(glm::quat rotation);
-	glm::quat getRotation();
-
 	void setCanvasUpdateShader(std::shared_ptr<ofShader> shader);
-	void setShader(std::shared_ptr<ofShader> shader);
-	std::shared_ptr<ofShader> getShader();
-
-	void setTexture(std::shared_ptr<ofTexture> texture);
-	void setMaterial(std::shared_ptr<ofMaterial> mtl);
-	void setMesh(std::shared_ptr<ofMesh> mesh);
-
-	bool bUseTexture = false;
 
 private:
 	struct BrushCoord {
@@ -65,25 +30,16 @@ private:
 		}
 	};
 
-	void initPlane(glm::vec3 position, float size, float mass);
-	void createBody(glm::vec3 position, float mass);
-
-	btDynamicsWorld* _ownerWorld;
+	void initPlane(glm::vec3 position, float size);
 
 	glm::ivec2 _canvasRes;
 	float _canvasSize;
-
-	ofMesh _canvasDrawQuad;
-
-	btCollisionShape* _shape;
-	btRigidBody* _body;
-
-	std::string _name;
-	int _tag;
 	
 	ofBufferObject _brushCoordBuffer;
 	std::vector<BrushCoord> _brushCoordQueue;
 	unsigned int _brushQueueSize = 0;
+
+	ofMesh _canvasDrawQuad;
 
 	// render buffers
 	ofFbo _canvasFinalFbo;
@@ -94,8 +50,4 @@ private:
 	ofColor _canvasClearColor;
 
 	std::shared_ptr<ofShader> _canvasUpdateShader;
-	std::shared_ptr<ofShader> _shader;
-	std::shared_ptr<ofTexture> _texture;
-	std::shared_ptr<ofMaterial> _material;
-	std::shared_ptr<ofMesh> _mesh;
 };

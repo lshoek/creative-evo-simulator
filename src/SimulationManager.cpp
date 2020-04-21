@@ -16,6 +16,11 @@ void SimulationManager::init()
     // rendering -- load shaders and texture data from disk
     loadShaders();
 
+    cam.setNearClip(0.01f);
+    cam.setFarClip(1000.0f);
+    cam.setPosition(8.0f, 8.0f, 4.0f);
+    cam.lookAt(glm::vec3(0));
+
     _nodeTexture = std::make_shared<ofTexture>();
     _terrainTexture = std::make_shared<ofTexture>();
     ofLoadImage(*_nodeTexture, "textures/box_256.png");
@@ -28,15 +33,30 @@ void SimulationManager::init()
     _terrainTexture->setTextureMinMagFilter(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
     _terrainTexture->setTextureWrap(GL_REPEAT, GL_REPEAT);
 
-    _material = std::make_shared<ofMaterial>();
-    _material->setDiffuseColor(ofFloatColor(1.0f, 1.0f));
-    _material->setAmbientColor(ofFloatColor(0.375f, 1.0f));
-    _material->setSpecularColor(ofFloatColor(1.0f, 1.0f));
-    _material->setEmissiveColor(ofFloatColor(0.0f, 1.0f));
-    _material->setShininess(50.0f);
+    ofMaterialSettings mtl_settings;
+    mtl_settings.ambient = ofFloatColor(0.25f, 1.0f);
+    mtl_settings.diffuse = ofFloatColor(1.0f, 1.0f);
+    mtl_settings.specular = ofFloatColor(1.0f, 1.0f);
+    mtl_settings.emissive = ofFloatColor(0.0f, 1.0f);
+    mtl_settings.shininess = 32;
+    //mtl_settings.postFragment = "postFrag";
 
-    lightPosition = glm::vec3(0.0f, 1.0f, 0.25f);
+    _nodeMaterial = std::make_shared<ofMaterial>();
+    _nodeMaterial->setup(mtl_settings);
+
+    _terrainMaterial = std::make_shared<ofMaterial>();
+    _terrainMaterial->setup(mtl_settings);
+
+    lightPosition = glm::vec3(0.0f, 10.0f, 0.25f);
     lightDirection = glm::vec3(0.0f, 1.0f, 0.75f);
+
+    _light = std::make_shared<ofLight>();
+    _light->setDirectional();
+    _light->setAmbientColor(ofColor::white);
+    _light->setDiffuseColor(ofColor::white);
+    _light->setSpecularColor(ofColor::white);
+    _light->setPosition(lightPosition);
+    _light->lookAt(_light->getPosition() + lightDirection);
 
     // physics -- init
     initPhysics();
@@ -76,10 +96,11 @@ void SimulationManager::initPhysics()
 
 void SimulationManager::initTerrain()
 {
-    _terrainNode = new SimNode(TerrainTag);
+    _terrainNode = new SimNode(TerrainTag, _world);
     _terrainNode->initPlane(glm::vec3(0), terrainSize, 0);
     _terrainNode->setShader(_terrainShader);
-    _terrainNode->setMaterial(_material);
+    _terrainNode->setMaterial(_terrainMaterial);
+    _terrainNode->setLight(_light);
     _terrainNode->setTexture(_terrainTexture);
 
     _world->addRigidBody(_terrainNode->getRigidBody());
@@ -92,8 +113,9 @@ void SimulationManager::initTestEnvironment()
     canv = new SimCanvasNode(CanvasTag, canvasSize, _canvasRes.x, _canvasRes.y, _world);
     canv->setPosition(glm::vec3(0, 0.1f, 0));
     canv->setCanvasUpdateShader(_canvasUpdateShader);
-    canv->setShader(_unlitShader);
-    canv->setMaterial(_material);
+    canv->setShader(_terrainShader);
+    canv->setMaterial(_nodeMaterial);
+    canv->setLight(_light);
     canv->setTexture(_nodeTexture);
     _world->addRigidBody(canv->getRigidBody());
 
@@ -101,13 +123,13 @@ void SimulationManager::initTestEnvironment()
 
     SimCreature* crtr;
     crtr = new SimCreature(btVector3(0, 0, 0), 6, _world, offset, true);
-    crtr->setAppearance(_nodeShader, _material, _nodeTexture);
+    crtr->setAppearance(_nodeShader, _nodeMaterial, _nodeTexture);
     crtr->addToWorld();
 
     SimCreature* snake;
     snake = new SimCreature(btVector3(0, 0, 0), 0, _world, offset, false);
     snake->initSnake(btVector3(0, 0, 24), 32, 1.0f, 0.75f, true);
-    snake->setAppearance(_nodeShader, _material, _nodeTexture);
+    snake->setAppearance(_nodeShader, _nodeMaterial, _nodeTexture);
     _debugSnakeCreature = snake;
 
     _simulationInstances.push_back(new SimInstance(0, crtr, canv, ofGetElapsedTimef(), 10.0f));
@@ -153,14 +175,16 @@ int SimulationManager::runSimulationInstance(GenomeBase& genome, int ticket, flo
     canv = new SimCanvasNode(CanvasTag, canvasSize, _canvasRes.x, _canvasRes.y, _world);
     canv->setPosition(glm::vec3(position.x(), position.y() + 0.1f, position.z()));
     canv->setCanvasUpdateShader(_canvasUpdateShader);
-    canv->setShader(_unlitShader);
-    canv->setMaterial(_material);
+    canv->setShader(_nodeShader);
+    canv->setMaterial(_nodeMaterial);
+    canv->setLight(_light);
     canv->setTexture(_nodeTexture);
     canv->addToWorld();
 
     SimCreature* crtr;
     crtr = new SimCreature(position, _numWalkerLegs, _world, offset, true);
-    crtr->setAppearance(_nodeShader, _material, _nodeTexture);
+    crtr->setAppearance(_nodeShader, _nodeMaterial, _nodeTexture);
+    crtr->setLight(_light);
     crtr->setControlPolicyGenome(genome);
     crtr->addToWorld();
 
@@ -219,14 +243,30 @@ void SimulationManager::update(double timeStep)
 
 void SimulationManager::draw()
 {
+    if (bCameraSnapFocus) {
+        cam.lookAt(getFocusOrigin());
+    }
+    cam.begin();
+
+    _light->setPosition(lightPosition);
+    _light->lookAt(_light->getPosition() + lightDirection);
+
     _terrainShader->begin();
-    _terrainShader->setUniform3f("light_pos", lightPosition);
-    _terrainShader->setUniform3f("light_dir", lightDirection);
+    _terrainShader->setUniform3f("light.position", _light->getPosition());
+    _terrainShader->setUniform3f("light.direction", _light->getLookAtDir());
+    _terrainShader->setUniform4f("light.ambient", _light->getAmbientColor());
+    _terrainShader->setUniform4f("light.diffuse", _light->getDiffuseColor());
+    _terrainShader->setUniform4f("light.specular", _light->getSpecularColor());
+    _terrainShader->setUniform3f("eyePos", cam.getPosition());
     _terrainShader->end();
 
     _nodeShader->begin();
-    _nodeShader->setUniform3f("light_pos", lightPosition);
-    _nodeShader->setUniform3f("light_dir", lightDirection);
+    _nodeShader->setUniform3f("light.position", _light->getPosition());
+    _nodeShader->setUniform3f("light.direction", _light->getLookAtDir());
+    _nodeShader->setUniform4f("light.ambient", _light->getAmbientColor());
+    _nodeShader->setUniform4f("light.diffuse", _light->getDiffuseColor());
+    _nodeShader->setUniform4f("light.specular", _light->getSpecularColor());
+    _nodeShader->setUniform3f("eyePos", cam.getPosition());
     _nodeShader->end();
 
     if (bDraw) {
@@ -243,7 +283,14 @@ void SimulationManager::draw()
     }
     if (bDebugDraw) {
         _world->debugDrawWorld();
+        ofDrawIcoSphere(lightPosition, 2.0f);
     }
+    cam.end();
+}
+
+ofxGrabCam* SimulationManager::getCamera()
+{
+    return &cam;
 }
 
 SimCreature* SimulationManager::getFocusCreature()

@@ -8,7 +8,7 @@ isim_ticket PaintFitnessFunc::queueEval(GenomeBase& genome)
     
     // run an instance of a simulation and acquire the fitness result
     // a neural network phenotype (or cppn) should be passed on to the sim
-    int id = _sim->queueSimulationInstance(genome, 1.0f);
+    int id = _sim->queueSimulationInstance(genome, 10.0f);
 
     ofLog() << "started : " << id;
     return id;

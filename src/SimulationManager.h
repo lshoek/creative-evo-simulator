@@ -7,6 +7,7 @@
 #include "ImageSaverThread.h"
 #include "GenomeBase.h"
 #include "ofMain.h"
+#include "ofxGrabCam.h"
 
 typedef std::function<void(uint32_t)> simRunCallback_t;
 
@@ -29,6 +30,7 @@ public:
 
     ofFbo* getCanvasFbo();
 
+    ofxGrabCam* getCamera();
     SimCreature* getFocusCreature();
     glm::vec3 getFocusOrigin();
     void shiftFocus();
@@ -36,6 +38,7 @@ public:
     bool bDraw = true;
     bool bDebugDraw = false;
     bool bTestMode = false;
+    bool bCameraSnapFocus = true;
 
     glm::vec3 lightPosition;
     glm::vec3 lightDirection;
@@ -67,8 +70,9 @@ private:
     int runSimulationInstance(GenomeBase& genome, int ticket, float duration);
     std::vector<simRunCallback_t> _simulationInstanceCallbackQueue;
     std::vector<SimInstance*> _simulationInstances;
-
     std::mutex _cbQueueMutex;
+
+    ofxGrabCam cam;
 
     SimNode* _terrainNode;
     SimCreature* _debugSnakeCreature;
@@ -88,7 +92,9 @@ private:
 
     std::shared_ptr<ofTexture> _nodeTexture;
     std::shared_ptr<ofTexture> _terrainTexture;
-    std::shared_ptr<ofMaterial> _material;
+    std::shared_ptr<ofMaterial> _terrainMaterial;
+    std::shared_ptr<ofMaterial> _nodeMaterial;
+    std::shared_ptr<ofLight> _light;
 
     float terrainSize = 48.0f;
     float canvasSize = 4.0f;

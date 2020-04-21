@@ -45,11 +45,11 @@ void SimCreature::init(btVector3 position, uint32_t numLegs, btDynamicsWorld* ow
 	// Setup geometry
 	m_nodes.reserve(m_numBodyParts);
 	for (int i = 0; i < m_numBodyParts; i++) {
-		m_nodes.push_back(new SimNode(BodyTag));
+		m_nodes.push_back(new SimNode(BodyTag, m_ownerWorld));
 	}
 	m_ballPointerNodes.resize(m_numBallPointers);
 	for (int i = 0; i < m_ballPointerNodes.size(); i++) {
-		m_ballPointerNodes[i] = new SimNode(BrushTag, ofColor::fromHex(0x33));
+		m_ballPointerNodes[i] = new SimNode(BrushTag, ofColor::fromHex(0x33), m_ownerWorld);
 		m_ballPointerNodes[i]->setMesh(m_ballPointMesh);
 	}
 
@@ -259,7 +259,7 @@ void SimCreature::initSnake(btVector3 position, unsigned int numNodes, float box
 		if (bRandomSize) {
 			size = glm::vec3(ofRandom(boxExtents / 2, boxExtents), boxExtents, ofRandom(boxExtents / 2, boxExtents));
 		}
-		m_nodes[i] = new SimNode(AnonymousTag);
+		m_nodes[i] = new SimNode(AnonymousTag, m_ownerWorld);
 		m_nodes[i]->initBox(cur, size, 1.0f);
 		m_nodes[i]->setRotation(lookatRot);
 
@@ -579,6 +579,15 @@ void SimCreature::setMaterial(std::shared_ptr<ofMaterial> mtl)
 
 	for (int i = 0; i < m_nodes.size(); ++i) {
 		m_nodes[i]->setMaterial(m_material);
+	}
+}
+
+void SimCreature::setLight(std::shared_ptr<ofLight> light)
+{
+	m_light = light;
+
+	for (int i = 0; i < m_nodes.size(); ++i) {
+		m_nodes[i]->setLight(m_light);
 	}
 }
 
