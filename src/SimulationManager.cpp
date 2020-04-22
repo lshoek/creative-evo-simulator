@@ -47,7 +47,7 @@ void SimulationManager::init()
     _terrainMaterial = std::make_shared<ofMaterial>();
     _terrainMaterial->setup(mtl_settings);
 
-    lightPosition = glm::vec3(0.0f, 10.0f, 0.25f);
+    lightPosition = glm::vec3(0.0f, 20.0f, 0.0f);
     lightDirection = glm::vec3(0.0f, 1.0f, 0.75f);
 
     _light = std::make_shared<ofLight>();
@@ -98,10 +98,8 @@ void SimulationManager::initTerrain()
 {
     _terrainNode = new SimNode(TerrainTag, _world);
     _terrainNode->initPlane(glm::vec3(0), terrainSize, 0);
-    _terrainNode->setShader(_terrainShader);
-    _terrainNode->setMaterial(_terrainMaterial);
+    _terrainNode->setAppearance(_terrainShader, _terrainMaterial, _terrainTexture);
     _terrainNode->setLight(_light);
-    _terrainNode->setTexture(_terrainTexture);
 
     _world->addRigidBody(_terrainNode->getRigidBody());
     bTerrainInitialized = true;
@@ -110,24 +108,21 @@ void SimulationManager::initTerrain()
 void SimulationManager::initTestEnvironment()
 {
     SimCanvasNode* canv;
-    canv = new SimCanvasNode(CanvasTag, canvasSize, _canvasRes.x, _canvasRes.y, _world);
-    canv->setPosition(glm::vec3(0, 0.1f, 0));
+    canv = new SimCanvasNode(glm::vec3(0, 0.1f, 0), CanvasTag, canvasSize, _canvasRes.x, _canvasRes.y, _world);
     canv->setCanvasUpdateShader(_canvasUpdateShader);
-    canv->setShader(_terrainShader);
-    canv->setMaterial(_nodeMaterial);
+    canv->setAppearance(_terrainShader, _nodeMaterial, _nodeTexture);
     canv->setLight(_light);
-    canv->setTexture(_nodeTexture);
     _world->addRigidBody(canv->getRigidBody());
 
     btVector3 offset(0, 1.0f, 0);
 
     SimCreature* crtr;
-    crtr = new SimCreature(btVector3(0, 0, 0), 6, _world, offset, true);
+    crtr = new SimCreature(btVector3(0, 0, 0), 6, _world, true);
     crtr->setAppearance(_nodeShader, _nodeMaterial, _nodeTexture);
     crtr->addToWorld();
 
     SimCreature* snake;
-    snake = new SimCreature(btVector3(0, 0, 0), 0, _world, offset, false);
+    snake = new SimCreature(btVector3(0, 0, 0), 0, _world, false);
     snake->initSnake(btVector3(0, 0, 24), 32, 1.0f, 0.75f, true);
     snake->setAppearance(_nodeShader, _nodeMaterial, _nodeTexture);
     _debugSnakeCreature = snake;
@@ -150,8 +145,6 @@ int SimulationManager::queueSimulationInstance(const GenomeBase& genome, float d
             std::bind(&SimulationManager::runSimulationInstance, this, genome, ticket, duration)
         );
     }
-
-    // todo: prevent duplicates; requires a more sophisticated mechanism
     simInstanceId = (simInstanceId+1) % simInstanceLimit;
 
     return ticket;
@@ -159,30 +152,26 @@ int SimulationManager::queueSimulationInstance(const GenomeBase& genome, float d
 
 int SimulationManager::runSimulationInstance(GenomeBase& genome, int ticket, float duration)
 {
-    // todo: locate based on ticket id
-    //int gridSize = 2;
-    //int grid_x = ticket % gridSize;
-    //int grid_z = ticket / gridSize;
+    int grid_x = ticket % simInstanceGridSize;
+    int grid_z = ticket / simInstanceGridSize;
 
-    //btVector3 position(grid_x * canvasSize*2.0f, 0, grid_z * canvasSize*2.0f);
-    btVector3 position(0, 0, 0);
+    glm::vec2 p = glm::vec2(
+        (grid_x - simInstanceGridSize/2) * canvasSize * 2.0f + grid_x * canvasMargin,
+        (grid_z - simInstanceGridSize/2) * canvasSize * 2.0f + grid_z * canvasMargin
+    );
+    btVector3 position(p.x, 0, p.y);
+    glm::vec3 canvasPos = glm::vec3(position.x(), position.y() + 0.05f, position.z());
 
-    // some fixed offset that works (may later be based on creature size)
-    btVector3 offset(0, 1.0f, 0);
-
-    // make sure to create, add to/remove from world and destroy properly
     SimCanvasNode* canv;
-    canv = new SimCanvasNode(CanvasTag, canvasSize, _canvasRes.x, _canvasRes.y, _world);
-    canv->setPosition(glm::vec3(position.x(), position.y() + 0.1f, position.z()));
+    canv = new SimCanvasNode(canvasPos, CanvasTag, canvasSize, _canvasRes.x, _canvasRes.y, _world);
+    canv->setAppearance(_nodeShader, _terrainMaterial, _nodeTexture);
     canv->setCanvasUpdateShader(_canvasUpdateShader);
-    canv->setShader(_nodeShader);
-    canv->setMaterial(_nodeMaterial);
     canv->setLight(_light);
-    canv->setTexture(_nodeTexture);
+    canv->enableBounds();
     canv->addToWorld();
 
     SimCreature* crtr;
-    crtr = new SimCreature(position, _numWalkerLegs, _world, offset, true);
+    crtr = new SimCreature(position, _numWalkerLegs, _world, true);
     crtr->setAppearance(_nodeShader, _nodeMaterial, _nodeTexture);
     crtr->setLight(_light);
     crtr->setControlPolicyGenome(genome);
@@ -191,6 +180,60 @@ int SimulationManager::runSimulationInstance(GenomeBase& genome, int ticket, flo
     _simulationInstances.push_back(new SimInstance(ticket, crtr, canv, ofGetElapsedTimef(), duration));
 
     return ticket;
+}
+
+void SimulationManager::handleCollisions(btDynamicsWorld* worldPtr)
+{
+    int numManifolds = worldPtr->getDispatcher()->getNumManifolds();
+
+    for (int i = 0; i < numManifolds; i++)
+    {
+        btPersistentManifold* contactManifold = worldPtr->getDispatcher()->getManifoldByIndexInternal(i);
+        btCollisionObject* o1 = (btCollisionObject*)(contactManifold->getBody0());
+        btCollisionObject* o2 = (btCollisionObject*)(contactManifold->getBody1());
+
+        for (int j = 0; j < contactManifold->getNumContacts(); j++)
+        {
+            // collision with something other than itself
+            if ((o1->getUserIndex() == BodyTag && o2->getUserIndex() != BodyTag) ||
+                (o1->getUserIndex() != BodyTag && o2->getUserIndex() == BodyTag))
+            {
+                SimCreature* creaturePtr = nullptr;
+
+                // brushtag should always have a simcreature as user pointer
+                if (o1->getUserIndex() == BodyTag) {
+                    creaturePtr = (SimCreature*)o1->getUserPointer();
+                    creaturePtr->setTouchSensor(o1);
+                }
+                else if (o2->getUserIndex() == BodyTag) {
+                    creaturePtr = (SimCreature*)o2->getUserPointer();
+                    creaturePtr->setTouchSensor(o2);
+                }
+                btManifoldPoint& pt = contactManifold->getContactPoint(j);
+                if (worldPtr->getDebugDrawer() != NULL) {
+                    worldPtr->getDebugDrawer()->drawSphere(pt.getPositionWorldOnA(), 10.0, btVector3(1., 0., 0.));
+                }
+            }
+            // todo: Currently using bodytag because of the added complexity of also checking for brushtags. Reconsideration is required.
+            if ((o1->getUserIndex() == BodyTag && o2->getUserIndex() == CanvasTag) ||
+                (o1->getUserIndex() == CanvasTag && o2->getUserIndex() == BodyTag))
+            {
+                SimCanvasNode* canvasPtr = nullptr;
+
+                // brushtag should always have a simcreature as user pointer
+                if (o1->getUserIndex() == CanvasTag) {
+                    canvasPtr = (SimCanvasNode*)o1->getUserPointer();
+                }
+                else if (o2->getUserIndex() == CanvasTag) {
+                    canvasPtr = (SimCanvasNode*)o2->getUserPointer();
+                }
+                btManifoldPoint& pt = contactManifold->getContactPoint(j);
+                btVector3 localPt = pt.getPositionWorldOnA() - SimUtils::glmToBullet(canvasPtr->getPosition());
+                canvasPtr->addBrushStroke(localPt, pt.getAppliedImpulse());
+            }
+        }
+        //contactManifold->clearManifold();	
+    }
 }
 
 void SimulationManager::update(double timeStep)
@@ -235,9 +278,11 @@ void SimulationManager::update(double timeStep)
     }
 
     _world->stepSimulation(timeStep);
+    handleCollisions(_world);
+
     for (auto& s : _simulationInstances) {
-        s->canvas->update();
         s->creature->update(timeStep);
+        s->canvas->update();
     }
 }
 
@@ -304,7 +349,7 @@ SimCreature* SimulationManager::getFocusCreature()
 glm::vec3 SimulationManager::getFocusOrigin()
 {
     if (!_simulationInstances.empty()) {
-        return SimUtils::bulletToGlm(_simulationInstances[focusIndex]->creature->getPosition());
+        return SimUtils::bulletToGlm(_simulationInstances[focusIndex]->creature->getCenterOfMassPosition());
     }
     else return glm::vec3(0);
 }
@@ -375,6 +420,12 @@ bool SimulationManager::isSimulationInstanceActive()
     return !_simulationInstances.empty();
 }
 
+void SimulationManager::setMaxParallelSims(int max)
+{
+    simInstanceLimit = max;
+    simInstanceGridSize = sqrt(max);
+}
+
 void SimulationManager::dealloc()
 {
     if (_terrainNode)           delete _terrainNode;
@@ -383,6 +434,7 @@ void SimulationManager::dealloc()
     for (auto &s : _simulationInstances) {
         delete s;
     }
+
     delete _world;
     delete _solver;
     delete _collisionConfiguration;

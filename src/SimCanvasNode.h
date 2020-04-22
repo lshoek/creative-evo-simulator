@@ -1,12 +1,12 @@
 #pragma once
-#include "SimNodeBase.h"
+#include "SimNode.h"
 #include "ofBufferObject.h"
 #include "ofFbo.h"
 
 class SimCanvasNode : public SimNodeBase
 {
 public:
-	SimCanvasNode(int tag, float size, int x_res, int y_res, btDynamicsWorld* ownerWorld);
+	SimCanvasNode(glm::vec3 position, int tag, float size, int x_res, int y_res, btDynamicsWorld* ownerWorld);
 	~SimCanvasNode();
 
 	void update();
@@ -18,6 +18,7 @@ public:
 	ofFbo* getCanvasFbo();
 
 	void setCanvasUpdateShader(std::shared_ptr<ofShader> shader);
+	void enableBounds();
 
 private:
 	struct BrushCoord {
@@ -48,6 +49,9 @@ private:
 
 	ofColor _brushColor;
 	ofColor _canvasClearColor;
+
+	std::unique_ptr<SimNode> _bounds[4];
+	bool _bBounds = false;
 
 	std::shared_ptr<ofShader> _canvasUpdateShader;
 };

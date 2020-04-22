@@ -10,6 +10,7 @@
 #define BrushTag 3
 #define TerrainTag 4
 #define CanvasTag 5
+#define BoundsTag 6
 
 #define SIMD_PI_2 ((SIMD_PI)*0.5)
 #define SIMD_PI_4 ((SIMD_PI)*0.25)

@@ -46,6 +46,8 @@ public:
     MorphologyInfo getWalkerMorphologyInfo();
     void initTestEnvironment();
 
+    void setMaxParallelSims(int max);
+
 private:
     struct SimInstance {
         int instanceId;
@@ -63,6 +65,7 @@ private:
 
     void initPhysics();
     void initTerrain();
+    void handleCollisions(btDynamicsWorld* _worldPtr);
 
     void writeToPixels(const ofTexture& tex, ofPixels& pix);
     void saveToDisk(const ofPixels& pix);
@@ -96,14 +99,16 @@ private:
     std::shared_ptr<ofMaterial> _nodeMaterial;
     std::shared_ptr<ofLight> _light;
 
-    float terrainSize = 48.0f;
+    float terrainSize = 64.0f;
     float canvasSize = 4.0f;
+    float canvasMargin = 2.0f;
 
     bool bTerrainInitialized = false;
 
     int focusIndex = 0;
     int simInstanceId = 0;
     int simInstanceLimit = 256;
+    int simInstanceGridSize = 2;
 
     // for fixed walker creature
     int _numWalkerLegs = 8;

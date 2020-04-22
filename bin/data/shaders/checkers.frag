@@ -47,7 +47,7 @@ void main(void)
 	// outcol.rgb = pow(outcol.rgb, vec3(1.0/gamma));
 
 	float alpha_radial = 0.5 - distance(vec2(0.5), texcoord_varying);
-	outcol.a *= alpha * smoothstep(0.0, 0.1, alpha_radial);
+	outcol.a *= alpha * smoothstep(0.0, 0.2, alpha_radial);
 
 	fragColor = outcol;
 }

@@ -3,7 +3,7 @@
 #include "toolbox.h"
 #include <boost/thread.hpp>
 
-void NEATManager::setup(SimulationManager* sim, bool threaded)
+void NEATManager::setup(SimulationManager* sim)
 {
 	// create a fitness function
 	paintFitnessFunc.init(sim);
@@ -49,11 +49,8 @@ void NEATManager::setup(SimulationManager* sim, bool threaded)
 	maxNumGenerations = 100;
 	fitnessResults.reserve(maxNumGenerations);
 
-	maxSimultaneousEvaluations = 4;
+	maxParallelEvals = 1;
 	targetFitness = 1.0;
-
-	bThreaded = threaded;
-	bThreadedEvaluation = true;
 }
 
 void NEATManager::draw()
@@ -181,14 +178,14 @@ bool NEATManager::tick()
 
 bool NEATManager::evaluatePopulation()
 {
-	if (bThreadedEvaluation) 
+	if (maxParallelEvals > 1)
 	{
 		std::vector<GenomeBase> tempGenomes;
 		std::vector<std::thread> evalThreads;
 		std::mutex populationMutex;
 
 		tempGenomes.reserve(population->NumGenomes());
-		evalThreads.reserve(maxSimultaneousEvaluations);
+		evalThreads.reserve(maxParallelEvals);
 
 		for (unsigned int i = 0; i < population->m_Species.size(); ++i) {
 			for (unsigned int j = 0; j < population->m_Species[i].m_Individuals.size(); ++j) {
@@ -212,7 +209,7 @@ bool NEATManager::evaluatePopulation()
 					population->m_Species[i].m_Individuals[j].SetFitness(f);
 					population->m_Species[i].m_Individuals[j].SetEvaluated();
 				}));
-				if (evalThreads.size() >= maxSimultaneousEvaluations || index >= population->NumGenomes()-1) {
+				if (evalThreads.size() >= maxParallelEvals || index >= population->NumGenomes()-1) {
 					for (std::thread& t : evalThreads) {
 						t.join();
 					}
@@ -291,6 +288,11 @@ int NEATManager::getNumGeneration()
 float NEATManager::getPctGenEvaluated()
 {
 	return pctGenEvaluated;
+}
+
+void NEATManager::setMaxParallelEvals(int max)
+{
+	maxParallelEvals = max;
 }
 
 void NEATManager::exit()

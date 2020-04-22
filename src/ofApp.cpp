@@ -46,13 +46,15 @@ void ofApp::setup()
 void ofApp::startSimulation()
 {
 	simulationManager.init();
+	simulationManager.setMaxParallelSims(settings.get("evo.max_parallel_evals", 4));
 	simulationManager.bDebugDraw = settings.get("mode.debugdraw", true);
 	simulationManager.bCameraSnapFocus = settings.get("mode.snapfocus", true);
 }
 
 void ofApp::startEvolution()
 {
-	neatManager.setup(&simulationManager, true);
+	neatManager.setup(&simulationManager);
+	neatManager.setMaxParallelEvals(settings.get("evo.max_parallel_evals", 4));
 	neatManager.startEvolution();
 	renderEventQueuedListener = neatManager.onNewBestFound.newListener([this] {
 		bRenderEventQueued = true;
@@ -131,8 +133,7 @@ void ofApp::imGui()
 			ImGui::Text("cam_pos: x:%.02f, y:%.02f, z:%.02f", cpos.x, cpos.y, cpos.z);
 			ImGui::Separator();
 			if (simulationManager.isInitialized()) {
-				ImGui::SliderFloat3("light_dir", &simulationManager.lightDirection[0], -1.0f, 1.0f);
-				ImGui::SliderFloat3("light_pos", &simulationManager.lightPosition[0], -100.0f, 100.0f);
+				ImGui::SliderFloat3("light_pos", &simulationManager.lightPosition[0], -20.0f, 20.0f);
 				ImGui::Separator();
 				if (simulationManager.isSimulationInstanceActive()) {
 					ImGui::SliderFloat("motor_strength", &simulationManager.getFocusCreature()->m_motorStrength, 0, 1);

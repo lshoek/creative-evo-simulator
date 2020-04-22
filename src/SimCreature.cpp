@@ -7,7 +7,7 @@
 
 btRigidBody* localCreateRigidBody(btScalar mass, const btTransform& startTransform, btCollisionShape* shape);
 
-SimCreature::SimCreature(btVector3 position, uint32_t numLegs, btDynamicsWorld* ownerWorld, const btVector3& positionOffset, bool bInit)
+SimCreature::SimCreature(btVector3 position, uint32_t numLegs, btDynamicsWorld* ownerWorld, bool bInit)
 	: m_ownerWorld(ownerWorld), m_inEvaluation(false), m_evaluationTime(0), m_reaped(false)
 {
 	m_motorStrength = 0.05f * m_ownerWorld->getSolverInfo().m_numIterations;
@@ -17,14 +17,15 @@ SimCreature::SimCreature(btVector3 position, uint32_t numLegs, btDynamicsWorld* 
 	m_targetAccumulator = 0;
 
 	if (bInit) {
-		init(position, numLegs, ownerWorld, positionOffset);
+		init(position, numLegs, ownerWorld);
 	}
 }
 
-void SimCreature::init(btVector3 position, uint32_t numLegs, btDynamicsWorld* ownerWorld, const btVector3& positionOffset)
+void SimCreature::init(btVector3 position, uint32_t numLegs, btDynamicsWorld* ownerWorld)
 {
 	// fixed for now
 	bHasBallPointers = true;
+	m_spawnPosition = position;
 
 	// calculate indices
 	m_numLegs = numLegs;
@@ -40,7 +41,7 @@ void SimCreature::init(btVector3 position, uint32_t numLegs, btDynamicsWorld* ow
 	m_bodyMesh = std::make_shared<ofMesh>(ofMesh::sphere(gRootBodyRadius));
 	m_foreLegMesh = std::make_shared<ofMesh>(ofMesh::cylinder(gForeLegRadius, gForeLegLength));
 	m_legMesh = std::make_shared<ofMesh>(ofMesh::cylinder(gLegRadius, gLegLength));
-	m_ballPointMesh = std::make_shared<ofMesh>(ofMesh::sphere(gLegRadius));
+	m_ballPointMesh = std::make_shared<ofMesh>(ofMesh::sphere(gForeLegRadius*0.9f));
 
 	// Setup geometry
 	m_nodes.reserve(m_numBodyParts);
@@ -72,28 +73,30 @@ void SimCreature::init(btVector3 position, uint32_t numLegs, btDynamicsWorld* ow
 	}
 
 	// Setup rigid bodies
-	btScalar rootAboveGroundHeight = gForeLegLength;
-	btTransform bodyOffset;
-	bodyOffset.setIdentity();
-	bodyOffset.setOrigin(positionOffset);
+	btScalar rootHeightOffset = gForeLegLength;
 
-	// root body
-	btVector3 localRootBodyPosition = btVector3(position.x(), rootAboveGroundHeight, position.z()); // root body position in local reference frame
-	btTransform transform;
-	transform.setIdentity();
-	transform.setOrigin(localRootBodyPosition);
+	// Root body in global reference frame
+	btTransform bodyOffsetTrans;
+	bodyOffsetTrans.setIdentity();
+	bodyOffsetTrans.setOrigin(position);
 
-	btTransform originTransform = transform;
+	// Root body in local reference frame
+	btVector3 localRootBodyPos = btVector3(btScalar(0.), rootHeightOffset, btScalar(0.));
+
+	btTransform trans;
+	trans.setIdentity();
+	trans.setOrigin(localRootBodyPos);
+
+	btTransform originTrans = trans;
 
 	m_bodies.resize(m_numBodyParts);
 	m_ballPointerBodies.resize(m_numBallPointers);
 
-	m_bodies[0] = localCreateRigidBody(1.0, bodyOffset * transform, m_shapes[0]);
+	m_bodies[0] = localCreateRigidBody(1.0, bodyOffsetTrans * trans, m_shapes[0]);
 	m_ownerWorld->addRigidBody(m_bodies[0]);
 
 	m_bodyRelativeTransforms.resize(m_numBodyParts);
 	m_bodyRelativeTransforms[0] = btTransform::getIdentity();
-	m_bodies[0]->setUserPointer(this);
 	m_bodyTouchSensorIndexMap.insert(btHashPtr(m_bodies[0]), 0);
 
 	m_joints.resize(m_numJoints);
@@ -107,48 +110,45 @@ void SimCreature::init(btVector3 position, uint32_t numLegs, btDynamicsWorld* ow
 	// legs
 	for (int i = 0; i < m_numLegs; i++)
 	{
-		float footAngle = 2 * SIMD_PI * i / m_numLegs;  // legs are uniformly distributed around the root body
-		float footYUnitPosition = std::sin(footAngle); // y position of the leg on the unit circle
-		float footXUnitPosition = std::cos(footAngle); // x position of the leg on the unit circle
+		float footAngle = SIMD_2_PI * i / m_numLegs;
+		float footYUnitPosition = std::sin(footAngle);
+		float footXUnitPosition = std::cos(footAngle);
 
-		transform.setIdentity();
+		trans.setIdentity();
 		btVector3 legCOM = btVector3(
 			footXUnitPosition * (gRootBodyRadius + 0.5 * gLegLength), 
-			rootAboveGroundHeight, 
+			rootHeightOffset,
 			footYUnitPosition * (gRootBodyRadius + 0.5 * gLegLength)
 		);
-		transform.setOrigin(legCOM);
+		trans.setOrigin(legCOM);
 
 		// thigh
-		btVector3 legDirection = (legCOM - localRootBodyPosition).normalize();
+		btVector3 legDirection = (legCOM - localRootBodyPos).normalize();
 		btVector3 kneeAxis = legDirection.cross(vUp);
-		transform.setRotation(btQuaternion(kneeAxis, SIMD_HALF_PI));
-		m_bodies[1 + 2 * i] = localCreateRigidBody(1.0, bodyOffset * transform, m_shapes[1 + 2 * i]);
-		m_bodyRelativeTransforms[1 + 2 * i] = transform;
-		m_bodies[1 + 2 * i]->setUserPointer(this);
+		trans.setRotation(btQuaternion(kneeAxis, SIMD_HALF_PI));
+		m_bodies[1 + 2 * i] = localCreateRigidBody(1.0, bodyOffsetTrans * trans, m_shapes[1 + 2 * i]);
+		m_bodyRelativeTransforms[1 + 2 * i] = trans;
 		m_bodyTouchSensorIndexMap.insert(btHashPtr(m_bodies[1 + 2 * i]), 1 + 2 * i);
 
 		// shin
-		transform.setIdentity();
-		transform.setOrigin(btVector3(
+		trans.setIdentity();
+		trans.setOrigin(btVector3(
 			footXUnitPosition * (gRootBodyRadius + gLegLength), 
-			rootAboveGroundHeight - 0.5 * gForeLegLength, 
+			rootHeightOffset - 0.5 * gForeLegLength,
 			footYUnitPosition * (gRootBodyRadius + gLegLength)
 		));
-		m_bodies[2 + 2 * i] = localCreateRigidBody(1.0, bodyOffset * transform, m_shapes[2 + 2 * i]);
-		m_bodyRelativeTransforms[2 + 2 * i] = transform;
-		m_bodies[2 + 2 * i]->setUserPointer(this);
+		m_bodies[2 + 2 * i] = localCreateRigidBody(1.0, bodyOffsetTrans * trans, m_shapes[2 + 2 * i]);
+		m_bodyRelativeTransforms[2 + 2 * i] = trans;
 		m_bodyTouchSensorIndexMap.insert(btHashPtr(m_bodies[2 + 2 * i]), 2 + 2 * i);
 		
 		// ball pointers
-		transform.setIdentity();
-		transform.setOrigin(btVector3(
+		trans.setIdentity();
+		trans.setOrigin(btVector3(
 			footXUnitPosition * (gRootBodyRadius + gLegLength),
-			rootAboveGroundHeight - gForeLegLength,
+			rootHeightOffset - gForeLegLength,
 			footYUnitPosition * (gRootBodyRadius + gLegLength)
 		));
-		m_ballPointerBodies[i] = localCreateRigidBody(1.0, bodyOffset * transform, m_ballPointerShapes[i]);
-		m_ballPointerBodies[i]->setUserPointer(this);
+		m_ballPointerBodies[i] = localCreateRigidBody(1.0, bodyOffsetTrans * trans, m_ballPointerShapes[i]);
 		m_ballPointerBodies[i]->setCollisionFlags(m_ballPointerBodies[i]->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE);
 
 		// hip joints
@@ -188,30 +188,12 @@ void SimCreature::init(btVector3 position, uint32_t numLegs, btDynamicsWorld* ow
 
 		m_ownerWorld->addRigidBody(m_ballPointerBodies[i]);
 		m_ownerWorld->addConstraint(m_ballPointerJoints[i], true);
-
-		//if (nnWalkersDemo->detectCollisions())
-		if (false)
-		{  // if thigh bone causes collision, remove it again
-			m_ownerWorld->removeRigidBody(m_bodies[1 + 2 * i]);
-			m_ownerWorld->removeConstraint(m_joints[2 * i]);  // disconnect thigh bone from root
-		}
-		else
-		{
-			m_ownerWorld->addRigidBody(m_bodies[2 + 2 * i]);         // add shin bone
-			m_ownerWorld->addConstraint(m_joints[1 + 2 * i], true);  // connect shin bone with thigh
-
-			//if (nnWalkersDemo->detectCollisions())
-			if (false)
-			{  // if shin bone causes collision, remove it again
-				m_ownerWorld->removeRigidBody(m_bodies[2 + 2 * i]);
-				m_ownerWorld->removeConstraint(m_joints[1 + 2 * i]);  // disconnect shin bone from thigh
-			}
-		}
 	}
 
 	// Setup some damping on the m_bodies
 	for (int i = 0; i < m_numBodyParts; ++i)
 	{
+		m_bodies[i]->setUserPointer(this);
 		m_bodies[i]->setDamping(0.05, 0.85);
 		m_bodies[i]->setDeactivationTime(0.8);
 		m_bodies[i]->setSleepingThresholds(0.5f, 0.5f);
@@ -222,12 +204,13 @@ void SimCreature::init(btVector3 position, uint32_t numLegs, btDynamicsWorld* ow
 		m_nodes[i]->setRigidBody(m_bodies[i]);
 	}
 	for (int i = 0; i < m_ballPointerNodes.size(); ++i) {
-		m_ballPointerBodies[i]->setUserIndex(BrushTag);
+		m_ballPointerBodies[i]->setUserPointer(this);
 		m_ballPointerNodes[i]->setRigidBody(m_ballPointerBodies[i]);
 	}
 	m_touchSensors.resize(m_numBodyParts);
 
-	removeFromWorld(); // it should not yet be in the world
+	// Should not yet be in world
+	removeFromWorld();
 	bInitialized = true;
 }
 
@@ -292,65 +275,10 @@ void SimCreature::initSnake(btVector3 position, unsigned int numNodes, float box
 	bInitialized = true;
 }
 
-void handleCollisions(btDynamicsWorld* worldPtr)
-{
-	int numManifolds = worldPtr->getDispatcher()->getNumManifolds();
-
-	for (int i=0; i < numManifolds; i++)
-	{
-		btPersistentManifold* contactManifold = worldPtr->getDispatcher()->getManifoldByIndexInternal(i);
-		btCollisionObject* o1 = (btCollisionObject*)(contactManifold->getBody0());
-		btCollisionObject* o2 = (btCollisionObject*)(contactManifold->getBody1());
-
-		for (int j = 0; j < contactManifold->getNumContacts(); j++)
-		{
-			// collision with something other than itself
-			if ((o1->getUserIndex() == BodyTag && o2->getUserIndex() != BodyTag) ||
-				(o1->getUserIndex() != BodyTag && o2->getUserIndex() == BodyTag)) 
-			{
-				SimCreature* creaturePtr = nullptr;
-
-				// brushtag should always have a simcreature as user pointer
-				if (o1->getUserIndex() == BodyTag) {
-					creaturePtr = (SimCreature*)o1->getUserPointer();
-					creaturePtr->setTouchSensor(o1);
-				}
-				else if (o2->getUserIndex() == BodyTag) {
-					creaturePtr = (SimCreature*)o2->getUserPointer();
-					creaturePtr->setTouchSensor(o2);
-				}
-				btManifoldPoint& pt = contactManifold->getContactPoint(j);
-				if (worldPtr->getDebugDrawer() != NULL) {
-					worldPtr->getDebugDrawer()->drawSphere(pt.getPositionWorldOnA(), 10.0, btVector3(1., 0., 0.));
-				}
-			}
-			// check for canvas
-			if ((o1->getUserIndex() == BodyTag && o2->getUserIndex() == CanvasTag) ||
-				(o1->getUserIndex() == CanvasTag && o2->getUserIndex() == BodyTag))
-			{
-				SimCanvasNode* canvasPtr = nullptr;
-
-				// brushtag should always have a simcreature as user pointer
-				if (o1->getUserIndex() == CanvasTag) {
-					canvasPtr = (SimCanvasNode*)o1->getUserPointer();
-				}
-				else if (o2->getUserIndex() == CanvasTag) {
-					canvasPtr = (SimCanvasNode*)o2->getUserPointer();
-				}
-				btManifoldPoint& pt = contactManifold->getContactPoint(j);
-				canvasPtr->addBrushStroke(pt.getPositionWorldOnA(), pt.getAppliedImpulse());
-			}
-		}
-		//contactManifold->clearManifold();	
-	}
-}
-
 void SimCreature::update(double timeStep)
 {
 	if (!bIsDebugCreature)
 	{
-		handleCollisions(m_ownerWorld);
-
 		m_time += timeStep;
 		m_targetAccumulator += timeStep;
 
@@ -366,14 +294,6 @@ void SimCreature::update(double timeStep)
 			{
 				btScalar targetAngle = 0;
 				btHingeConstraint* joint = static_cast<btHingeConstraint*>(getJoints()[i]);
-
-				//// neural network movement
-				//// accumulate sensor inputs with weights
-				//for (int j = 0; j < m_numJoints; j++) {
-				//	targetAngle += getSensoryMotorWeights()[i + j * m_numBodyParts] * getTouchSensor(i);
-				//}
-				//// apply the activation function
-				//targetAngle = (std::tanh(targetAngle) + 1.0f) * 0.5f;
 
 				targetAngle = outputs[i];
 
@@ -488,7 +408,6 @@ void SimCreature::addToWorld()
 	for (i = 0; i < m_numJoints; ++i) {
 		m_ownerWorld->addConstraint(m_joints[i], true);
 	}
-	m_startPosition = getPosition();
 }
 
 void SimCreature::removeFromWorld()
@@ -506,7 +425,12 @@ void SimCreature::removeFromWorld()
 	}
 }
 
-btVector3 SimCreature::getPosition() const
+btVector3 SimCreature::getSpawnPosition() const
+{
+	return m_spawnPosition;
+}
+
+btVector3 SimCreature::getCenterOfMassPosition() const
 {
 	btVector3 finalPosition(0, 0, 0);
 
@@ -515,19 +439,6 @@ btVector3 SimCreature::getPosition() const
 	}
 	finalPosition /= m_numBodyParts;
 	return finalPosition;
-}
-
-btScalar SimCreature::getDistanceFitness() const
-{
-	btScalar distance = 0;
-	distance = (getPosition() - m_startPosition).length2();
-
-	return distance;
-}
-
-btScalar SimCreature::getFitness() const
-{
-	return getDistanceFitness();  // for now it is only distance
 }
 
 void SimCreature::resetAt(const btVector3& position)

@@ -12,10 +12,10 @@
 class SimCreature
 {
 public:
-	SimCreature(btVector3 position, uint32_t numLegs, btDynamicsWorld* ownerWorld, const btVector3& positionOffset, bool bInit);
+	SimCreature(btVector3 position, uint32_t numLegs, btDynamicsWorld* ownerWorld, bool bInit);
 	~SimCreature();
 
-	void init(btVector3 position, uint32_t numLegs, btDynamicsWorld* ownerWorld, const btVector3& positionOffset);
+	void init(btVector3 position, uint32_t numLegs, btDynamicsWorld* ownerWorld);
 	void initSnake(btVector3 position, unsigned int numNodes, float boxExtents, float distPct, bool bRandomSize);
 
 	void update(double timeStep);
@@ -37,9 +37,8 @@ public:
 	void addToWorld();
 	void removeFromWorld();
 
-	btVector3 getPosition() const;
-	btScalar getDistanceFitness() const;
-	btScalar getFitness() const;
+	btVector3 getSpawnPosition() const;
+	btVector3 getCenterOfMassPosition() const;
 
 	void resetAt(const btVector3& position);
 
@@ -66,6 +65,7 @@ private:
 
 	btDynamicsWorld* m_ownerWorld;
 	GenomeBase* m_controlPolicyGenome;
+	btVector3 m_spawnPosition;
 
 	// standard rigid bodies and shapes for creature
 	std::vector<btCollisionShape*> m_shapes;
@@ -109,7 +109,6 @@ private:
 
 	btScalar m_targetAccumulator;
 	btScalar m_evaluationTime;
-	btVector3 m_startPosition;
 
 	btScalar gRootBodyRadius = 0.25f;
 	btScalar gRootBodyHeight = 0.1f;

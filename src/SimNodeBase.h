@@ -48,9 +48,10 @@ public:
 	void setMesh(std::shared_ptr<ofMesh> mesh);
 
 	bool bUseTexture = false;
+	bool bRender = true;
 
 protected:
-	virtual void createBody(glm::vec3 position, float mass);
+	virtual void createBody(glm::vec3 position, float mass, void* userPointer);
 
 	btCollisionShape* _shape;
 	btRigidBody* _body;

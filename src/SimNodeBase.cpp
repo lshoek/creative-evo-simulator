@@ -12,7 +12,7 @@ void SimNodeBase::setRigidBody(btRigidBody* body)
     _shape = _body->getCollisionShape();
 }
 
-void SimNodeBase::createBody(glm::vec3 position, float mass)
+void SimNodeBase::createBody(glm::vec3 position, float mass, void* userPointer)
 {
     btTransform trans = btTransform::getIdentity();
     trans.setOrigin(SimUtils::glmToBullet(position));
@@ -29,7 +29,7 @@ void SimNodeBase::createBody(glm::vec3 position, float mass)
     bodyConstrInfo.m_friction = 0.5f;
 
     _body = new btRigidBody(bodyConstrInfo);
-    _body->setUserPointer(this);
+    _body->setUserPointer(userPointer);
     _body->setUserIndex(_tag);
 }
 
@@ -104,6 +104,7 @@ void SimNodeBase::setAppearance(std::shared_ptr<ofShader> shader, std::shared_pt
     _shader = shader;
     _material = mtl;
     _texture = tex;
+    bUseTexture = true;
 }
 void SimNodeBase::setTexture(std::shared_ptr<ofTexture> texture) {
     _texture = texture;

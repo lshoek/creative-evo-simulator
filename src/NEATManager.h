@@ -10,7 +10,7 @@
 class NEATManager : public ofThread
 {
 public:
-	void setup(SimulationManager* sim, bool threaded);
+	void setup(SimulationManager* sim);
     void draw();
     void exit();
 
@@ -32,6 +32,8 @@ public:
 
     ofEvent<void> onNewBestFound;
 
+    void setMaxParallelEvals(int max);
+
 private:
     virtual void threadedFunction() override;
 
@@ -43,16 +45,15 @@ private:
     NEAT::Substrate substrate;
 
     int maxNumGenerations;
-    int maxSimultaneousEvaluations;
+    int maxParallelEvals = 1;
 
     double targetFitness;
     double bestFitness;
 
     float pctGenEvaluated = 0.0f;
 
+    bool bThreaded = true;
     bool bHasFitnessFunc;
-    bool bThreaded;
-    bool bThreadedEvaluation;
 
     NEAT::Genome deadGenome;
     NEAT::Genome offspringGenome;

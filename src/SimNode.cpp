@@ -12,44 +12,46 @@ void SimNode::initBox(glm::vec3 position, glm::vec3 size, float mass)
 {
     _shape = new btBoxShape(btVector3(size.x, size.y, size.z));
     _mesh = std::make_shared<ofMesh>(ofMesh::box(size.x * 2, size.y * 2, size.z * 2));
-    createBody(position, mass);
+    createBody(position, mass, this);
 }
 
 void SimNode::initCapsule(glm::vec3 position, float radius, float height, float mass)
 {
     _shape = new btCapsuleShape(radius, height);
     _mesh = std::make_shared<ofMesh>(ofMesh::cylinder(radius, height));
-    createBody(position, mass);
+    createBody(position, mass, this);
 }
 
 void SimNode::initPlane(glm::vec3 position, float size, float mass)
 {
     _shape = new btStaticPlaneShape(btVector3(0, 1, 0), 0);
     _mesh = std::make_shared<ofMesh>(tb::gridMesh(2, 2, size*2, true));
-    createBody(position, mass);
+    createBody(position, mass, this);
 }
 
 void SimNode::draw()
 {
-    if (_shader) {
-        ofPushMatrix();
-        ofMultMatrix(getTransform());
+    if (bRender) {
+        if (_shader) {
+            ofPushMatrix();
+            ofMultMatrix(getTransform());
 
-        _shader->begin();
-        if (bUseTexture) {
-            _shader->setUniformTexture("tex", *_texture, 0);
+            _shader->begin();
+            if (bUseTexture) {
+                _shader->setUniformTexture("tex", *_texture, 0);
+            }
+            _shader->setUniform4f("color", _color);
+            _shader->setUniform4f("mtl.ambient", _material->getAmbientColor());
+            _shader->setUniform4f("mtl.diffuse", _material->getDiffuseColor());
+            _shader->setUniform4f("mtl.specular", _material->getSpecularColor());
+            _shader->setUniform4f("mtl.emission", _material->getEmissiveColor());
+            _shader->setUniform1f("mtl.shininess", _material->getShininess());
+
+            _mesh->draw();
+            _shader->end();
+
+            ofPopMatrix();
         }
-        _shader->setUniform4f("color", _color);
-        _shader->setUniform4f("mtl.ambient", _material->getAmbientColor());
-        _shader->setUniform4f("mtl.diffuse", _material->getDiffuseColor());
-        _shader->setUniform4f("mtl.specular", _material->getSpecularColor());
-        _shader->setUniform4f("mtl.emission", _material->getEmissiveColor());
-        _shader->setUniform1f("mtl.shininess", _material->getShininess());
-
-        _mesh->draw();
-        _shader->end();
-
-        ofPopMatrix();
     }
 }
 

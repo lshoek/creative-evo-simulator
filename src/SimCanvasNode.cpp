@@ -6,8 +6,8 @@
 // This number should be synced with BRUSH_COORD_BUF_MAXSIZE in canvas.frag.
 #define BRUSH_COORD_BUF_MAXSIZE 8
 
-SimCanvasNode::SimCanvasNode(int tag, float size, int x_res, int y_res, btDynamicsWorld* owner) : 
-    SimNodeBase(tag, owner), _canvasSize(size)
+SimCanvasNode::SimCanvasNode(glm::vec3 position, int tag, float size, int x_res, int y_res, btDynamicsWorld* ownerWorld) :
+    SimNodeBase(tag, ownerWorld), _canvasSize(size)
 {
     _color = ofColor::white;
     _brushColor = ofColor::black;
@@ -16,7 +16,7 @@ SimCanvasNode::SimCanvasNode(int tag, float size, int x_res, int y_res, btDynami
     _canvasRes = glm::ivec2(x_res, y_res);
     _canvasDrawQuad = tb::rectMesh(0, 0, _canvasRes.x, _canvasRes.y, true);
 
-    initPlane(glm::vec3(0), _canvasSize);
+    initPlane(position, _canvasSize);
 
     for (int i = 0; i < 2; i++) {
         _canvasFbo[i].allocate(_canvasRes.x, _canvasRes.y, GL_RGBA32F);
@@ -37,7 +37,7 @@ void SimCanvasNode::initPlane(glm::vec3 position, float size)
 {
     _shape = new btStaticPlaneShape(btVector3(0, 1, 0), 0);
     _mesh = std::make_shared<ofMesh>(tb::gridMesh(2, 2, size * 2, true));
-    createBody(position, 0);
+    createBody(position, 0, this);
 }
 
 void SimCanvasNode::update()
@@ -120,10 +120,10 @@ void SimCanvasNode::addBrushStroke(btVector3 location, float impulse)
 {
     if (_brushQueueSize < BRUSH_COORD_BUF_MAXSIZE)
     {
-        // convert to normalized texture coordinates
         glm::vec3 loc = SimUtils::bulletToGlm(location);
-        glm::vec2 px = (glm::vec2(loc.x, loc.z) + glm::vec2(_canvasSize)) / glm::vec2(_canvasSize * 2);
 
+        // convert to normalized texture coordinates
+        glm::vec2 px = (glm::vec2(loc.x, loc.z) + glm::vec2(_canvasSize)) / glm::vec2(_canvasSize * 2);
         if (px.x > 1.0f || px.x < 0 || px.y > 1.0f || px.y < 0) {
             return;
         }
@@ -145,8 +145,32 @@ ofFbo* SimCanvasNode::getCanvasFbo()
     return &_canvasFinalFbo;
 }
 
-void SimCanvasNode::setCanvasUpdateShader(std::shared_ptr<ofShader> shader) { 
+void SimCanvasNode::setCanvasUpdateShader(std::shared_ptr<ofShader> shader) {
     _canvasUpdateShader = shader; 
+}
+
+void SimCanvasNode::enableBounds()
+{
+    if (_bBounds) {
+        return;
+    }
+    else {
+        float thickness = 1.0f;
+        glm::vec3 fromCenter = glm::vec3(0, 0, _canvasSize + thickness);
+        glm::vec3 fwd = glm::vec3(0, 0, 1);
+
+        for (int i = 0; i < 4; i++) {
+            _bounds[i] = std::make_unique<SimNode>(BoundsTag, _ownerWorld);
+            _bounds[i]->initBox(glm::vec3(0), glm::vec3(_canvasSize, _canvasSize, thickness), 0);
+
+            glm::quat rot = glm::rotation(fwd, glm::rotate(fwd, float(HALF_PI) * i, glm::vec3(0, 1, 0)));
+            _bounds[i]->setRotation(rot);
+            _bounds[i]->setPosition(getPosition() + rot * fromCenter);
+            _bounds[i]->addToWorld();
+            _bounds[i]->bRender = false;
+        }
+        _bBounds = true;
+    }
 }
 
 SimCanvasNode::~SimCanvasNode()
