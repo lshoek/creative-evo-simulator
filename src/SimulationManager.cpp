@@ -7,6 +7,8 @@
 
 #define NTRS_ARTWORK_PATH "output/artworks/"
 
+void worldUpdateCallback(btDynamicsWorld* world, btScalar timeStep);
+
 void SimulationManager::init()
 {
     _canvasRes = glm::ivec2(256, 256);
@@ -70,6 +72,22 @@ void SimulationManager::init()
     }
     int iPBO = 0;
     pboPtr = &pixelWriteBuffers[iPBO];
+
+    if (ofGetTargetFrameRate()) {
+        _targetFrameTimeMillis = 1000.0f/ofGetTargetFrameRate();
+    }
+    else {
+        _targetFrameTimeMillis = _fixedTimeStepMillis;
+    }
+    bInitialized = true;
+}
+
+void SimulationManager::startSimulation()
+{
+    if (bInitialized) {
+        _startTime = _clock.getTimeMilliseconds();
+        _clock.reset();
+    }
 }
 
 void SimulationManager::initPhysics()
@@ -89,9 +107,8 @@ void SimulationManager::initPhysics()
     _world = new btDiscreteDynamicsWorld(_dispatcher, _broadphase, _solver, _collisionConfiguration);
     _world->setGravity(btVector3(0, -9.81, 0));
     _world->setDebugDrawer(_dbgDrawer);
-
-    // for later
-    //_world->setInternalTickCallback(&tickCallback, this, true);
+    _world->setWorldUserInfo(this);
+    _world->setInternalTickCallback(&worldUpdateCallback, this, false);
 }
 
 void SimulationManager::initTerrain()
@@ -102,7 +119,6 @@ void SimulationManager::initTerrain()
     _terrainNode->setLight(_light);
 
     _world->addRigidBody(_terrainNode->getRigidBody());
-    bTerrainInitialized = true;
 }
 
 void SimulationManager::initTestEnvironment()
@@ -127,12 +143,12 @@ void SimulationManager::initTestEnvironment()
     snake->setAppearance(_nodeShader, _nodeMaterial, _nodeTexture);
     _debugSnakeCreature = snake;
 
-    _simulationInstances.push_back(new SimInstance(0, crtr, canv, ofGetElapsedTimef(), 10.0f));
+    _simulationInstances.push_back(new SimInstance(0, crtr, canv, _simulationTime, 10.0f));
 
     bTestMode = true;
 }
 
-int SimulationManager::queueSimulationInstance(const GenomeBase& genome, float duration)
+int SimulationManager::queueSimulationInstance(const GenomeBase& genome, float duration, bool bMultiEval)
 {
     // dont allow this when using test objects
     if (bTestMode) return -1;
@@ -145,7 +161,8 @@ int SimulationManager::queueSimulationInstance(const GenomeBase& genome, float d
             std::bind(&SimulationManager::runSimulationInstance, this, genome, ticket, duration)
         );
     }
-    simInstanceId = (simInstanceId+1) % simInstanceLimit;
+    // Set back to zero after a single non-parallell evaluation
+    simInstanceId = (bMultiEval) ? (simInstanceId + 1) % simInstanceLimit : 0;
 
     return ticket;
 }
@@ -166,18 +183,16 @@ int SimulationManager::runSimulationInstance(GenomeBase& genome, int ticket, flo
     canv = new SimCanvasNode(canvasPos, CanvasTag, canvasSize, _canvasRes.x, _canvasRes.y, _world);
     canv->setAppearance(_nodeShader, _terrainMaterial, _nodeTexture);
     canv->setCanvasUpdateShader(_canvasUpdateShader);
-    canv->setLight(_light);
     canv->enableBounds();
     canv->addToWorld();
 
     SimCreature* crtr;
     crtr = new SimCreature(position, _numWalkerLegs, _world, true);
     crtr->setAppearance(_nodeShader, _nodeMaterial, _nodeTexture);
-    crtr->setLight(_light);
     crtr->setControlPolicyGenome(genome);
     crtr->addToWorld();
 
-    _simulationInstances.push_back(new SimInstance(ticket, crtr, canv, ofGetElapsedTimef(), duration));
+    _simulationInstances.push_back(new SimInstance(ticket, crtr, canv, _simulationTime, duration));
 
     return ticket;
 }
@@ -232,12 +247,59 @@ void SimulationManager::handleCollisions(btDynamicsWorld* worldPtr)
                 canvasPtr->addBrushStroke(localPt, pt.getAppliedImpulse());
             }
         }
-        //contactManifold->clearManifold();	
+        contactManifold->clearManifold();	
     }
 }
 
-void SimulationManager::update(double timeStep)
+void SimulationManager::updateTime()
 {
+    _time = _clock.getTimeMilliseconds();
+    _frameTime = _time - _prevTime;
+    _prevTime = _time;
+
+    _runTime = _time - _startTime;
+    _simulationSpeed = simulationSpeed;
+
+    // prevents physics time accumulator from summing up too much time (i.e. when debugging)
+    if (_frameTime > _targetFrameTimeMillis) {
+        _frameTime = _targetFrameTimeMillis;  
+    }
+    _frameTimeAccumulator += _frameTime;
+    int steps = floor((_frameTimeAccumulator / _fixedTimeStepMillis) + 0.5);
+
+    if (steps > 0) {
+        btScalar timeToProcess = steps * _frameTime * simulationSpeed;
+        while (timeToProcess >= 0.0001) {
+            performTrueSteps(_fixedTimeStep);
+            timeToProcess -= _fixedTimeStepMillis;
+        }
+        // Residual value carries over to next frame
+        _frameTimeAccumulator -= _frameTime * steps;
+    }
+}
+
+void SimulationManager::performTrueSteps(btScalar timeStep)
+{
+    _world->stepSimulation(timeStep, 1, _fixedTimeStep);
+    _simulationTime += timeStep;
+}
+
+void worldUpdateCallback(btDynamicsWorld* world, btScalar timeStep)
+{
+    SimulationManager* sim = (SimulationManager*)world->getWorldUserInfo();
+    sim->updateSimInstances(timeStep);
+}
+
+void SimulationManager::updateSimInstances(double timeStep)
+{
+    handleCollisions(_world);
+
+    for (auto& s : _simulationInstances) {
+        s->getCreature()->update(timeStep);
+        s->getCanvas()->update();
+    }
+
+    // scope for lock_guard
     {
         // create new simulation instances on main thread
         std::lock_guard<std::mutex> guard(_cbQueueMutex);
@@ -248,24 +310,23 @@ void SimulationManager::update(double timeStep)
     }
 
     // close simulation instances that are finished
-    // TODO: Make this simulated runtime, not app runtime
-    for (int i=0; i<_simulationInstances.size(); i++) {
-        if (ofGetElapsedTimef() - _simulationInstances[i]->startTime > _simulationInstances[i]->duration) {
+    for (int i = 0; i < _simulationInstances.size(); i++) {
+        if (_simulationTime - _simulationInstances[i]->getStartTime() > _simulationInstances[i]->getDuration()) {
 
-            ofLog() << "ended : " << _simulationInstances[i]->instanceId;
+            ofLog() << "ended : " << _simulationInstances[i]->getID();
 
             ofPixels pix;
-            writeToPixels(_simulationInstances[i]->canvas->getCanvasFbo()->getTexture(), pix);
+            writeToPixels(_simulationInstances[i]->getCanvas()->getCanvasFbo()->getTexture(), pix);
 
             double total = 0.0;
             for (ofPixels::ConstPixel p : pix.getConstPixelsIter()) {
                 // black paint so calculate inverse color
-                total += 1.0 - (p[0] + p[1] + p[2])/(3.0*255.0);
+                total += 1.0 - (p[0] + p[1] + p[2]) / (3.0 * 255.0);
             }
             total /= double(_canvasRes.x * _canvasRes.y);
 
             SimResult result;
-            result.instanceId = _simulationInstances[i]->instanceId;
+            result.instanceId = _simulationInstances[i]->getID();
             result.fitness = total;
             onSimulationInstanceFinished.notify(result);
 
@@ -275,14 +336,6 @@ void SimulationManager::update(double timeStep)
             // optional
             //saveToDisk(pix);
         }
-    }
-
-    _world->stepSimulation(timeStep);
-    handleCollisions(_world);
-
-    for (auto& s : _simulationInstances) {
-        s->creature->update(timeStep);
-        s->canvas->update();
     }
 }
 
@@ -314,17 +367,14 @@ void SimulationManager::draw()
     _nodeShader->setUniform3f("eyePos", cam.getPosition());
     _nodeShader->end();
 
-    if (bDraw) {
-        if (bTerrainInitialized) {
-            _terrainNode->draw();
-        }           
-        for (auto &s : _simulationInstances) {
-            s->canvas->draw();
-            s->creature->draw();
-        }
-        if (bTestMode) {
-            _debugSnakeCreature->draw();
-        }
+
+    _terrainNode->draw();     
+    for (auto &s : _simulationInstances) {
+        s->getCanvas()->draw();
+        s->getCreature()->draw();
+    }
+    if (bTestMode) {
+        _debugSnakeCreature->draw();
     }
     if (bDebugDraw) {
         _world->debugDrawWorld();
@@ -338,10 +388,15 @@ ofxGrabCam* SimulationManager::getCamera()
     return &cam;
 }
 
+float SimulationManager::getSimulationTime()
+{
+    return _simulationTime;
+}
+
 SimCreature* SimulationManager::getFocusCreature()
 {
     if (!_simulationInstances.empty()) {
-        return _simulationInstances[focusIndex]->creature;
+        return _simulationInstances[focusIndex]->getCreature();
     }
     else return nullptr;
 }
@@ -349,7 +404,7 @@ SimCreature* SimulationManager::getFocusCreature()
 glm::vec3 SimulationManager::getFocusOrigin()
 {
     if (!_simulationInstances.empty()) {
-        return SimUtils::bulletToGlm(_simulationInstances[focusIndex]->creature->getCenterOfMassPosition());
+        return SimUtils::bulletToGlm(_simulationInstances[focusIndex]->getCreature()->getCenterOfMassPosition());
     }
     else return glm::vec3(0);
 }
@@ -357,7 +412,7 @@ glm::vec3 SimulationManager::getFocusOrigin()
 ofFbo* SimulationManager::getCanvasFbo()
 {
     if (!_simulationInstances.empty()) {
-        _simulationInstances[focusIndex]->canvas->getCanvasFbo();
+        _simulationInstances[focusIndex]->getCanvas()->getCanvasFbo();
     }
     else return nullptr;
 }
@@ -412,7 +467,7 @@ void SimulationManager::loadShaders()
 
 bool SimulationManager::isInitialized()
 {
-    return bTerrainInitialized;
+    return bInitialized;
 }
 
 bool SimulationManager::isSimulationInstanceActive()

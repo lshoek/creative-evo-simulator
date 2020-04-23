@@ -102,7 +102,6 @@ private:
 	std::vector<btScalar> m_sensoryMotorWeights;
 
 	int m_index = 0;
-	double m_time = 0.0;
 
 	bool m_inEvaluation;	
 	bool m_reaped;	

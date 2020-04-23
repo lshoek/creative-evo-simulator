@@ -164,7 +164,7 @@ bool NEATManager::tick()
 	offspringGenomeBasePtr->setGenome(offspringGenome);
 
 	// evaluate the newly created offspring in Tick()
-	int id = fitnessFuncPtr->queueEval(*offspringGenomeBasePtr);
+	int id = fitnessFuncPtr->queueEval(*offspringGenomeBasePtr, false);
 	double f = fitnessFuncPtr->awaitEval(id);
 
 	offspringGenomeBasePtr->getGenome().SetFitness(f);
@@ -199,7 +199,7 @@ bool NEATManager::evaluatePopulation()
 
 				pctGenEvaluated = index / float(population->NumGenomes());
 				GenomeBase gb = GenomeBase(population->m_Species[i].m_Individuals[j]);
-				int id = fitnessFuncPtr->queueEval(gb);
+				int id = fitnessFuncPtr->queueEval(gb, true);
 
 				evalThreads.push_back(std::thread([this, &populationMutex, id, i, j, index]
 				{
@@ -228,7 +228,7 @@ bool NEATManager::evaluatePopulation()
 				pctGenEvaluated = index / float(population->NumGenomes());
 				GenomeBase g(population->m_Species[i].m_Individuals[j]);
 
-				int id = fitnessFuncPtr->queueEval(g);
+				int id = fitnessFuncPtr->queueEval(g, false);
 				double f = fitnessFuncPtr->awaitEval(id);
 
 				population->m_Species[i].m_Individuals[j].SetFitness(f);

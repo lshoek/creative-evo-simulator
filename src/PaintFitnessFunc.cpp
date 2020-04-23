@@ -2,13 +2,13 @@
 #include "PaintFitnessFunc.h"
 #include "SimSharedData.h"
 
-isim_ticket PaintFitnessFunc::queueEval(GenomeBase& genome)
+isim_ticket PaintFitnessFunc::queueEval(GenomeBase& genome, bool bMultiEval)
 {
     genome.buildPhenotype();
     
     // run an instance of a simulation and acquire the fitness result
     // a neural network phenotype (or cppn) should be passed on to the sim
-    int id = _sim->queueSimulationInstance(genome, 20.0f);
+    int id = _sim->queueSimulationInstance(genome, 120.0f, bMultiEval);
 
     ofLog() << "started : " << id;
     return id;
@@ -28,6 +28,5 @@ double PaintFitnessFunc::awaitEval(isim_ticket id)
     while (simres.instanceId < 0) {
         ofSleepMillis(100);
     }
-    ofLog() << "done : " << id;
     return simres.fitness;
 }

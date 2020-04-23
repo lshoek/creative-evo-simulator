@@ -10,19 +10,22 @@
 void ofApp::setup()
 {
 	ofSetWindowTitle(APP_ID);
-	ofSetVerticalSync(true);
-	ofDisableArbTex();
 	ofSetFrameRate(60);
+	ofSetVerticalSync(false);
+	ofDisableArbTex();
 	ofSetWindowPosition(32, 128);
+	ofBackground(0x222222);
+	ofNoFill();
+
 	ofSetLogLevel("ofThread", OF_LOG_VERBOSE);
 	ofEnableGLDebugLog();
-	//ofLogToConsole();
-	ofNoFill();
+	ofLogToConsole();
 
 	settings = ofxIniSettings("settings.ini");
 	bEvolve = settings.get("mode.evolve", true);
 	bSimulate = settings.get("mode.simulate", true);
 	bDebugGrid = settings.get("mode.debuggrid", true);
+	bDraw = settings.get("mode.draw", true);
 
 	HWND hwnd = GetConsoleWindow();
 	MoveWindow(
@@ -49,6 +52,7 @@ void ofApp::startSimulation()
 	simulationManager.setMaxParallelSims(settings.get("evo.max_parallel_evals", 4));
 	simulationManager.bDebugDraw = settings.get("mode.debugdraw", true);
 	simulationManager.bCameraSnapFocus = settings.get("mode.snapfocus", true);
+	simulationManager.startSimulation();
 }
 
 void ofApp::startEvolution()
@@ -61,40 +65,41 @@ void ofApp::startEvolution()
 	});
 }
 
-void ofApp::update()
+void ofApp::update() 
 {
-	if (bSimulate) {
-		simulationManager.update(1/60.0);
+	if (bSimulate && simulationManager.isInitialized()) {
+		simulationManager.updateTime();
 	}
 }
 
 void ofApp::draw()
 {
-	ofBackground(0x222222);
-	ofSetHexColor(0xffffff);
+	if (bDraw) {
+		ofBackground(0x222222);
+		ofSetHexColor(0xffffff);
 
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	if (bRenderEventQueued) {
-		cppnFbo.begin();
-		ofClear(0, 1.0f);
-		neatManager.draw();
-		cppnFbo.end();
-		bRenderEventQueued = false;
+		if (bRenderEventQueued) {
+			cppnFbo.begin();
+			ofClear(0, 1.0f);
+			neatManager.draw();
+			cppnFbo.end();
+			bRenderEventQueued = false;
+		}
+		if (bSimulate)
+		{
+			frameFbo.begin();
+			ofClear(0, 0);
+
+			simulationManager.draw();
+
+			frameFbo.end();
+			frameFbo.draw(viewRect);
+		}
+		glDisable(GL_BLEND);
 	}
-	if (bSimulate) 
-	{
-		frameFbo.begin();
-		ofClear(0, 0);
-
-		simulationManager.draw();
-
-		frameFbo.end();
-		frameFbo.draw(viewRect);
-	}
-	glDisable(GL_BLEND);
-
 	if (bGui) {
 		imGui();
 	}
@@ -130,11 +135,13 @@ void ofApp::imGui()
 		}
 		if (bSimulate) {
 			glm::vec3 cpos = simulationManager.getCamera()->getPosition();
-			ImGui::Text("cam_pos: x:%.02f, y:%.02f, z:%.02f", cpos.x, cpos.y, cpos.z);
+			ImGui::Text("cam_pos: (%.02f, %.02f, %.02f)", cpos.x, cpos.y, cpos.z);
 			ImGui::Separator();
 			if (simulationManager.isInitialized()) {
 				ImGui::SliderFloat3("light_pos", &simulationManager.lightPosition[0], -20.0f, 20.0f);
 				ImGui::Separator();
+				ImGui::Text("sim_time: %.02f", simulationManager.getSimulationTime());
+				ImGui::SliderInt("sim_speed", &simulationManager.simulationSpeed, 0, 16);
 				if (simulationManager.isSimulationInstanceActive()) {
 					ImGui::SliderFloat("motor_strength", &simulationManager.getFocusCreature()->m_motorStrength, 0, 1);
 					ImGui::SliderFloat("target_freq", &simulationManager.getFocusCreature()->m_targetFrequency, 1, 60);
@@ -182,7 +189,7 @@ void ofApp::keyPressed(int key)
 				simulationManager.bDebugDraw = !simulationManager.bDebugDraw;
 			}
 			if (key == 'D') {
-				simulationManager.bDraw = !simulationManager.bDraw;
+				bDraw = !bDraw;
 			}
 			//if (key == 's') {
 			//	simulationManager.saveCanvas();

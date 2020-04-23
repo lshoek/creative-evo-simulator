@@ -49,5 +49,6 @@ private:
 	bool bEvolve = true;
 	bool bSimulate = true;
 	bool bDebugGrid = true;
+	bool bDraw = true;
 	bool bGui = true;
 };

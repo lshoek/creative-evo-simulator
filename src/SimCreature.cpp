@@ -11,9 +11,7 @@ SimCreature::SimCreature(btVector3 position, uint32_t numLegs, btDynamicsWorld* 
 	: m_ownerWorld(ownerWorld), m_inEvaluation(false), m_evaluationTime(0), m_reaped(false)
 {
 	m_motorStrength = 0.05f * m_ownerWorld->getSolverInfo().m_numIterations;
-	m_motorStrength = 1.0f;
-
-	m_targetFrequency = 6.0f;
+	m_targetFrequency = 3.0f;
 	m_targetAccumulator = 0;
 
 	if (bInit) {
@@ -279,7 +277,6 @@ void SimCreature::update(double timeStep)
 {
 	if (!bIsDebugCreature)
 	{
-		m_time += timeStep;
 		m_targetAccumulator += timeStep;
 
 		// motor update rate

@@ -1,9 +1,10 @@
 #pragma once
 #include "bullet/btBulletDynamicsCommon.h"
 #include "SimNode.h"
-#include "SimCreature.h"
+#include "SimInstance.h"
 #include "SimDebugDrawer.h"
 #include "SimSharedData.h"
+#include "Scheduler.h"
 #include "ImageSaverThread.h"
 #include "GenomeBase.h"
 #include "ofMain.h"
@@ -15,12 +16,16 @@ class SimulationManager
 {
 public:
     void init();
-    void update(double timestep);
+    void startSimulation();
+
+    void updateTime();
+    void updateSimInstances(double timeStep);
+
     void draw();
     void dealloc();
 
     // Returns ticket that listener can use to check when sim is finished and genome fitness is updated
-    int queueSimulationInstance(const GenomeBase& genome, float duration);
+    int queueSimulationInstance(const GenomeBase& genome, float duration, bool bMultiEval);
     ofEvent<SimResult> onSimulationInstanceFinished;
 
     void loadShaders();
@@ -29,42 +34,31 @@ public:
     bool isSimulationInstanceActive();
 
     ofFbo* getCanvasFbo();
-
     ofxGrabCam* getCamera();
+    float getSimulationTime();
+
     SimCreature* getFocusCreature();
     glm::vec3 getFocusOrigin();
     void shiftFocus();
-
-    bool bDraw = true;
-    bool bDebugDraw = false;
-    bool bTestMode = false;
-    bool bCameraSnapFocus = true;
-
-    glm::vec3 lightPosition;
-    glm::vec3 lightDirection;
 
     MorphologyInfo getWalkerMorphologyInfo();
     void initTestEnvironment();
 
     void setMaxParallelSims(int max);
 
+    bool bDebugDraw = false;
+    bool bTestMode = false;
+    bool bCameraSnapFocus = true;
+
+    glm::vec3 lightPosition;
+    glm::vec3 lightDirection;
+    int simulationSpeed = 1;
+
 private:
-    struct SimInstance {
-        int instanceId;
-        float startTime, duration;
-        SimCreature* creature;
-        SimCanvasNode* canvas;
-
-        SimInstance(int id, SimCreature* crtr, SimCanvasNode* canv, float startTime, float duration) :
-            instanceId(id), creature(crtr), canvas(canv), startTime(startTime), duration(duration) {}
-        ~SimInstance() {
-            delete creature;
-            delete canvas;
-        }
-    };
-
     void initPhysics();
     void initTerrain();
+
+    void performTrueSteps(btScalar timeStep);
     void handleCollisions(btDynamicsWorld* _worldPtr);
 
     void writeToPixels(const ofTexture& tex, ofPixels& pix);
@@ -80,6 +74,7 @@ private:
     SimNode* _terrainNode;
     SimCreature* _debugSnakeCreature;
 
+    // physics
     btBroadphaseInterface* _broadphase;
     btDefaultCollisionConfiguration* _collisionConfiguration;
     btCollisionDispatcher* _dispatcher;
@@ -88,6 +83,23 @@ private:
 
     SimDebugDrawer* _dbgDrawer;
 
+    // time
+    btClock _clock;
+    btScalar _startTime = 0;            // clock time that simulation started (ms)
+    btScalar _runTime = 0;              // clock time simulation has run (ms)
+    btScalar _simulationSpeed = 1.0;    // speed of simulation relative to clock time
+    btScalar _simulationTime = 0;       // simulation time after speedup (s)
+
+    const btScalar _fixedTimeStep = 1.0 / 60.0;
+    const btScalar _fixedTimeStepMillis = (1.0 / 60.0)*1000.0;
+    btScalar _targetFrameTimeMillis;
+
+    btScalar _time = 0;
+    btScalar _prevTime = 0;
+    btScalar _frameTime = 0;
+    btScalar _frameTimeAccumulator = 0;
+
+    // graphics
     std::shared_ptr<ofShader> _terrainShader;
     std::shared_ptr<ofShader> _nodeShader;
     std::shared_ptr<ofShader> _unlitShader;
@@ -103,7 +115,7 @@ private:
     float canvasSize = 4.0f;
     float canvasMargin = 2.0f;
 
-    bool bTerrainInitialized = false;
+    bool bInitialized = false;
 
     int focusIndex = 0;
     int simInstanceId = 0;

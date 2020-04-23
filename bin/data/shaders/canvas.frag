@@ -39,7 +39,9 @@ void main(void)
 			float dist = min(distance(b.coord, st), 1.0);
 			float dist_inv = inv(dist);
 
-			float diam = min_thickness + thickness * b.impulse * impulse_mult;
+			//float diam = min_thickness + thickness * b.impulse * impulse_mult;
+			float diam = min_thickness + thickness * impulse_mult;
+
 			float result = dist_inv * smoothstep(diam+fade, diam, dist);
 			pct = max(result, pct);
 		}

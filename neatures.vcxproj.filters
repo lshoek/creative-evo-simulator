@@ -156,6 +156,9 @@
     <ClCompile Include="src\SimNodeBase.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\SimInstance.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ofApp.h">
@@ -315,6 +318,9 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="src\SimNodeBase.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SimInstance.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

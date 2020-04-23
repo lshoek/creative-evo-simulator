@@ -10,7 +10,7 @@ class SimFitnessFunc
 public:
 	virtual void init(SimulationManager* _manager) { _sim = _manager; }
 
-	virtual isim_ticket queueEval(GenomeBase& genome) = 0;
+	virtual isim_ticket queueEval(GenomeBase& genome, bool bMultiEval) = 0;
 	virtual double awaitEval(isim_ticket id) = 0;
 
 	virtual void setSimulationManager(SimulationManager* _manager) { _sim = _manager; }

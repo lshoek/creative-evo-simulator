@@ -232,6 +232,7 @@
     <ClCompile Include="src\ofApp.cpp" />
     <ClCompile Include="src\SimCam.cpp" />
     <ClCompile Include="src\SimCreature.cpp" />
+    <ClCompile Include="src\SimInstance.cpp" />
     <ClCompile Include="src\SimNode.cpp" />
     <ClCompile Include="src\SimDebugDrawer.cpp" />
     <ClCompile Include="src\SimNodeBase.cpp" />
@@ -273,6 +274,7 @@
     <ClInclude Include="..\..\..\addons\ofxImGui\src\ofxImGuiLoggerChannel.h" />
     <ClInclude Include="..\..\..\addons\ofxIniSettings\src\ofxIniSettings.h" />
     <ClInclude Include="src\ImageSaverThread.h" />
+    <ClInclude Include="src\SimInstance.h" />
     <ClInclude Include="src\SimNodeBase.h" />
     <ClInclude Include="src\Scheduler.h" />
     <ClInclude Include="src\SimCanvasNode.h" />

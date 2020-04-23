@@ -15,8 +15,10 @@ public:
 private:
 	void Scheduler::threadedFunction() 
 	{
-		sleep(waitTimeMs);
-		ofNotifyEvent(tick);
-		waitForThread();
+		while (true) {
+			sleep(waitTimeMs);
+			ofNotifyEvent(tick);
+			waitForThread();
+		}
 	}
 };
