@@ -14,11 +14,12 @@ void NEATManager::setup(SimulationManager* sim)
 	params.Load(paramFile);
 	paramFile.close();
 
-	params.NeuronRecursionLimit = 8;
-
 	// create substrate
-	substrate = NEATUtils::CreateSubstrate(3);
+	substrate = NEATUtils::CreateSubstrate(3);	
 	//substrate.PrintInfo();
+
+	// get morphology info to build network
+	MorphologyInfo info = sim->getWalkerMorphologyInfo();
 
 	// create cppn genome using substrate config
 	//NEAT::Genome templateGenome(0,
@@ -29,16 +30,28 @@ void NEATManager::setup(SimulationManager* sim)
 	//	0, params, 0
 	//);
 
-	MorphologyInfo info = sim->getWalkerMorphologyInfo();
-	NEAT::Genome templateGenome(
-		0, info.numSensors, 0, info.numJoints, false,
+	// Simple network with a single hidden layer
+	NEAT::Genome templateGenome(0,
+		info.numSensors, info.numSensors, info.numJoints, false,
 		NEAT::ActivationFunction::TANH,
 		NEAT::ActivationFunction::TANH,
-		0, params, 0
+		1, params, 1
 	);
-	ofLog() << "genome" <<
+
+	// Fully-connected CTRNN constructor causes stackoverflow exception!!
+	//NEAT::Genome templateGenome(0, 
+	//	info.numSensors, info.numSensors, info.numJoints,
+	//	NEAT::ActivationFunction::TANH,
+	//	NEAT::ActivationFunction::TANH,
+	//	params
+	//);
+
+	ofLog() << "template_genome" <<
 		"\ninputs:" << templateGenome.NumInputs() <<
-		"\noutputs:" << templateGenome.NumOutputs() << "\n";
+		"\noutputs:" << templateGenome.NumOutputs() <<
+		"\nneurons:" << templateGenome.NumNeurons() << 
+		"\nlinks:" << templateGenome.NumLinks() <<
+		"\n";
 
 	offspringGenomeBasePtr = new GenomeBase(templateGenome);
 	bestGenomeBasePtr = new GenomeBase(templateGenome);
@@ -199,6 +212,8 @@ bool NEATManager::evaluatePopulation()
 
 				pctGenEvaluated = index / float(population->NumGenomes());
 				GenomeBase gb = GenomeBase(population->m_Species[i].m_Individuals[j]);
+				gb.buildPhenotype();
+
 				int id = fitnessFuncPtr->queueEval(gb, true);
 
 				evalThreads.push_back(std::thread([this, &populationMutex, id, i, j, index]
@@ -226,9 +241,10 @@ bool NEATManager::evaluatePopulation()
 			for (unsigned int j = 0; j < population->m_Species[i].m_Individuals.size(); ++j) {
 
 				pctGenEvaluated = index / float(population->NumGenomes());
-				GenomeBase g(population->m_Species[i].m_Individuals[j]);
+				GenomeBase gb(population->m_Species[i].m_Individuals[j]);
+				gb.buildPhenotype();
 
-				int id = fitnessFuncPtr->queueEval(g, false);
+				int id = fitnessFuncPtr->queueEval(gb, false);
 				double f = fitnessFuncPtr->awaitEval(id);
 
 				population->m_Species[i].m_Individuals[j].SetFitness(f);
