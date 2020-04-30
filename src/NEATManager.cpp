@@ -14,12 +14,30 @@ void NEATManager::setup(SimulationManager* sim)
 	params.Load(paramFile);
 	paramFile.close();
 
-	// create substrate
-	substrate = NEATUtils::CreateSubstrate(3);	
-	//substrate.PrintInfo();
-
 	// get morphology info to build network
-	MorphologyInfo info = sim->getWalkerMorphologyInfo();
+	NEAT::Genome templateGenome;
+	if (sim->IsMorphologyGenomeModeEnabled()) {
+		DirectedGraph graph = sim->getMorphologyGenome();
+		templateGenome = NEAT::Genome(0,
+			graph.getNumNodesUnwrapped(), graph.getNumNodesUnwrapped(), graph.getNumJointsUnwrapped(), false,
+			NEAT::ActivationFunction::TANH,
+			NEAT::ActivationFunction::TANH,
+			1, params, 1
+		);
+	} 
+	else {
+		MorphologyInfo info = sim->getWalkerMorphologyInfo();
+		templateGenome = NEAT::Genome(0,
+			info.numSensors, info.numSensors, info.numJoints, false,
+			NEAT::ActivationFunction::TANH,
+			NEAT::ActivationFunction::TANH,
+			1, params, 1
+		);
+	}
+
+	// create substrate
+	substrate = NEATUtils::CreateSubstrate(3);
+	//substrate.PrintInfo();
 
 	// create cppn genome using substrate config
 	//NEAT::Genome templateGenome(0,
@@ -30,15 +48,7 @@ void NEATManager::setup(SimulationManager* sim)
 	//	0, params, 0
 	//);
 
-	// Simple network with a single hidden layer
-	NEAT::Genome templateGenome(0,
-		info.numSensors, info.numSensors, info.numJoints, false,
-		NEAT::ActivationFunction::TANH,
-		NEAT::ActivationFunction::TANH,
-		1, params, 1
-	);
-
-	// Fully-connected CTRNN constructor causes stackoverflow exception!!
+	// Fully-connected CTRNN constructor causes stackoverflow exception if not checked for loops!
 	//NEAT::Genome templateGenome(0, 
 	//	info.numSensors, info.numSensors, info.numJoints,
 	//	NEAT::ActivationFunction::TANH,

@@ -1,25 +1,153 @@
 #include "SimCreature.h"
+#include "SimDefines.h"
 #include "SimUtils.h"
 #include "toolbox.h"
+
+#include "DirectedGraph.h"
 
 #define World2Loc SimUtils::b3RefFrameHelper::getTransformWorldToLocal
 #define Loc2World SimUtils::b3RefFrameHelper::getTransformLocalToWorld
 
-btRigidBody* localCreateRigidBody(btScalar mass, const btTransform& startTransform, btCollisionShape* shape);
+btRigidBody* localCreateRigidBody(btScalar mass, const btTransform& startTransform, btCollisionShape* shape, void* userPtr);
+
+SimCreature::SimCreature(btVector3 position, const DirectedGraph& graph, btDynamicsWorld* ownerWorld)
+	: m_ownerWorld(ownerWorld), m_inEvaluation(false), m_evaluationTime(0), m_reaped(false)
+{
+	m_spawnPosition = position;
+	m_morphologyGenome = new DirectedGraph(graph);
+
+	m_motorStrength = 0.025f * m_ownerWorld->getSolverInfo().m_numIterations;
+	m_targetFrequency = 3.0f;
+	m_targetAccumulator = 0;
+
+	buildPhenome(m_morphologyGenome);
+}
 
 SimCreature::SimCreature(btVector3 position, uint32_t numLegs, btDynamicsWorld* ownerWorld, bool bInit)
 	: m_ownerWorld(ownerWorld), m_inEvaluation(false), m_evaluationTime(0), m_reaped(false)
 {
-	m_motorStrength = 0.05f * m_ownerWorld->getSolverInfo().m_numIterations;
+	m_motorStrength = 0.025f * m_ownerWorld->getSolverInfo().m_numIterations;
 	m_targetFrequency = 3.0f;
 	m_targetAccumulator = 0;
 
 	if (bInit) {
-		init(position, numLegs, ownerWorld);
+		initWalker(position, numLegs, ownerWorld);
 	}
 }
 
-void SimCreature::init(btVector3 position, uint32_t numLegs, btDynamicsWorld* ownerWorld)
+void SimCreature::buildPhenome(DirectedGraph* graph)
+{
+	m_numBodyParts = graph->getNumNodesUnwrapped();
+	m_numJoints = m_numBodyParts - 1;
+	m_numBallPointers = 0;
+	m_numLegs = 0;
+
+	randomizeSensoryMotorWeights();
+
+	m_nodes.resize(m_numBodyParts);
+	m_bodies.resize(m_numBodyParts);
+	m_joints.reserve(m_numJoints);
+	m_touchSensors.resize(m_numBodyParts);
+
+	std::vector<int> recursionLimits(graph->getNodes().size());
+	for (int i = 0; i < recursionLimits.size(); i++) {
+		recursionLimits[i] = graph->getNodes()[i]->getRecursionLimit();
+	}
+
+	int segmentIndex = 0;
+	dfs(graph->getRootNode(), nullptr, nullptr, graph, btVector3(1., 1., 1.), 1.0, recursionLimits, segmentIndex);
+}
+
+void SimCreature::dfs(
+	GraphNode* graphNode, GraphConnection* incoming, SimNode* parentSimNode, DirectedGraph* graph, 
+	btVector3 parentDims, btScalar cascadingScale, std::vector<int> recursionLimits, int& segmentIndex)
+{
+	bool bIsRootNode = (incoming == nullptr);
+
+	if (!bIsRootNode) {
+		cascadingScale *= incoming->jointInfo.scalingFactor;
+	}
+	recursionLimits[graphNode->getGraphIndex()]--;
+
+	// Log some graph level info
+	ofLog() << graphNode->id << " : " << recursionLimits[graphNode->getGraphIndex()] << " x " << cascadingScale;
+	
+	SimNode* simNodePtr = new SimNode(BodyTag, m_ownerWorld);
+
+	if (!bIsRootNode) {
+		segmentIndex++;
+
+		btTransform parentTrans = parentSimNode->getRigidBody()->getWorldTransform();
+		btVector3 boxSizeParent = parentDims;
+
+		btVector3 boxSize = graphNode->primitiveInfo.dimensions * cascadingScale;
+		boxSize = btVector3(btMax(boxSize.x(), GraphNode::minSize), btMax(boxSize.y(), GraphNode::minSize), btMax(boxSize.z(), GraphNode::minSize));
+		boxSize = btVector3(btMin(boxSize.x(), GraphNode::maxSize), btMin(boxSize.y(), GraphNode::maxSize), btMin(boxSize.z(), GraphNode::maxSize));
+
+		btVector3 halfExtents = boxSize / 2;
+		btVector3 halfExtentsParent = boxSizeParent / 2;
+
+		float distFromOrigin = sqrt((halfExtents.x() * halfExtents.x()) + (halfExtents.x() * halfExtents.x()));
+		float distFromParentOrigin = sqrt((halfExtentsParent.x() * halfExtentsParent.x()) + (halfExtentsParent.x() * halfExtentsParent.x()));
+
+		btTransform trans;
+		trans.setIdentity();
+		trans.setOrigin(parentTrans.getOrigin());
+		trans.setRotation(incoming->jointInfo.rotation);
+
+		btCollisionShape* shape = new btBoxShape(halfExtents);
+		btRigidBody* body = localCreateRigidBody(1.0f, trans, shape, this);
+
+		btVector3 dirFromParent = incoming->jointInfo.parentAnchor.normalize();
+		btVector3 dirFromChild = dirFromParent * -1.0;
+		btVector3 pAnchor = dirFromParent * SimUtils::distToSurface(dirFromParent, halfExtentsParent);
+		btVector3 cAnchor = dirFromChild * SimUtils::distToSurface(dirFromChild, halfExtents);
+		
+		btHingeConstraint* joint = new btHingeConstraint(
+			*parentSimNode->getRigidBody(), *body, 
+			pAnchor, cAnchor, incoming->jointInfo.axis, incoming->jointInfo.axis
+		);
+		joint->setLimit(-SIMD_HALF_PI * 0.5f, SIMD_HALF_PI * 0.5f);
+
+		simNodePtr->setRigidBody(body);
+		simNodePtr->setMesh(std::make_shared<ofMesh>(ofMesh::box(boxSize.x(), boxSize.y(), boxSize.z())));
+
+		m_nodes[segmentIndex] = simNodePtr;
+		m_bodies[segmentIndex] = body;
+		m_bodyTouchSensorIndexMap.insert(btHashPtr(body), segmentIndex);
+		m_joints.push_back(joint);
+
+		parentDims = boxSize;
+	}
+	else { // ROOT BODY
+		btTransform trans;
+		trans.setIdentity();
+		trans.setOrigin(m_spawnPosition + btVector3(0, GraphNode::maxSize, 0));
+
+		btVector3 boxSize = graphNode->primitiveInfo.dimensions;
+		btVector3 halfExtents = boxSize/2;
+
+		btCollisionShape* shape = new btBoxShape(halfExtents);
+		btRigidBody* body = localCreateRigidBody(1.0, trans, shape, this);
+
+		simNodePtr->setRigidBody(body);
+		simNodePtr->setMesh(std::make_shared<ofMesh>(ofMesh::box(boxSize.x(), boxSize.y(), boxSize.z())));
+
+		m_nodes[segmentIndex] = simNodePtr;
+		m_bodies[segmentIndex] = body;
+		m_bodyTouchSensorIndexMap.insert(btHashPtr(body), segmentIndex);
+
+		parentDims = boxSize;
+	}
+
+	for (GraphConnection* c : graphNode->conns) {
+		if (recursionLimits[graph->getNodeIndex(c->child)] > 0) {
+			dfs(c->child, c, simNodePtr, graph, parentDims, cascadingScale, recursionLimits, segmentIndex);
+		}
+	}
+}
+
+void SimCreature::initWalker(btVector3 position, uint32_t numLegs, btDynamicsWorld* ownerWorld)
 {
 	// fixed for now
 	bHasBallPointers = true;
@@ -90,7 +218,7 @@ void SimCreature::init(btVector3 position, uint32_t numLegs, btDynamicsWorld* ow
 	m_bodies.resize(m_numBodyParts);
 	m_ballPointerBodies.resize(m_numBallPointers);
 
-	m_bodies[0] = localCreateRigidBody(1.0, bodyOffsetTrans * trans, m_shapes[0]);
+	m_bodies[0] = localCreateRigidBody(1.0, bodyOffsetTrans * trans, m_shapes[0], this);
 	m_ownerWorld->addRigidBody(m_bodies[0]);
 
 	m_bodyRelativeTransforms.resize(m_numBodyParts);
@@ -124,7 +252,7 @@ void SimCreature::init(btVector3 position, uint32_t numLegs, btDynamicsWorld* ow
 		btVector3 legDirection = (legCOM - localRootBodyPos).normalize();
 		btVector3 kneeAxis = legDirection.cross(vUp);
 		trans.setRotation(btQuaternion(kneeAxis, SIMD_HALF_PI));
-		m_bodies[1 + 2 * i] = localCreateRigidBody(1.0, bodyOffsetTrans * trans, m_shapes[1 + 2 * i]);
+		m_bodies[1 + 2 * i] = localCreateRigidBody(1.0, bodyOffsetTrans * trans, m_shapes[1 + 2 * i], this);
 		m_bodyRelativeTransforms[1 + 2 * i] = trans;
 		m_bodyTouchSensorIndexMap.insert(btHashPtr(m_bodies[1 + 2 * i]), 1 + 2 * i);
 
@@ -135,7 +263,7 @@ void SimCreature::init(btVector3 position, uint32_t numLegs, btDynamicsWorld* ow
 			rootHeightOffset - 0.5 * gForeLegLength,
 			footYUnitPosition * (gRootBodyRadius + gLegLength)
 		));
-		m_bodies[2 + 2 * i] = localCreateRigidBody(1.0, bodyOffsetTrans * trans, m_shapes[2 + 2 * i]);
+		m_bodies[2 + 2 * i] = localCreateRigidBody(1.0, bodyOffsetTrans * trans, m_shapes[2 + 2 * i], this);
 		m_bodyRelativeTransforms[2 + 2 * i] = trans;
 		m_bodyTouchSensorIndexMap.insert(btHashPtr(m_bodies[2 + 2 * i]), 2 + 2 * i);
 		
@@ -146,7 +274,7 @@ void SimCreature::init(btVector3 position, uint32_t numLegs, btDynamicsWorld* ow
 			rootHeightOffset - gForeLegLength,
 			footYUnitPosition * (gRootBodyRadius + gLegLength)
 		));
-		m_ballPointerBodies[i] = localCreateRigidBody(1.0, bodyOffsetTrans * trans, m_ballPointerShapes[i]);
+		m_ballPointerBodies[i] = localCreateRigidBody(1.0, bodyOffsetTrans * trans, m_ballPointerShapes[i], this);
 		m_ballPointerBodies[i]->setCollisionFlags(m_ballPointerBodies[i]->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE);
 
 		// hip joints
@@ -217,10 +345,11 @@ void SimCreature::initSnake(btVector3 position, unsigned int numNodes, float box
 {
 	m_nodes.resize(numNodes);
 
-	glm::vec3 start = glm::vec3(position.x(), boxExtents, position.z());
-	glm::vec3 size = glm::vec3(boxExtents);
+	btVector3 start = btVector3(position.x(), boxExtents, position.z());
+	btVector3 size = btVector3(boxExtents, boxExtents, boxExtents);
+	btVector3 cur, prev = start;
+
 	glm::vec3 dir = right;
-	glm::vec3 cur, prev = start;
 	glm::quat lookatRot;
 
 	float maxDistBetweenNodes = ofLerp(0, sqrt((boxExtents * 2) * (boxExtents * 2) * 3), distPct);
@@ -235,10 +364,10 @@ void SimCreature::initSnake(btVector3 position, unsigned int numNodes, float box
 		dir = glm::normalize(lookatRot * right);
 
 		prev = cur;
-		cur = prev + dir * maxDistBetweenNodes;
+		cur = prev + SimUtils::glmToBullet(dir) * maxDistBetweenNodes;
 
 		if (bRandomSize) {
-			size = glm::vec3(ofRandom(boxExtents / 2, boxExtents), boxExtents, ofRandom(boxExtents / 2, boxExtents));
+			size = btVector3(ofRandom(boxExtents / 2, boxExtents), boxExtents, ofRandom(boxExtents / 2, boxExtents));
 		}
 		m_nodes[i] = new SimNode(AnonymousTag, m_ownerWorld);
 		m_nodes[i]->initBox(cur, size, 1.0f);
@@ -261,13 +390,8 @@ void SimCreature::initSnake(btVector3 position, unsigned int numNodes, float box
 				*m_nodes[i]->getRigidBody(), *m_nodes[i - 1]->getRigidBody(), pivotInA, pivotInB, ax, ax);
 
 			joint->setLimit(SIMD_HALF_PI * -0.5f, SIMD_HALF_PI * 0.5f);
-			m_ownerWorld->addConstraint(joint);
+			m_ownerWorld->addConstraint(joint, true);
 		}
-	}
-	// disables collision on linked nodes
-	for (int i = 1; i < numNodes - 1; i++) {
-		m_nodes[i]->getRigidBody()->setIgnoreCollisionCheck(m_nodes[i - 1]->getRigidBody(), true);
-		m_nodes[i]->getRigidBody()->setIgnoreCollisionCheck(m_nodes[i + 1]->getRigidBody(), true);
 	}
 	bIsDebugCreature = true;
 	bInitialized = true;
@@ -287,7 +411,7 @@ void SimCreature::update(double timeStep)
 			// activate network
 			const std::vector<double> outputs = m_controlPolicyGenome->activate(m_touchSensors);
 
-			for (int i = 0; i < 2 * m_numLegs; i++)
+			for (int i = 0; i < m_numJoints; i++)
 			{
 				btScalar targetAngle = 0;
 				btHingeConstraint* joint = static_cast<btHingeConstraint*>(getJoints()[i]);
@@ -314,7 +438,7 @@ void SimCreature::update(double timeStep)
 	}
 }
 
-btRigidBody* localCreateRigidBody(btScalar mass, const btTransform& startTransform, btCollisionShape* shape)
+btRigidBody* localCreateRigidBody(btScalar mass, const btTransform& startTransform, btCollisionShape* shape, void* userPtr)
 {
 	bool isDynamic = (mass != 0.f);
 
@@ -325,6 +449,10 @@ btRigidBody* localCreateRigidBody(btScalar mass, const btTransform& startTransfo
 	btDefaultMotionState* motionState = new btDefaultMotionState(startTransform);
 	btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionState, shape, localInertia);
 	btRigidBody* body = new btRigidBody(rbInfo);
+	body->setUserPointer(userPtr);
+	body->setDamping(0.05, 0.85);
+	body->setDeactivationTime(0.8);
+	body->setSleepingThresholds(0.5f, 0.5f);
 
 	return body;
 }
@@ -562,10 +690,11 @@ SimCreature::~SimCreature()
 		delete m_nodes[i];
 		m_nodes[i] = 0;
 	}
-	for (int i = 0; i < m_ballPointerNodes.size(); ++i) {
+	for (int i = 0; i < m_numBallPointers; ++i) {
 		m_ownerWorld->removeRigidBody(m_ballPointerNodes[i]->getRigidBody());
 		delete m_ballPointerNodes[i];
 		m_ballPointerNodes[i] = 0;
 	}
 	if (m_controlPolicyGenome) delete m_controlPolicyGenome;
+	if (m_morphologyGenome) delete m_morphologyGenome;
 }

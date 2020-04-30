@@ -4,6 +4,7 @@
 #include "ofLog.h"
 #include "ofMath.h"
 #include "toolbox.h"
+#include "DirectedGraph.h"
 
 #define NTRS_ARTWORK_PATH "output/artworks/"
 
@@ -79,6 +80,8 @@ void SimulationManager::init()
     else {
         _targetFrameTimeMillis = _fixedTimeStepMillis;
     }
+
+    _testMorphologyGenome.unwrap();
     bInitialized = true;
 }
 
@@ -100,8 +103,8 @@ void SimulationManager::initPhysics()
     _dbgDrawer = new SimDebugDrawer();
     _dbgDrawer->setDebugMode(
         btIDebugDraw::DBG_DrawWireframe | 
-        btIDebugDraw::DBG_DrawConstraints | 
-        btIDebugDraw::DBG_DrawContactPoints
+        btIDebugDraw::DBG_DrawConstraints |
+        btIDebugDraw::DBG_DrawConstraintLimits
     );
     
     _world = new btDiscreteDynamicsWorld(_dispatcher, _broadphase, _solver, _collisionConfiguration);
@@ -114,7 +117,7 @@ void SimulationManager::initPhysics()
 void SimulationManager::initTerrain()
 {
     _terrainNode = new SimNode(TerrainTag, _world);
-    _terrainNode->initPlane(glm::vec3(0), terrainSize, 0);
+    _terrainNode->initPlane(btVector3(0, 0, 0), terrainSize, 0);
     _terrainNode->setAppearance(_terrainShader, _terrainMaterial, _terrainTexture);
     _terrainNode->setLight(_light);
 
@@ -124,7 +127,7 @@ void SimulationManager::initTerrain()
 void SimulationManager::initTestEnvironment()
 {
     SimCanvasNode* canv;
-    canv = new SimCanvasNode(glm::vec3(0, 0.1f, 0), CanvasTag, canvasSize, _canvasRes.x, _canvasRes.y, _world);
+    canv = new SimCanvasNode(btVector3(0, .1, 0), CanvasTag, canvasSize, canvasSize/2, _canvasRes.x, _canvasRes.y, _world);
     canv->setCanvasUpdateShader(_canvasUpdateShader);
     canv->setAppearance(_terrainShader, _nodeMaterial, _nodeTexture);
     canv->setLight(_light);
@@ -141,7 +144,6 @@ void SimulationManager::initTestEnvironment()
     snake = new SimCreature(btVector3(0, 0, 0), 0, _world, false);
     snake->initSnake(btVector3(0, 0, 24), 32, 1.0f, 0.75f, true);
     snake->setAppearance(_nodeShader, _nodeMaterial, _nodeTexture);
-    _debugSnakeCreature = snake;
 
     _simulationInstances.push_back(new SimInstance(0, crtr, canv, _simulationTime, 10.0f));
 
@@ -172,22 +174,25 @@ int SimulationManager::runSimulationInstance(GenomeBase& genome, int ticket, flo
     int grid_x = ticket % simInstanceGridSize;
     int grid_z = ticket / simInstanceGridSize;
 
-    glm::vec2 p = glm::vec2(
-        (grid_x - simInstanceGridSize/2) * canvasSize * 2.0f + grid_x * canvasMargin,
-        (grid_z - simInstanceGridSize/2) * canvasSize * 2.0f + grid_z * canvasMargin
-    );
-    btVector3 position(p.x, 0, p.y);
-    glm::vec3 canvasPos = glm::vec3(position.x(), position.y() + 0.05f, position.z());
+    btScalar spaceExt = canvasSize/2.0;
+    btScalar stride = canvasSize * 2.0 + spaceExt * 2.0;
+    btScalar xpos = (grid_x - simInstanceGridSize / 2) * stride + grid_x * canvasMargin;
+    btScalar zpos = (grid_z - simInstanceGridSize / 2) * stride + grid_z * canvasMargin;
+
+    btVector3 position(xpos, 0, zpos);
+    btVector3 canvasPos = position + btVector3(0 , 0.05f, 0);
 
     SimCanvasNode* canv;
-    canv = new SimCanvasNode(canvasPos, CanvasTag, canvasSize, _canvasRes.x, _canvasRes.y, _world);
+    canv = new SimCanvasNode(canvasPos, CanvasTag, canvasSize, spaceExt, _canvasRes.x, _canvasRes.y, _world);
     canv->setAppearance(_nodeShader, _terrainMaterial, _nodeTexture);
     canv->setCanvasUpdateShader(_canvasUpdateShader);
     canv->enableBounds();
     canv->addToWorld();
 
-    SimCreature* crtr;
-    crtr = new SimCreature(position, _numWalkerLegs, _world, true);
+    SimCreature* crtr = (bUseMorphologyGenomes) ?
+        new SimCreature(position, _testMorphologyGenome, _world) :
+        new SimCreature(position, _numWalkerLegs, _world, true);
+
     crtr->setAppearance(_nodeShader, _nodeMaterial, _nodeTexture);
     crtr->setControlPolicyGenome(genome);
     crtr->addToWorld();
@@ -247,7 +252,7 @@ void SimulationManager::handleCollisions(btDynamicsWorld* worldPtr)
                 canvasPtr->addBrushStroke(localPt, pt.getAppliedImpulse());
             }
         }
-        contactManifold->clearManifold();	
+        //contactManifold->clearManifold();	
     }
 }
 
@@ -269,7 +274,7 @@ void SimulationManager::updateTime()
 
     if (steps > 0) {
         btScalar timeToProcess = steps * _frameTime * simulationSpeed;
-        while (timeToProcess >= 0.0001) {
+        while (timeToProcess >= 0.01) {
             performTrueSteps(_fixedTimeStep);
             timeToProcess -= _fixedTimeStepMillis;
         }
@@ -311,7 +316,8 @@ void SimulationManager::updateSimInstances(double timeStep)
 
     // close simulation instances that are finished
     for (int i = 0; i < _simulationInstances.size(); i++) {
-        if (_simulationTime - _simulationInstances[i]->getStartTime() > _simulationInstances[i]->getDuration()) {
+        if (_simulationInstances[i]->IsAborted() ||
+            _simulationTime - _simulationInstances[i]->getStartTime() > _simulationInstances[i]->getDuration()) {
 
             ofLog() << "ended : " << _simulationInstances[i]->getID();
 
@@ -373,9 +379,6 @@ void SimulationManager::draw()
         s->getCanvas()->draw();
         s->getCreature()->draw();
     }
-    if (bTestMode) {
-        _debugSnakeCreature->draw();
-    }
     if (bDebugDraw) {
         _world->debugDrawWorld();
         ofDrawIcoSphere(lightPosition, 2.0f);
@@ -422,6 +425,13 @@ void SimulationManager::shiftFocus()
     focusIndex = (focusIndex + 1) % _simulationInstances.size();
 }
 
+void SimulationManager::nextSimulation()
+{
+    for (SimInstance* i : _simulationInstances) {
+        i->abort();
+    }
+}
+
 // As morphology is fixed this will only work for the walker creature for now
 MorphologyInfo SimulationManager::getWalkerMorphologyInfo()
 {
@@ -429,6 +439,11 @@ MorphologyInfo SimulationManager::getWalkerMorphologyInfo()
     int numJoints = numBodyParts - 1;
 
     return MorphologyInfo(numBodyParts, numJoints);
+}
+
+DirectedGraph SimulationManager::getMorphologyGenome()
+{
+    return _testMorphologyGenome;
 }
 
 void SimulationManager::writeToPixels(const ofTexture& tex, ofPixels& pix)
@@ -481,10 +496,19 @@ void SimulationManager::setMaxParallelSims(int max)
     simInstanceGridSize = sqrt(max);
 }
 
+void SimulationManager::setMorphologyGenomeModeEnabled(bool b)
+{
+    bUseMorphologyGenomes = b;
+}
+
+bool SimulationManager::IsMorphologyGenomeModeEnabled()
+{
+    return bUseMorphologyGenomes;
+}
+
 void SimulationManager::dealloc()
 {
     if (_terrainNode)           delete _terrainNode;
-    if (_debugSnakeCreature)    delete _debugSnakeCreature;
 
     for (auto &s : _simulationInstances) {
         delete s;

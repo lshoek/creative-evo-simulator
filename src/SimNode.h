@@ -9,9 +9,9 @@ public:
 	~SimNode();
 
 	// conveniece init functions
-	void initBox(glm::vec3 position, glm::vec3 size, float mass);
-	void initCapsule(glm::vec3 position, float radius, float height, float mass);
-	void initPlane(glm::vec3 position, float size, float mass);
+	void initBox(btVector3 position, btVector3 size, float mass);
+	void initCapsule(btVector3 position, float radius, float height, float mass);
+	void initPlane(btVector3 position, float size, float mass);
 
 	virtual void draw() override;
 };

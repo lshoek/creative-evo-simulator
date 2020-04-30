@@ -159,6 +159,15 @@
     <ClCompile Include="src\SimInstance.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\DirectedGraph.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\DirectedGraphNode.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\DirectedGraphConnection.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ofApp.h">
@@ -321,6 +330,18 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="src\SimInstance.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\DirectedGraph.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\DirectedGraphNode.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\DirectedGraphConnection.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SimDefines.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

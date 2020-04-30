@@ -40,11 +40,15 @@ public:
     SimCreature* getFocusCreature();
     glm::vec3 getFocusOrigin();
     void shiftFocus();
+    void nextSimulation();
 
     MorphologyInfo getWalkerMorphologyInfo();
+    DirectedGraph getMorphologyGenome();
     void initTestEnvironment();
 
     void setMaxParallelSims(int max);
+    void setMorphologyGenomeModeEnabled(bool b);
+    bool IsMorphologyGenomeModeEnabled();
 
     bool bDebugDraw = false;
     bool bTestMode = false;
@@ -52,7 +56,7 @@ public:
 
     glm::vec3 lightPosition;
     glm::vec3 lightDirection;
-    int simulationSpeed = 1;
+    uint32_t simulationSpeed = 1;
 
 private:
     void initPhysics();
@@ -70,9 +74,8 @@ private:
     std::mutex _cbQueueMutex;
 
     ofxGrabCam cam;
-
     SimNode* _terrainNode;
-    SimCreature* _debugSnakeCreature;
+    DirectedGraph _testMorphologyGenome;
 
     // physics
     btBroadphaseInterface* _broadphase;
@@ -111,19 +114,20 @@ private:
     std::shared_ptr<ofMaterial> _nodeMaterial;
     std::shared_ptr<ofLight> _light;
 
-    float terrainSize = 64.0f;
-    float canvasSize = 4.0f;
-    float canvasMargin = 2.0f;
+    btScalar terrainSize = 64.0;
+    btScalar canvasSize = 4.0;
+    btScalar canvasMargin = 4.0;
 
     bool bInitialized = false;
+    bool bUseMorphologyGenomes = true;
 
-    int focusIndex = 0;
     int simInstanceId = 0;
-    int simInstanceLimit = 256;
     int simInstanceGridSize = 2;
+    uint32_t simInstanceLimit = 256;
+    uint32_t focusIndex = 0;
 
     // for fixed walker creature
-    int _numWalkerLegs = 8;
+    uint32_t _numWalkerLegs = 8;
 
     // pbo
     ImageSaverThread _imageSaverThread;
@@ -131,7 +135,7 @@ private:
     ofBufferObject* pboPtr;
     ofPixels writePixels;
     ofBuffer writeBuffer;
-    int iPBO;
+    uint32_t iPBO;
 
     glm::ivec2 _canvasRes;
 

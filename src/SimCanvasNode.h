@@ -6,7 +6,7 @@
 class SimCanvasNode : public SimNodeBase
 {
 public:
-	SimCanvasNode(glm::vec3 position, int tag, float size, int x_res, int y_res, btDynamicsWorld* ownerWorld);
+	SimCanvasNode(btVector3 position, int tag, float size, float extraBounds, int x_res, int y_res, btDynamicsWorld* ownerWorld);
 	~SimCanvasNode();
 
 	void update();
@@ -31,10 +31,11 @@ private:
 		}
 	};
 
-	void initPlane(glm::vec3 position, float size);
+	void initPlane(btVector3 position, float size);
 
 	glm::ivec2 _canvasRes;
 	float _canvasSize;
+	float _margin;
 	
 	ofBufferObject _brushCoordBuffer;
 	std::vector<BrushCoord> _brushCoordQueue;

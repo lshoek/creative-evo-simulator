@@ -50,6 +50,7 @@ void ofApp::startSimulation()
 {
 	simulationManager.init();
 	simulationManager.setMaxParallelSims(settings.get("evo.max_parallel_evals", 4));
+	simulationManager.setMorphologyGenomeModeEnabled(settings.get("mode.body_genomes", true));
 	simulationManager.bDebugDraw = settings.get("mode.debugdraw", true);
 	simulationManager.bCameraSnapFocus = settings.get("mode.snapfocus", true);
 	simulationManager.startSimulation();
@@ -141,7 +142,7 @@ void ofApp::imGui()
 				ImGui::SliderFloat3("light_pos", &simulationManager.lightPosition[0], -20.0f, 20.0f);
 				ImGui::Separator();
 				ImGui::Text("sim_time: %.02f", simulationManager.getSimulationTime());
-				ImGui::SliderInt("sim_speed", &simulationManager.simulationSpeed, 0, 16);
+				ImGui::SliderInt("sim_speed", (int*)&simulationManager.simulationSpeed, 0, 16);
 				if (simulationManager.isSimulationInstanceActive()) {
 					ImGui::SliderFloat("motor_strength", &simulationManager.getFocusCreature()->m_motorStrength, 0, 1);
 					ImGui::SliderFloat("target_freq", &simulationManager.getFocusCreature()->m_targetFrequency, 1, 60);
@@ -199,6 +200,9 @@ void ofApp::keyPressed(int key)
 			}
 			if (key == 'c') {
 				simulationManager.shiftFocus();
+			}
+			if (key == 'z') {
+				simulationManager.nextSimulation();
 			}
 		}
 	}

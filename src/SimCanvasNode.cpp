@@ -1,4 +1,5 @@
 #include "SimCanvasNode.h"
+#include "SimDefines.h"
 #include "SimUtils.h"
 #include "toolbox.h"
 
@@ -6,8 +7,8 @@
 // This number should be synced with BRUSH_COORD_BUF_MAXSIZE in canvas.frag.
 #define BRUSH_COORD_BUF_MAXSIZE 8
 
-SimCanvasNode::SimCanvasNode(glm::vec3 position, int tag, float size, int x_res, int y_res, btDynamicsWorld* ownerWorld) :
-    SimNodeBase(tag, ownerWorld), _canvasSize(size)
+SimCanvasNode::SimCanvasNode(btVector3 position, int tag, float size, float extraBounds, int x_res, int y_res, btDynamicsWorld* ownerWorld) :
+    SimNodeBase(tag, ownerWorld), _canvasSize(size), _margin(extraBounds)
 {
     _color = ofColor::white;
     _brushColor = ofColor::black;
@@ -33,7 +34,7 @@ SimCanvasNode::SimCanvasNode(glm::vec3 position, int tag, float size, int x_res,
     _brushCoordBuffer.setData(BrushCoord::size()*BRUSH_COORD_BUF_MAXSIZE, NULL, GL_DYNAMIC_DRAW);
 }
 
-void SimCanvasNode::initPlane(glm::vec3 position, float size)
+void SimCanvasNode::initPlane(btVector3 position, float size)
 {
     _shape = new btStaticPlaneShape(btVector3(0, 1, 0), 0);
     _mesh = std::make_shared<ofMesh>(tb::gridMesh(2, 2, size * 2, true));
@@ -156,16 +157,16 @@ void SimCanvasNode::enableBounds()
     }
     else {
         float thickness = 1.0f;
-        glm::vec3 fromCenter = glm::vec3(0, 0, _canvasSize + thickness);
-        glm::vec3 fwd = glm::vec3(0, 0, 1);
+        glm::vec3 fromCenter = glm::vec3(0, 0, _canvasSize + _margin + thickness);
+        glm::vec3 ax = glm::vec3(0, 0, 1);
 
         for (int i = 0; i < 4; i++) {
             _bounds[i] = std::make_unique<SimNode>(BoundsTag, _ownerWorld);
-            _bounds[i]->initBox(glm::vec3(0), glm::vec3(_canvasSize, _canvasSize, thickness), 0);
+            _bounds[i]->initBox(btVector3(0, 0, 0), btVector3(_canvasSize+_margin, _canvasSize, thickness), 0);
 
-            glm::quat rot = glm::rotation(fwd, glm::rotate(fwd, float(HALF_PI) * i, glm::vec3(0, 1, 0)));
+            glm::quat rot = glm::rotation(ax, glm::rotate(ax, float(HALF_PI) * i, glm::vec3(0, 1, 0)));
             _bounds[i]->setRotation(rot);
-            _bounds[i]->setPosition(getPosition() + rot * fromCenter);
+            _bounds[i]->setPosition((getPosition() + glm::vec3(0, _canvasSize, 0)) + rot * fromCenter);
             _bounds[i]->addToWorld();
             _bounds[i]->bRender = false;
         }

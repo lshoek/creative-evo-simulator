@@ -4,14 +4,6 @@
 #include "bullet/LinearMath/btVector3.h"
 #include "ofVectorMath.h"
 
-#define AnonymousTag 0
-#define BodyTag 1
-#define JointTag 2
-#define BrushTag 3
-#define TerrainTag 4
-#define CanvasTag 5
-#define BoundsTag 6
-
 #define SIMD_PI_2 ((SIMD_PI)*0.5)
 #define SIMD_PI_4 ((SIMD_PI)*0.25)
 #define SIMD_PI_8 ((SIMD_PI)*0.125)
@@ -54,6 +46,33 @@ public:
 
 	};
 
+	// Origin lies inside the box so there is always an intersection
+	static btScalar distToSurface(btVector3 dir, btVector3 boxExtents)
+	{
+		btVector3 o = btVector3(0, 0, 0);
+
+		btScalar tmin = (-boxExtents.x() - o.x()) / dir.x();
+		btScalar tmax = (boxExtents.x() - o.x()) / dir.x();
+		if (tmin > tmax) std::swap(tmin, tmax);
+
+		btScalar tymin = (-boxExtents.y() - o.y()) / dir.y();
+		btScalar tymax = (boxExtents.y() - o.y()) / dir.y();
+		if (tymin > tymax) std::swap(tymin, tymax);
+
+		btScalar tzmin = (-boxExtents.z() - o.z()) / dir.z();
+		btScalar tzmax = (boxExtents.z() - o.z()) / dir.z();
+		if (tzmin > tzmax) std::swap(tzmin, tzmax);
+
+		if (tzmin > tmin) tmin = tzmin;
+		if (tzmax < tmax) tmax = tzmax;
+
+		btScalar t = tmin;
+
+		// tmin should always be positive as the intersection is in front of the origin of the ray
+		return t;
+	}
+
+	// Conversion functions
     static glm::vec3 bulletToGlm(const btVector3& v) { return glm::vec3(v.getX(), v.getY(), v.getZ()); }
     static btVector3 glmToBullet(const glm::vec3& v) { return btVector3(v.x, v.y, v.z); }
     static glm::quat bulletToGlm(const btQuaternion& q) { return glm::quat(q.getW(), q.getX(), q.getY(), q.getZ()); }

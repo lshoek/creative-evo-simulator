@@ -7,6 +7,9 @@ public:
     SimInstance(int id, SimCreature* crtr, SimCanvasNode* canv, float startTime, float duration);
     ~SimInstance();
 
+    void abort();
+    bool IsAborted();
+
     int getID();
     int getStartTime();
     int getDuration();
@@ -21,4 +24,6 @@ private:
     btDynamicsWorld* _world;
     SimCreature* _creature;
     SimCanvasNode* _canvas;
+
+    bool _bIsAborted = false;
 };

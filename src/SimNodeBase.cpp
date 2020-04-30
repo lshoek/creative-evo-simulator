@@ -12,10 +12,10 @@ void SimNodeBase::setRigidBody(btRigidBody* body)
     _shape = _body->getCollisionShape();
 }
 
-void SimNodeBase::createBody(glm::vec3 position, float mass, void* userPointer)
+void SimNodeBase::createBody(btVector3 position, float mass, void* userPointer)
 {
     btTransform trans = btTransform::getIdentity();
-    trans.setOrigin(SimUtils::glmToBullet(position));
+    trans.setOrigin(position);
 
     btDefaultMotionState* motionState = new btDefaultMotionState(trans);
 

@@ -3,6 +3,16 @@
 SimInstance::SimInstance(int id, SimCreature* crtr, SimCanvasNode* canv, float startTime, float duration) :
 	_instanceId(id), _world(canv->_ownerWorld), _creature(crtr), _canvas(canv), _startTime(startTime), _duration(duration) {}
 
+void SimInstance::abort()
+{
+	_bIsAborted = true;
+}
+
+bool SimInstance::IsAborted() 
+{
+	return _bIsAborted;
+}
+
 int SimInstance::getID()
 {
 	return _instanceId;

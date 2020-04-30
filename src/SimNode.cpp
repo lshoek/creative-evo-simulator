@@ -8,21 +8,21 @@ SimNode::SimNode(int tag, btDynamicsWorld* owner) : SimNodeBase(tag, owner)
 }
 SimNode::SimNode(int tag, ofColor color, btDynamicsWorld* owner) : SimNodeBase(tag, color, owner) {}
 
-void SimNode::initBox(glm::vec3 position, glm::vec3 size, float mass)
+void SimNode::initBox(btVector3 position, btVector3 size, float mass)
 {
-    _shape = new btBoxShape(btVector3(size.x, size.y, size.z));
-    _mesh = std::make_shared<ofMesh>(ofMesh::box(size.x * 2, size.y * 2, size.z * 2));
+    _shape = new btBoxShape(size);
+    _mesh = std::make_shared<ofMesh>(ofMesh::box(size.x() * 2, size.y() * 2, size.z() * 2));
     createBody(position, mass, this);
 }
 
-void SimNode::initCapsule(glm::vec3 position, float radius, float height, float mass)
+void SimNode::initCapsule(btVector3 position, float radius, float height, float mass)
 {
     _shape = new btCapsuleShape(radius, height);
     _mesh = std::make_shared<ofMesh>(ofMesh::cylinder(radius, height));
     createBody(position, mass, this);
 }
 
-void SimNode::initPlane(glm::vec3 position, float size, float mass)
+void SimNode::initPlane(btVector3 position, float size, float mass)
 {
     _shape = new btStaticPlaneShape(btVector3(0, 1, 0), 0);
     _mesh = std::make_shared<ofMesh>(tb::gridMesh(2, 2, size*2, true));
