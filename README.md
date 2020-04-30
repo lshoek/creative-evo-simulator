@@ -14,4 +14,5 @@ Uses a modified version of openFrameworks 0.11 using boost 1.72 (instead of 1.65
 - MultiNEAT (https://github.com/lshoek/MultiNEAT)
 
 ![Preview](preview/preview-app.jpg)
+![Preview](preview/preview-app-walkers.jpg)
 ![Preview](preview/preview-art.jpg)
