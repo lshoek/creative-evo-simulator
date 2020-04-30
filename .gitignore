@@ -24,8 +24,7 @@ bld/
 [Oo]bj/
 [Ll]og/
 
-bin/data/textures
-bin/data/output
+bin/data/output/artworks
 
 # Exclude binaries and etc
 *.exe
