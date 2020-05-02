@@ -46,10 +46,16 @@ public:
 
 	};
 
+	static btVector3 sign(btVector3 v)
+	{
+		return btVector3(v.x() >= 0 ? 1. : -1., v.y() >= 0 ? 1. : -1., v.z() >= 0 ? 1. : -1.);
+	}
+
 	// Origin lies inside the box so there is always an intersection
-	static btScalar distToSurface(btVector3 dir, btVector3 boxExtents)
+	static btScalar distToSurface(btVector3 dir, btVector3 boxExtents, btVector3& perp)
 	{
 		btVector3 o = btVector3(0, 0, 0);
+		btVector3 surf = btVector3(1, 0, 0);
 
 		btScalar tmin = (-boxExtents.x() - o.x()) / dir.x();
 		btScalar tmax = (boxExtents.x() - o.x()) / dir.x();
@@ -59,14 +65,26 @@ public:
 		btScalar tymax = (boxExtents.y() - o.y()) / dir.y();
 		if (tymin > tymax) std::swap(tymin, tymax);
 
+		if (tymin > tmin) {
+			tmin = tymin;
+			surf = btVector3(0, 1, 0);
+		}
+		if (tymax < tmax) tmax = tymax;
+
 		btScalar tzmin = (-boxExtents.z() - o.z()) / dir.z();
 		btScalar tzmax = (boxExtents.z() - o.z()) / dir.z();
 		if (tzmin > tzmax) std::swap(tzmin, tzmax);
 
-		if (tzmin > tmin) tmin = tzmin;
+		if (tzmin > tmin) {
+			tmin = tzmin;
+			surf = btVector3(0, 0, 1);
+		}
 		if (tzmax < tmax) tmax = tzmax;
 
 		btScalar t = tmin;
+		
+		// perp is perpendicular to the surface 
+		perp = surf * sign(dir);
 
 		// tmin should always be positive as the intersection is in front of the origin of the ray
 		return t;

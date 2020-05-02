@@ -1,6 +1,7 @@
 #include "SimCreature.h"
 #include "SimDefines.h"
 #include "SimUtils.h"
+#include "MathUtils.h"
 #include "toolbox.h"
 
 #include "DirectedGraph.h"
@@ -70,15 +71,20 @@ void SimCreature::dfs(
 	recursionLimits[graphNode->getGraphIndex()]--;
 
 	// Log some graph level info
-	ofLog() << graphNode->id << " : " << recursionLimits[graphNode->getGraphIndex()] << " x " << cascadingScale;
+	//ofLog() << graphNode->id << " : " << recursionLimits[graphNode->getGraphIndex()] << " x " << cascadingScale;
 	
 	SimNode* simNodePtr = new SimNode(BodyTag, m_ownerWorld);
 
 	if (!bIsRootNode) {
 		segmentIndex++;
 
-		btTransform parentTrans = parentSimNode->getRigidBody()->getWorldTransform();
+		btTransform rootTrans = m_bodies[0]->getWorldTransform();
+		btTransform parentWorldTrans = parentSimNode->getRigidBody()->getWorldTransform();
+
 		btVector3 boxSizeParent = parentDims;
+
+		btVector3 fwd = btVector3(1, 0, 0);
+		btVector3 up = btVector3(0, 1, 0);
 
 		btVector3 boxSize = graphNode->primitiveInfo.dimensions * cascadingScale;
 		boxSize = btVector3(btMax(boxSize.x(), GraphNode::minSize), btMax(boxSize.y(), GraphNode::minSize), btMax(boxSize.z(), GraphNode::minSize));
@@ -87,27 +93,38 @@ void SimCreature::dfs(
 		btVector3 halfExtents = boxSize / 2;
 		btVector3 halfExtentsParent = boxSizeParent / 2;
 
-		float distFromOrigin = sqrt((halfExtents.x() * halfExtents.x()) + (halfExtents.x() * halfExtents.x()));
-		float distFromParentOrigin = sqrt((halfExtentsParent.x() * halfExtentsParent.x()) + (halfExtentsParent.x() * halfExtentsParent.x()));
+		// Calculate local anchor points
+		btVector3 dirFromParentLocal = incoming->jointInfo.parentAnchorDir.normalize();
+		btVector3 dirFromChildLocal = incoming->jointInfo.childAnchorDir.normalize();
 
-		btTransform trans;
-		trans.setIdentity();
-		trans.setOrigin(parentTrans.getOrigin());
-		trans.setRotation(incoming->jointInfo.rotation);
+		// Calculate local anchor points
+		btVector3 parentNormal, childNormal;
+		btVector3 parentAnchor = dirFromParentLocal * SimUtils::distToSurface(dirFromParentLocal, halfExtentsParent, parentNormal);
+		btVector3 childAnchor = dirFromChildLocal * SimUtils::distToSurface(dirFromChildLocal, halfExtents, childNormal);
 
-		btCollisionShape* shape = new btBoxShape(halfExtents);
-		btRigidBody* body = localCreateRigidBody(1.0f, trans, shape, this);
-
-		btVector3 dirFromParent = incoming->jointInfo.parentAnchor.normalize();
-		btVector3 dirFromChild = dirFromParent * -1.0;
-		btVector3 pAnchor = dirFromParent * SimUtils::distToSurface(dirFromParent, halfExtentsParent);
-		btVector3 cAnchor = dirFromChild * SimUtils::distToSurface(dirFromChild, halfExtents);
-		
-		btHingeConstraint* joint = new btHingeConstraint(
-			*parentSimNode->getRigidBody(), *body, 
-			pAnchor, cAnchor, incoming->jointInfo.axis, incoming->jointInfo.axis
+		// Specify alignment transformations to anchor space reference frames
+		btTransform parentAnchorSpaceTrans = btTransform(
+			SimUtils::glmToBullet(glm::rotation(SimUtils::bulletToGlm(fwd), SimUtils::bulletToGlm(parentNormal))), 
+			parentAnchor
 		);
-		joint->setLimit(-SIMD_HALF_PI * 0.5f, SIMD_HALF_PI * 0.5f);
+		btTransform childAnchorSpaceTrans = btTransform(
+			SimUtils::glmToBullet(glm::rotation(SimUtils::bulletToGlm(fwd), SimUtils::bulletToGlm(dirFromChildLocal))), 
+			childAnchor
+		);
+
+		// Build child world transformation and rigid body
+		btTransform childWorldTrans = parentWorldTrans * childAnchorSpaceTrans.inverse() * parentAnchorSpaceTrans;
+		btCollisionShape* shape = new btBoxShape(halfExtents);
+		btRigidBody* body = localCreateRigidBody(1.0f, childWorldTrans, shape, this);
+
+		btVector3 rotAxis = incoming->jointInfo.axis; 
+
+		btHingeConstraint* joint = new btHingeConstraint(
+			*parentSimNode->getRigidBody(), *body,
+			parentAnchorSpaceTrans, childAnchorSpaceTrans
+		);
+		joint->setLimit(-SIMD_HALF_PI * btScalar(0.5), SIMD_HALF_PI * btScalar(0.5));
+		joint->setDbgDrawSize(0.25f);
 
 		simNodePtr->setRigidBody(body);
 		simNodePtr->setMesh(std::make_shared<ofMesh>(ofMesh::box(boxSize.x(), boxSize.y(), boxSize.z())));
@@ -337,63 +354,6 @@ void SimCreature::initWalker(btVector3 position, uint32_t numLegs, btDynamicsWor
 
 	// Should not yet be in world
 	removeFromWorld();
-	bInitialized = true;
-}
-
-// use this for debug only
-void SimCreature::initSnake(btVector3 position, unsigned int numNodes, float boxExtents, float distPct, bool bRandomSize)
-{
-	m_nodes.resize(numNodes);
-
-	btVector3 start = btVector3(position.x(), boxExtents, position.z());
-	btVector3 size = btVector3(boxExtents, boxExtents, boxExtents);
-	btVector3 cur, prev = start;
-
-	glm::vec3 dir = right;
-	glm::quat lookatRot;
-
-	float maxDistBetweenNodes = ofLerp(0, sqrt((boxExtents * 2) * (boxExtents * 2) * 3), distPct);
-
-	cur = start;
-	for (int i = 0; i < numNodes; i++)
-	{
-		char id[32];
-		sprintf_s(id, "testNode_%d", i);
-
-		lookatRot = tb::quatDiff(right, glm::rotation(right, dir) * glm::rotate(right, 0.125f, up));
-		dir = glm::normalize(lookatRot * right);
-
-		prev = cur;
-		cur = prev + SimUtils::glmToBullet(dir) * maxDistBetweenNodes;
-
-		if (bRandomSize) {
-			size = btVector3(ofRandom(boxExtents / 2, boxExtents), boxExtents, ofRandom(boxExtents / 2, boxExtents));
-		}
-		m_nodes[i] = new SimNode(AnonymousTag, m_ownerWorld);
-		m_nodes[i]->initBox(cur, size, 1.0f);
-		m_nodes[i]->setRotation(lookatRot);
-
-		m_ownerWorld->addRigidBody(m_nodes[i]->getRigidBody());
-
-		// constraints
-		btVector3 ax = ofRandom(1.0f) > 0.5f ? btVector3(0, 0, 1) : btVector3(0, 1, 0);
-		if (i > 0) {
-			btVector3 pivotInA(0, 0, 0);
-			btVector3 pivotInB =
-				m_nodes[i - 1]->getRigidBody()->getWorldTransform().inverse()(m_nodes[i]->getRigidBody()->getWorldTransform()(pivotInA));
-
-			btTransform frameInA, frameInB = btTransform::getIdentity();
-			frameInA.setOrigin(pivotInA);
-			frameInB.setOrigin(pivotInB);
-
-			btHingeConstraint* joint = new btHingeConstraint(
-				*m_nodes[i]->getRigidBody(), *m_nodes[i - 1]->getRigidBody(), pivotInA, pivotInB, ax, ax);
-
-			joint->setLimit(SIMD_HALF_PI * -0.5f, SIMD_HALF_PI * 0.5f);
-			m_ownerWorld->addConstraint(joint, true);
-		}
-	}
-	bIsDebugCreature = true;
 	bInitialized = true;
 }
 

@@ -36,3 +36,8 @@ void GraphNode::setGraphIndex(uint32_t index)
 {
 	_graphIndex = index;
 }
+
+bool GraphNode::IsRootNode() 
+{
+	return _bIsRootNode;
+}

@@ -20,6 +20,7 @@ void ofApp::setup()
 	ofSetLogLevel("ofThread", OF_LOG_VERBOSE);
 	ofEnableGLDebugLog();
 	ofLogToConsole();
+	//ofLog() << "Num threads: " << std::thread::hardware_concurrency();
 
 	settings = ofxIniSettings("settings.ini");
 	bEvolve = settings.get("mode.evolve", true);

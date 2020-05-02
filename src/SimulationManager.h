@@ -1,5 +1,10 @@
 #pragma once
+
 #include "bullet/btBulletDynamicsCommon.h"
+#include "bullet/BulletDynamics/Dynamics/btDiscreteDynamicsWorldMt.h"
+#include "bullet/BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h"
+#include "bullet/BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolverMt.h"
+
 #include "SimNode.h"
 #include "SimInstance.h"
 #include "SimDebugDrawer.h"
@@ -79,8 +84,9 @@ private:
 
     // physics
     btBroadphaseInterface* _broadphase;
-    btDefaultCollisionConfiguration* _collisionConfiguration;
+    btDefaultCollisionConfiguration* _collisionConfig;
     btCollisionDispatcher* _dispatcher;
+    btConstraintSolverPoolMt* _solverPool;
     btSequentialImpulseConstraintSolver* _solver;
     btDiscreteDynamicsWorld* _world;
 

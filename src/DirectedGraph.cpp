@@ -2,26 +2,27 @@
 #include "DirectedGraph.h"
 #include "SimUtils.h"
 #include "MathUtils.h"
+#include <random>
 
 GraphNode::PrimitiveInfo randomPrimitive(btScalar min, btScalar max);
-GraphConnection::JointInfo randomJoint();
+GraphConnection::JointInfo randomJoint(default_random_engine& rng);
 
 // simple test graph for now 
 DirectedGraph::DirectedGraph() 
 {
-    initDefault();
-    //initSnake();
+    initRandom();
+    //initCurl();
 }
 
-void DirectedGraph::initDefault()
+void DirectedGraph::initRandom()
 {
     GraphNode* root = new GraphNode("a", randomPrimitive(GraphNode::maxSize*0.25, GraphNode::maxSize), true, 3);
     GraphNode* anotherNode = new GraphNode("b", randomPrimitive(GraphNode::minSize, GraphNode::maxSize), false, 1);
     GraphNode* endNode = new GraphNode("c", randomPrimitive(GraphNode::minSize, GraphNode::maxSize), false, 1);
 
-    root->addConnection(root, randomJoint(), false);
-    root->addConnection(anotherNode, randomJoint(), false);
-    anotherNode->addConnection(endNode, randomJoint(), true);
+    root->addConnection(root, randomJoint(_rng), false);
+    root->addConnection(anotherNode, randomJoint(_rng), false);
+    anotherNode->addConnection(endNode, randomJoint(_rng), true);
 
     _nodes.push_back(root);
     _nodes.push_back(anotherNode);
@@ -30,13 +31,17 @@ void DirectedGraph::initDefault()
     _rootNode = root;
 }
 
-void DirectedGraph::initSnake()
+// Verify that creature initialization works as it should
+void DirectedGraph::initCurl()
 {
-    GraphNode::PrimitiveInfo primInfoTemplate{0, btVector3(0.5, 0.5, 2.0), true};
+    GraphNode::PrimitiveInfo primInfoTemplate{0, btVector3(0.5, 1.0, 2.0), true};
     GraphConnection::JointInfo jointInfoTemplate{};
+    jointInfoTemplate.scalingFactor = 0.75;
+    jointInfoTemplate.parentAnchorDir = btVector3(0.5, -0.5, 1.0).rotate(btVector3(0, 1, 0), SIMD_HALF_PI);
+    jointInfoTemplate.childAnchorDir = btVector3(0.06125, 0.5, 1.0);
 
-    GraphNode* root = new GraphNode("a", primInfoTemplate, true, 8);
-    root->addConnection(root, randomJoint(), false);
+    GraphNode* root = new GraphNode("a", primInfoTemplate, true, 5);
+    root->addConnection(root, jointInfoTemplate, false);
     _nodes.push_back(root);
 
     _rootNode = root;
@@ -45,6 +50,7 @@ void DirectedGraph::initSnake()
 GraphNode::PrimitiveInfo randomPrimitive(btScalar min, btScalar max)
 {
     GraphNode::PrimitiveInfo info;
+
     info.dimensions = btVector3(
         ofRandom(max - min) + min,
         ofRandom(max - min) + min,
@@ -53,18 +59,23 @@ GraphNode::PrimitiveInfo randomPrimitive(btScalar min, btScalar max)
     return info;
 }
 
-GraphConnection::JointInfo randomJoint()
+GraphConnection::JointInfo randomJoint(default_random_engine& rng)
 {
     GraphConnection::JointInfo info;
     float ax = ofRandom(1.0f);
 
+    std::normal_distribution<double> norm(0.0, 1.0);
+    glm::vec3 fwd = glm::vec3(0, 0, 1);
+    btQuaternion q = btQuaternion::getIdentity();
+
     // This is currently leads to lots of broken randomly initialized phenomes
     // A system is required for preventing infeasible morphologies to be placed in the world
-    info.parentAnchor = SimUtils::glmToBullet(MathUtils::randomPointOnSphere());
+    info.parentAnchorDir = SimUtils::glmToBullet(MathUtils::randomPointOnSphere());
+    info.childAnchorDir = SimUtils::glmToBullet(MathUtils::randomPointOnSphere());
 
     info.reflection = btVector3(0, 0, 0);
+    info.rotation = q.slerp(SimUtils::glmToBullet(glm::rotation(fwd, MathUtils::randomPointOnSphere())), norm(rng));
     info.axis = ax < 0.3333f ? btVector3(1, 0, 0) : ax < 0.6666f ? btVector3(0, 1, 0) : btVector3(0, 0, 1);
-    info.rotation = SimUtils::glmToBullet(glm::rotation(glm::vec3(0, 0, 1), MathUtils::randomPointOnSphere()));
     info.scalingFactor = 0.75;
 
     return info;

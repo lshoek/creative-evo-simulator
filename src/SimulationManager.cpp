@@ -96,18 +96,29 @@ void SimulationManager::startSimulation()
 void SimulationManager::initPhysics()
 {
     _broadphase = new btDbvtBroadphase();
-    _collisionConfiguration = new btDefaultCollisionConfiguration();
-    _dispatcher = new btCollisionDispatcher(_collisionConfiguration);
-    _solver = new btSequentialImpulseConstraintSolver();
+    _collisionConfig = new btDefaultCollisionConfiguration();
+
+    bool bMultiThreading = true;
+    if (!bMultiThreading) {
+        _dispatcher = new btCollisionDispatcher(_collisionConfig);
+        _solver = new btSequentialImpulseConstraintSolver();
+        _world = new btDiscreteDynamicsWorld(_dispatcher, _broadphase, _solver, _collisionConfig);
+    }
+    else {
+        _dispatcher = new btCollisionDispatcherMt(_collisionConfig);
+        _solverPool = new btConstraintSolverPoolMt(BT_MAX_THREAD_COUNT);
+        _solver = new btSequentialImpulseConstraintSolverMt();
+        _world = new btDiscreteDynamicsWorldMt(_dispatcher, _broadphase, _solverPool, _solver, _collisionConfig);
+        btSetTaskScheduler(btCreateDefaultTaskScheduler());
+    }
 
     _dbgDrawer = new SimDebugDrawer();
     _dbgDrawer->setDebugMode(
         btIDebugDraw::DBG_DrawWireframe | 
-        btIDebugDraw::DBG_DrawConstraints |
-        btIDebugDraw::DBG_DrawConstraintLimits
+        btIDebugDraw::DBG_DrawConstraints
+        //btIDebugDraw::DBG_DrawConstraintLimits
     );
     
-    _world = new btDiscreteDynamicsWorld(_dispatcher, _broadphase, _solver, _collisionConfiguration);
     _world->setGravity(btVector3(0, -9.81, 0));
     _world->setDebugDrawer(_dbgDrawer);
     _world->setWorldUserInfo(this);
@@ -139,11 +150,6 @@ void SimulationManager::initTestEnvironment()
     crtr = new SimCreature(btVector3(0, 0, 0), 6, _world, true);
     crtr->setAppearance(_nodeShader, _nodeMaterial, _nodeTexture);
     crtr->addToWorld();
-
-    SimCreature* snake;
-    snake = new SimCreature(btVector3(0, 0, 0), 0, _world, false);
-    snake->initSnake(btVector3(0, 0, 24), 32, 1.0f, 0.75f, true);
-    snake->setAppearance(_nodeShader, _nodeMaterial, _nodeTexture);
 
     _simulationInstances.push_back(new SimInstance(0, crtr, canv, _simulationTime, 10.0f));
 
@@ -352,34 +358,36 @@ void SimulationManager::draw()
     }
     cam.begin();
 
-    _light->setPosition(lightPosition);
-    _light->lookAt(_light->getPosition() + lightDirection);
+    if (!bDebugDraw) {
+        _light->setPosition(lightPosition);
+        _light->lookAt(_light->getPosition() + lightDirection);
 
-    _terrainShader->begin();
-    _terrainShader->setUniform3f("light.position", _light->getPosition());
-    _terrainShader->setUniform3f("light.direction", _light->getLookAtDir());
-    _terrainShader->setUniform4f("light.ambient", _light->getAmbientColor());
-    _terrainShader->setUniform4f("light.diffuse", _light->getDiffuseColor());
-    _terrainShader->setUniform4f("light.specular", _light->getSpecularColor());
-    _terrainShader->setUniform3f("eyePos", cam.getPosition());
-    _terrainShader->end();
+        _terrainShader->begin();
+        _terrainShader->setUniform3f("light.position", _light->getPosition());
+        _terrainShader->setUniform3f("light.direction", _light->getLookAtDir());
+        _terrainShader->setUniform4f("light.ambient", _light->getAmbientColor());
+        _terrainShader->setUniform4f("light.diffuse", _light->getDiffuseColor());
+        _terrainShader->setUniform4f("light.specular", _light->getSpecularColor());
+        _terrainShader->setUniform3f("eyePos", cam.getPosition());
+        _terrainShader->end();
 
-    _nodeShader->begin();
-    _nodeShader->setUniform3f("light.position", _light->getPosition());
-    _nodeShader->setUniform3f("light.direction", _light->getLookAtDir());
-    _nodeShader->setUniform4f("light.ambient", _light->getAmbientColor());
-    _nodeShader->setUniform4f("light.diffuse", _light->getDiffuseColor());
-    _nodeShader->setUniform4f("light.specular", _light->getSpecularColor());
-    _nodeShader->setUniform3f("eyePos", cam.getPosition());
-    _nodeShader->end();
+        _nodeShader->begin();
+        _nodeShader->setUniform3f("light.position", _light->getPosition());
+        _nodeShader->setUniform3f("light.direction", _light->getLookAtDir());
+        _nodeShader->setUniform4f("light.ambient", _light->getAmbientColor());
+        _nodeShader->setUniform4f("light.diffuse", _light->getDiffuseColor());
+        _nodeShader->setUniform4f("light.specular", _light->getSpecularColor());
+        _nodeShader->setUniform3f("eyePos", cam.getPosition());
+        _nodeShader->end();
 
 
-    _terrainNode->draw();     
-    for (auto &s : _simulationInstances) {
-        s->getCanvas()->draw();
-        s->getCreature()->draw();
+        _terrainNode->draw();
+        for (auto& s : _simulationInstances) {
+            s->getCanvas()->draw();
+            s->getCreature()->draw();
+        }
     }
-    if (bDebugDraw) {
+    else {
         _world->debugDrawWorld();
         ofDrawIcoSphere(lightPosition, 2.0f);
     }
@@ -516,7 +524,7 @@ void SimulationManager::dealloc()
 
     delete _world;
     delete _solver;
-    delete _collisionConfiguration;
+    delete _collisionConfig;
     delete _dispatcher;
     delete _broadphase;
 }

@@ -19,9 +19,6 @@ public:
 	SimCreature(btVector3 position, uint32_t numLegs, btDynamicsWorld* ownerWorld, bool bInit);
 	~SimCreature();
 
-	void initWalker(btVector3 position, uint32_t numLegs, btDynamicsWorld* ownerWorld);
-	void initSnake(btVector3 position, unsigned int numNodes, float boxExtents, float distPct, bool bRandomSize);
-
 	void update(double timeStep);
 	void draw();
 
@@ -64,6 +61,7 @@ public:
 	float m_targetFrequency;
 
 private:
+	void initWalker(btVector3 position, uint32_t numLegs, btDynamicsWorld* ownerWorld);
 	void buildPhenome(DirectedGraph* graph);
 	void dfs(
 		GraphNode* graphNode, GraphConnection* incoming, SimNode* parentSimNode, DirectedGraph* graph, 

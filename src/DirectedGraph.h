@@ -2,14 +2,15 @@
 #include "DirectedGraphNode.h"
 #include "DirectedGraphConnection.h"
 #include "ofLog.h"
+#include <random>
 
 class DirectedGraph
 {
 public:
 	DirectedGraph();
 
-	void initDefault();
-	void initSnake();
+	void initRandom();
+	void initCurl();
 	void unwrap();
 
 	void addNode(GraphNode* node);
@@ -22,13 +23,12 @@ public:
 
 	GraphNode* getRootNode();
 	const std::vector<GraphNode*>& getNodes();
-	//const std::vector<GraphConnection*>& getConnections();
 
 private:
 	std::vector<GraphNode*> _nodes;
-	//std::vector<GraphConnection*> _conns;
 
 	GraphNode* _rootNode;
+	std::default_random_engine _rng;
 
 	void dfs(GraphNode* node);
 	void dfsTraverse(GraphNode* node, std::vector<int> recursionLimits);

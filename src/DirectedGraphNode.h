@@ -30,6 +30,8 @@ public:
 	uint32_t getGraphIndex();
 	void setGraphIndex(uint32_t index);
 
+	bool IsRootNode();
+
 	PrimitiveInfo primitiveInfo;
 
 	std::string id;
