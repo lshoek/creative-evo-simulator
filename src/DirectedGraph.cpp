@@ -20,6 +20,7 @@ DirectedGraph::DirectedGraph()
     _rng = std::mt19937(seed);
     _distrib = std::uniform_real_distribution<>(0, 1);
 
+    //initCurl();
     initRandom();
 }
 
@@ -47,9 +48,9 @@ DirectedGraph::DirectedGraph(const DirectedGraph& srcGraph)
 void DirectedGraph::initRandom()
 {
     // Build nodes
-    GraphNode* root = new GraphNode(randomPrimitive(GraphNode::maxSize*0.25, GraphNode::maxSize), true);
-    GraphNode* anotherNode = new GraphNode(randomPrimitive(GraphNode::minSize, GraphNode::maxSize), false);
-    GraphNode* endNode = new GraphNode(randomPrimitive(GraphNode::minSize, GraphNode::maxSize), false);
+    GraphNode* root = new GraphNode(randomPrimitive(GraphNode::maxSize*0.25, GraphNode::maxSize, 2), true);
+    GraphNode* anotherNode = new GraphNode(randomPrimitive(GraphNode::minSize, GraphNode::maxSize, 1), false);
+    GraphNode* endNode = new GraphNode(randomPrimitive(GraphNode::minSize, GraphNode::maxSize, 1), false);
 
     // Register indices in graph
     addNode(root);
@@ -67,21 +68,26 @@ void DirectedGraph::initRandom()
 // Verify that creature initialization works as it should
 void DirectedGraph::initCurl()
 {
-    GraphNode::PrimitiveInfo primInfoTemplate{0, 5, btVector3(0.5, 1.0, 2.0)};
-    GraphConnection::JointInfo jointInfoTemplate{};
-    jointInfoTemplate.scalingFactor = 0.75;
+    GraphNode::PrimitiveInfo primInfoTemplate{0, 1, btVector3(0.5, 1.0, 2.0)};
 
-    //jointInfoTemplate.parentAnchorDir = btVector3(0.5, -0.5, 1.0).rotate(btVector3(0, 1, 0), SIMD_HALF_PI);
-    jointInfoTemplate.childAnchorDir = btVector3(0.25, 0.75, 1.0);
-
-    GraphNode* root = new GraphNode(primInfoTemplate, true);
-    root->addConnection(root, jointInfoTemplate);
-    addNode(root);
-
-    _rootNode = root;
+    GraphNode* a = new GraphNode(primInfoTemplate, true);
+    GraphNode* b = new GraphNode(primInfoTemplate, true);
+    GraphNode* c = new GraphNode(primInfoTemplate, true);
+    GraphNode* d = new GraphNode(primInfoTemplate, true);
+    GraphNode* e = new GraphNode(primInfoTemplate, true);
+    a->addConnection(b, randomJoint());
+    b->addConnection(c, randomJoint());
+    c->addConnection(d, randomJoint());
+    d->addConnection(e, randomJoint());
+    addNode(a);
+    addNode(b);
+    addNode(c);
+    addNode(d);
+    addNode(e);
+    _rootNode = a;
 }
 
-GraphNode::PrimitiveInfo DirectedGraph::randomPrimitive(btScalar min, btScalar max)
+GraphNode::PrimitiveInfo DirectedGraph::randomPrimitive(btScalar min, btScalar max, int minRecursionLimit)
 {
     GraphNode::PrimitiveInfo info;
 
@@ -91,7 +97,7 @@ GraphNode::PrimitiveInfo DirectedGraph::randomPrimitive(btScalar min, btScalar m
         _distrib(_rng) * (max - min) + min
     );
     info.parentAttachmentPlane = randomPointOnSphere();
-    info.recursionLimit = int(_distrib(_rng)*5.0) + 1;
+    info.recursionLimit = int(_distrib(_rng)*3.0) + minRecursionLimit > 0 ? minRecursionLimit : 1;
     return info;
 }
 
@@ -103,7 +109,7 @@ GraphConnection::JointInfo DirectedGraph::randomJoint()
 
     info.childAnchorDir = randomPointOnSphere();
     info.axis = ax < 0.3333f ? btVector3(1, 0, 0) : ax < 0.6666f ? btVector3(0, 1, 0) : btVector3(0, 0, 1);
-    info.scalingFactor = 0.75;
+    info.scalingFactor = (_distrib(_rng) * 0.5) + 0.5;
 
     return info;
 }
@@ -119,13 +125,11 @@ btVector3 DirectedGraph::randomPointOnSphere()
 void DirectedGraph::unfold() 
 {
     _bTraversed = false;
-    _numNodesUnwrapped = 0;
-    _numJointsUnwrapped = 0;
 
     for (GraphNode* gn : _nodes) {
         gn->setGraphIndex(getNodeIndex(gn));
     }
-    dfs(_rootNode);
+    dfs(_rootNode, false);
 }
 
 // Same node should not be registered more than once
@@ -159,7 +163,7 @@ int DirectedGraph::getNodeIndex(GraphNode* node)
 int DirectedGraph::getNumNodesUnwrapped()
 {
     if (!_bTraversed) {
-        dfs(_rootNode);
+        dfs(_rootNode, false);
     }
     return _numNodesUnwrapped;
 }
@@ -167,23 +171,29 @@ int DirectedGraph::getNumNodesUnwrapped()
 int DirectedGraph::getNumJointsUnwrapped()
 {
     if (!_bTraversed) {
-        dfs(_rootNode);
+        dfs(_rootNode, false);
     }
     return _numJointsUnwrapped;
 }
 
-void DirectedGraph::dfs(GraphNode* node)
+void DirectedGraph::dfs(GraphNode* node, bool bPrint)
 {
     std::vector<int> recursionLimits(_nodes.size());
     for (int i = 0; i < recursionLimits.size(); i++) {
         recursionLimits[i] = _nodes[i]->getRecursionLimit();
     }
+    _numNodesUnwrapped = 0;
+    _numJointsUnwrapped = 0;
+
     // todo: check if node is registered
-    dfsTraverse(node, recursionLimits);
+    if (bPrint) {
+        ofLog() << node->primitiveInfo.index << " (root) " << node->conns.size() << " conns.";
+    }
+    dfsTraverse(node, recursionLimits, bPrint);
     _bTraversed = true;
 }
 
-void DirectedGraph::dfsTraverse(GraphNode* node, std::vector<int> recursionLimits)
+void DirectedGraph::dfsTraverse(GraphNode* node, std::vector<int> recursionLimits, bool bPrint)
 {
     int index = getNodeIndex(node);
     recursionLimits[index]--;
@@ -191,10 +201,18 @@ void DirectedGraph::dfsTraverse(GraphNode* node, std::vector<int> recursionLimit
 
     for (GraphConnection* c : node->conns) {
         if (recursionLimits[getNodeIndex(c->child)] > 0) {
+            if (bPrint) {
+                ofLog() << c->parent->primitiveInfo.index << " -> " << c->child->primitiveInfo.index;
+            }
             _numJointsUnwrapped++;
-            dfsTraverse(c->child, recursionLimits);
+            dfsTraverse(c->child, recursionLimits, bPrint);
         }
     }
+}
+
+void DirectedGraph::print()
+{
+    dfs(_rootNode, true);
 }
 
 void DirectedGraph::save()

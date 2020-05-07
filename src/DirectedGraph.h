@@ -24,6 +24,7 @@ public:
 	GraphNode* getRootNode();
 	const std::vector<GraphNode*>& getNodes();
 
+	void print();
 	void save();
 	void load(uint32_t id);
 
@@ -31,7 +32,7 @@ private:
 	int getNodeIndex(GraphNode* node);
 
 	// Random & mutation
-	GraphNode::PrimitiveInfo randomPrimitive(btScalar min, btScalar max);
+	GraphNode::PrimitiveInfo randomPrimitive(btScalar min, btScalar max, int minRecursionLimit);
 	GraphConnection::JointInfo randomJoint();
 	btVector3 randomPointOnSphere();
 
@@ -42,8 +43,8 @@ private:
 	std::random_device _rd;
 	std::uniform_real_distribution<> _distrib;
 
-	void dfs(GraphNode* node);
-	void dfsTraverse(GraphNode* node, std::vector<int> recursionLimits);
+	void dfs(GraphNode* node, bool bPrint);
+	void dfsTraverse(GraphNode* node, std::vector<int> recursionLimits, bool bPrint);
 
 	int _numNodesUnwrapped = 0;
 	int _numJointsUnwrapped = 0;

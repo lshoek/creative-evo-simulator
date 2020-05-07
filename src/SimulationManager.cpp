@@ -98,6 +98,7 @@ void SimulationManager::init()
                 bNoFeasibleCreatureFound = false;
 
                 ofLog() << "success! attempts: " << attempts;
+                _testBodyGenome->print();
                 //_testBodyGenome->save();
             }
             else {
@@ -381,7 +382,9 @@ void SimulationManager::updateSimInstances(double timeStep)
 void SimulationManager::draw()
 {
     if (bCameraSnapFocus) {
-        cam.lookAt(getFocusOrigin());
+        if (getFocusCreature() != nullptr) {
+            cam.lookAt(getFocusOrigin());
+        }
     }
     cam.begin();
 
@@ -433,7 +436,7 @@ float SimulationManager::getSimulationTime()
 
 SimCreature* SimulationManager::getFocusCreature()
 {
-    if (!_simulationInstances.empty()) {
+    if (!_simulationInstances.empty() && focusIndex < _simulationInstances.size()) {
         return _simulationInstances[focusIndex]->getCreature();
     }
     else return nullptr;
@@ -441,10 +444,10 @@ SimCreature* SimulationManager::getFocusCreature()
 
 glm::vec3 SimulationManager::getFocusOrigin()
 {
-    if (!_simulationInstances.empty()) {
+    if (!_simulationInstances.empty() && focusIndex < _simulationInstances.size()) {
         return SimUtils::bulletToGlm(_simulationInstances[focusIndex]->getCreature()->getCenterOfMassPosition());
     }
-    else return glm::vec3(0);
+    else return cam.getGlobalPosition() + cam.getLookAtDir();
 }
 
 ofFbo* SimulationManager::getCanvasFbo()

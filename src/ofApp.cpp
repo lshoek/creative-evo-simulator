@@ -149,9 +149,11 @@ void ofApp::imGui()
 				ImGui::Separator();
 				ImGui::Text("sim_time: %.02f", simulationManager.getSimulationTime());
 				ImGui::SliderInt("sim_speed", (int*)&simulationManager.simulationSpeed, 0, 16);
+
+				// Todo: prevent from failing
 				if (simulationManager.isSimulationInstanceActive()) {
-					ImGui::SliderFloat("motor_strength", &simulationManager.getFocusCreature()->m_motorStrength, 0, 1);
-					ImGui::SliderFloat("target_freq", &simulationManager.getFocusCreature()->m_targetFrequency, 1, 60);
+					//ImGui::SliderFloat("motor_strength", &simulationManager.getFocusCreature()->m_motorStrength, 0, 1);
+					//ImGui::SliderFloat("target_freq", &simulationManager.getFocusCreature()->m_targetFrequency, 1, 60);
 					ImGui::Image((void*)(intptr_t)simulationManager.getCanvasFbo()->getTexture().getTextureData().textureID, ImVec2(size.x, size.x));
 					ImGui::Separator();
 				}

@@ -95,69 +95,69 @@ void SimCreature::dfs(
 		btVector3 halfExtentsParent = boxSizeParent / 2;
 
 		// Calculate parent attachment point from plane
-		btVector3 planeForward = incoming->parent->primitiveInfo.parentAttachmentPlane;
-		btVector3 planeRight = planeForward.cross(planeForward.rotate(up, SIMD_HALF_PI));
+		btVector3 planeForward = incoming->parent->primitiveInfo.parentAttachmentPlane.normalize();
+		btVector3 planeRight = planeForward.cross(planeForward.rotate(up, SIMD_HALF_PI).normalize()).normalize();
 
 		// Calculate local anchor points
-		btVector3 dirFromParentLocal = planeRight.rotate(planeForward, SIMD_2_PI * attachment);
-		btVector3 dirFromChildLocal = incoming->jointInfo.childAnchorDir.normalize();
+		btVector3 parentAnchorDirLocal = planeRight.rotate(planeForward, SIMD_2_PI * attachment).normalize();
+		btVector3 childAnchorDirLocal = incoming->jointInfo.childAnchorDir.normalize();
 
 		// Calculate local anchor points
-		btVector3 parentNormal, childNormal;
-		btVector3 parentAnchorLocal = dirFromParentLocal * SimUtils::distToSurface(dirFromParentLocal, halfExtentsParent, parentNormal);
-		btVector3 childAnchorLocal = dirFromChildLocal * SimUtils::distToSurface(dirFromChildLocal, halfExtents, childNormal);
+		btVector3 parentNormalLocal, childNormalLocal;
+		btVector3 parentAnchorLocal = parentAnchorDirLocal * SimUtils::distToSurface(parentAnchorDirLocal, halfExtentsParent, parentNormalLocal);
+		btVector3 childAnchorLocal = childAnchorDirLocal * SimUtils::distToSurface(childAnchorDirLocal, halfExtents, childNormalLocal);
 
 		// Specify local origin-to-anchor translations
-		btTransform localParentAnchorTrans = btTransform(
-			btQuaternion::getIdentity(),
-			parentAnchorLocal
-		);
-		btTransform localChildAnchorTrans = btTransform(
-			btQuaternion::getIdentity(),
-			childAnchorLocal
-		);
-		btTransform childToParentSpaceTrans = localChildAnchorTrans.inverse() * localParentAnchorTrans;
-		btTransform childToWorldTrans = parentWorldTrans * childToParentSpaceTrans;
+		btTransform parentAnchorLocalTrans = btTransform(btQuaternion::getIdentity(), parentAnchorLocal);
+		btTransform childAnchorLocalTrans = btTransform(btQuaternion::getIdentity(), childAnchorLocal);
 
-		// These two should now be the same
-		btVector3 parentAnchorWorld = parentWorldTrans * parentAnchorLocal;
-		btVector3 childAnchorWorld = childToWorldTrans * childAnchorLocal;
+		// Only store the translational component in the child world transform for now
+		btTransform childToParentSpaceTrans = childAnchorLocalTrans.inverse() * parentAnchorLocalTrans;
+		btTransform childWorldTempTrans = btTransform(btQuaternion::getIdentity(), (parentWorldTrans * childToParentSpaceTrans).getOrigin());
 
-		btVector3 parentNormalWorld = (parentWorldTrans * parentNormal).normalize();
-		btVector3 childNormalWorld = (childToWorldTrans * childNormal).normalize();
+		// Definitive anchor point
+		btVector3 anchorWorld = parentWorldTrans * parentAnchorLocal;
+		btTransform anchorWorldTrans = btTransform(btQuaternion::getIdentity(), anchorWorld);
 
-		// Rotation to align parent and child normals
+		btVector3 parentNormalWorld = (parentWorldTrans * parentNormalLocal).normalize();
+		btVector3 parentAnchorDirWorld = (parentWorldTrans * parentAnchorDirLocal).normalize();
+
+		// Rotation to align parent and child normals in world space
 		btQuaternion anchorAlignmentRot = SimUtils::glmToBullet(glm::rotation(
-			SimUtils::bulletToGlm(childNormalWorld),
-			SimUtils::bulletToGlm(-parentNormalWorld)
+			SimUtils::bulletToGlm(childAnchorLocal.normalize()), //childAnchorDirWorld
+			SimUtils::bulletToGlm(-parentNormalWorld) // -parentAnchorDirWorld
 		));
 		btTransform anchorAlignmentRotTrans = btTransform(anchorAlignmentRot);
-
-		// Apply rotation around pivot
-		btTransform originToAnchor(btQuaternion::getIdentity(), childAnchorWorld - childToWorldTrans.getOrigin());
-		btTransform anchorToOrigin(btQuaternion::getIdentity(), childToWorldTrans.getOrigin() - childAnchorWorld);
-		childToWorldTrans = childToWorldTrans * (anchorToOrigin * anchorAlignmentRotTrans.inverse()) * anchorAlignmentRotTrans * originToAnchor;
+		btTransform childWorldTrans = anchorWorldTrans * anchorAlignmentRotTrans * childAnchorLocalTrans;
 
 		// Build child world transformation and rigid body
 		btCollisionShape* shape = new btBoxShape(halfExtents);
-		btRigidBody* body = localCreateRigidBody(1.0f, childToWorldTrans, shape, this);
+		btRigidBody* body = localCreateRigidBody(1.0f, childWorldTrans, shape, this);
 		
-		//if (incoming->jointInfo.axis.y() > 0) {
-		//	parentAnchorSpaceTrans.getBasis().setEulerZYX(0, 0, SIMD_HALF_PI);
-		//}
-		//else if (incoming->jointInfo.axis.z() > 0) {
-		//	parentAnchorSpaceTrans.getBasis().setEulerZYX(0, SIMD_HALF_PI, 0);
-		//}
+		btVector3 ax = incoming->jointInfo.axis;
+		btVector3 diff = (parentWorldTrans.getOrigin() - childWorldTrans.getOrigin()).normalize();
+		btVector3 rotAxis = (ax.cross(diff)).normalize();
+		btScalar theta = acos(ax.dot(diff));
+		btQuaternion qq = btQuaternion(rotAxis, theta);
 
-		//btHingeConstraint* joint = new btHingeConstraint(
-		//	*parentSimNode->getRigidBody(), *body,
-		//	localParentSpaceTrans,
-		//	localChildSpaceTrans
-		//);
+		btTransform frameInWorld;
+		frameInWorld.setIdentity();
+		frameInWorld.setOrigin(anchorWorld);
+
+		btTransform parentFrameInWorld;
+		parentFrameInWorld.setIdentity();
+		parentFrameInWorld.setOrigin(anchorWorld);
+		parentFrameInWorld.setRotation(childWorldTrans.inverse().getRotation() * qq);
+
+		btTransform childFrameInWorld;
+		childFrameInWorld.setIdentity();
+		childFrameInWorld.setOrigin(anchorWorld);
+		childFrameInWorld.setRotation(childWorldTrans.inverse().getRotation() * qq);
+
 		btHingeConstraint* joint = new btHingeConstraint(
 			*parentSimNode->getRigidBody(), *body,
-			parentAnchorLocal, childAnchorLocal, 
-			incoming->jointInfo.axis, incoming->jointInfo.axis
+			parentWorldTrans.inverse() * parentFrameInWorld, 
+			childWorldTrans.inverse() * childFrameInWorld
 		);
 		joint->setLimit(-SIMD_HALF_PI * btScalar(0.5), SIMD_HALF_PI * btScalar(0.5));
 		joint->setDbgDrawSize(0.25f);
@@ -174,9 +174,10 @@ void SimCreature::dfs(
 		parentDims = boxSize;
 	}
 	else { // ROOT BODY
+		btScalar startHeight = GraphNode::maxSize * 2.0;
 		btTransform trans;
 		trans.setIdentity();
-		trans.setOrigin(m_spawnPosition + btVector3(0, GraphNode::maxSize, 0));
+		trans.setOrigin(m_spawnPosition + btVector3(0, startHeight, 0));
 
 		btVector3 boxSize = graphNode->primitiveInfo.dimensions;
 		btVector3 halfExtents = boxSize/2;
@@ -204,6 +205,7 @@ void SimCreature::dfs(
 	}
 }
 
+#pragma region InitWalkerFunc
 void SimCreature::initWalker(btVector3 position, uint32_t numLegs, btDynamicsWorld* ownerWorld)
 {
 	// fixed for now
@@ -396,6 +398,7 @@ void SimCreature::initWalker(btVector3 position, uint32_t numLegs, btDynamicsWor
 	removeFromWorld();
 	bInitialized = true;
 }
+#pragma endregion
 
 void SimCreature::update(double timeStep)
 {
