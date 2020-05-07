@@ -11,11 +11,12 @@
 
 btRigidBody* localCreateRigidBody(btScalar mass, const btTransform& startTransform, btCollisionShape* shape, void* userPtr);
 
-SimCreature::SimCreature(btVector3 position, const DirectedGraph& graph, btDynamicsWorld* ownerWorld)
+SimCreature::SimCreature(btVector3 position, std::shared_ptr<DirectedGraph> graph, btDynamicsWorld* ownerWorld)
 	: m_ownerWorld(ownerWorld), m_inEvaluation(false), m_evaluationTime(0), m_reaped(false)
 {
 	m_spawnPosition = position;
-	m_morphologyGenome = new DirectedGraph(graph);
+	m_morphologyGenome = new DirectedGraph(*graph);
+	m_morphologyGenome->unfold();
 
 	m_motorStrength = 0.025f * m_ownerWorld->getSolverInfo().m_numIterations;
 	m_targetFrequency = 3.0f;
@@ -56,12 +57,12 @@ void SimCreature::buildPhenome(DirectedGraph* graph)
 	}
 
 	int segmentIndex = 0;
-	dfs(graph->getRootNode(), nullptr, nullptr, graph, btVector3(1., 1., 1.), 1.0, recursionLimits, segmentIndex);
+	dfs(graph->getRootNode(), nullptr, nullptr, graph, btVector3(1., 1., 1.), 1.0, 0.0, recursionLimits, segmentIndex);
 }
 
 void SimCreature::dfs(
 	GraphNode* graphNode, GraphConnection* incoming, SimNode* parentSimNode, DirectedGraph* graph, 
-	btVector3 parentDims, btScalar cascadingScale, std::vector<int> recursionLimits, int& segmentIndex)
+	btVector3 parentDims, btScalar cascadingScale, btScalar attachment, std::vector<int> recursionLimits, int& segmentIndex)
 {
 	bool bIsRootNode = (incoming == nullptr);
 
@@ -93,38 +94,74 @@ void SimCreature::dfs(
 		btVector3 halfExtents = boxSize / 2;
 		btVector3 halfExtentsParent = boxSizeParent / 2;
 
+		// Calculate parent attachment point from plane
+		btVector3 planeForward = incoming->parent->primitiveInfo.parentAttachmentPlane;
+		btVector3 planeRight = planeForward.cross(planeForward.rotate(up, SIMD_HALF_PI));
+
 		// Calculate local anchor points
-		btVector3 dirFromParentLocal = incoming->jointInfo.parentAnchorDir.normalize();
+		btVector3 dirFromParentLocal = planeRight.rotate(planeForward, SIMD_2_PI * attachment);
 		btVector3 dirFromChildLocal = incoming->jointInfo.childAnchorDir.normalize();
 
 		// Calculate local anchor points
 		btVector3 parentNormal, childNormal;
-		btVector3 parentAnchor = dirFromParentLocal * SimUtils::distToSurface(dirFromParentLocal, halfExtentsParent, parentNormal);
-		btVector3 childAnchor = dirFromChildLocal * SimUtils::distToSurface(dirFromChildLocal, halfExtents, childNormal);
+		btVector3 parentAnchorLocal = dirFromParentLocal * SimUtils::distToSurface(dirFromParentLocal, halfExtentsParent, parentNormal);
+		btVector3 childAnchorLocal = dirFromChildLocal * SimUtils::distToSurface(dirFromChildLocal, halfExtents, childNormal);
 
-		// Specify alignment transformations to anchor space reference frames
-		btTransform parentAnchorSpaceTrans = btTransform(
-			SimUtils::glmToBullet(glm::rotation(SimUtils::bulletToGlm(fwd), SimUtils::bulletToGlm(parentNormal))), 
-			parentAnchor
+		// Specify local origin-to-anchor translations
+		btTransform localParentAnchorTrans = btTransform(
+			btQuaternion::getIdentity(),
+			parentAnchorLocal
 		);
-		btTransform childAnchorSpaceTrans = btTransform(
-			SimUtils::glmToBullet(glm::rotation(SimUtils::bulletToGlm(fwd), SimUtils::bulletToGlm(dirFromChildLocal))), 
-			childAnchor
+		btTransform localChildAnchorTrans = btTransform(
+			btQuaternion::getIdentity(),
+			childAnchorLocal
 		);
+		btTransform childToParentSpaceTrans = localChildAnchorTrans.inverse() * localParentAnchorTrans;
+		btTransform childToWorldTrans = parentWorldTrans * childToParentSpaceTrans;
+
+		// These two should now be the same
+		btVector3 parentAnchorWorld = parentWorldTrans * parentAnchorLocal;
+		btVector3 childAnchorWorld = childToWorldTrans * childAnchorLocal;
+
+		btVector3 parentNormalWorld = (parentWorldTrans * parentNormal).normalize();
+		btVector3 childNormalWorld = (childToWorldTrans * childNormal).normalize();
+
+		// Rotation to align parent and child normals
+		btQuaternion anchorAlignmentRot = SimUtils::glmToBullet(glm::rotation(
+			SimUtils::bulletToGlm(childNormalWorld),
+			SimUtils::bulletToGlm(-parentNormalWorld)
+		));
+		btTransform anchorAlignmentRotTrans = btTransform(anchorAlignmentRot);
+
+		// Apply rotation around pivot
+		btTransform originToAnchor(btQuaternion::getIdentity(), childAnchorWorld - childToWorldTrans.getOrigin());
+		btTransform anchorToOrigin(btQuaternion::getIdentity(), childToWorldTrans.getOrigin() - childAnchorWorld);
+		childToWorldTrans = childToWorldTrans * (anchorToOrigin * anchorAlignmentRotTrans.inverse()) * anchorAlignmentRotTrans * originToAnchor;
 
 		// Build child world transformation and rigid body
-		btTransform childWorldTrans = parentWorldTrans * childAnchorSpaceTrans.inverse() * parentAnchorSpaceTrans;
 		btCollisionShape* shape = new btBoxShape(halfExtents);
-		btRigidBody* body = localCreateRigidBody(1.0f, childWorldTrans, shape, this);
+		btRigidBody* body = localCreateRigidBody(1.0f, childToWorldTrans, shape, this);
+		
+		//if (incoming->jointInfo.axis.y() > 0) {
+		//	parentAnchorSpaceTrans.getBasis().setEulerZYX(0, 0, SIMD_HALF_PI);
+		//}
+		//else if (incoming->jointInfo.axis.z() > 0) {
+		//	parentAnchorSpaceTrans.getBasis().setEulerZYX(0, SIMD_HALF_PI, 0);
+		//}
 
-		btVector3 rotAxis = incoming->jointInfo.axis; 
-
+		//btHingeConstraint* joint = new btHingeConstraint(
+		//	*parentSimNode->getRigidBody(), *body,
+		//	localParentSpaceTrans,
+		//	localChildSpaceTrans
+		//);
 		btHingeConstraint* joint = new btHingeConstraint(
 			*parentSimNode->getRigidBody(), *body,
-			parentAnchorSpaceTrans, childAnchorSpaceTrans
+			parentAnchorLocal, childAnchorLocal, 
+			incoming->jointInfo.axis, incoming->jointInfo.axis
 		);
 		joint->setLimit(-SIMD_HALF_PI * btScalar(0.5), SIMD_HALF_PI * btScalar(0.5));
 		joint->setDbgDrawSize(0.25f);
+		joint->setEnabled(true);
 
 		simNodePtr->setRigidBody(body);
 		simNodePtr->setMesh(std::make_shared<ofMesh>(ofMesh::box(boxSize.x(), boxSize.y(), boxSize.z())));
@@ -157,10 +194,13 @@ void SimCreature::dfs(
 		parentDims = boxSize;
 	}
 
+	int connectionIndex = 0;
 	for (GraphConnection* c : graphNode->conns) {
-		if (recursionLimits[graph->getNodeIndex(c->child)] > 0) {
-			dfs(c->child, c, simNodePtr, graph, parentDims, cascadingScale, recursionLimits, segmentIndex);
+		if (recursionLimits[c->child->getGraphIndex()] > 0) {
+			btScalar attachment = connectionIndex/float(graphNode->conns.size());
+			dfs(c->child, c, simNodePtr, graph, parentDims, cascadingScale, attachment, recursionLimits, segmentIndex);
 		}
+		connectionIndex++;
 	}
 }
 
@@ -415,6 +455,32 @@ btRigidBody* localCreateRigidBody(btScalar mass, const btTransform& startTransfo
 	body->setSleepingThresholds(0.5f, 0.5f);
 
 	return body;
+}
+
+bool SimCreature::feasibilityCheck()
+{
+	addToWorld();
+	m_ownerWorld->performDiscreteCollisionDetection();
+
+	int numManifolds = m_ownerWorld->getDispatcher()->getNumManifolds();
+	bool bIsFeasible = true;
+
+	for (int i = 0; i < numManifolds; i++)
+	{
+		btPersistentManifold* contactManifold = m_ownerWorld->getDispatcher()->getManifoldByIndexInternal(i);
+		btCollisionObject* o1 = (btCollisionObject*)(contactManifold->getBody0());
+		btCollisionObject* o2 = (btCollisionObject*)(contactManifold->getBody1());
+
+		// Check for collision with self (excluding linked bodies)
+		if (o1->getUserPointer() == this && o2->getUserPointer() == this) {
+			bIsFeasible = false;
+		}
+		// Make sure to remove all manifolds again
+		contactManifold->clearManifold();	
+	}
+	removeFromWorld();
+
+	return bIsFeasible;
 }
 
 //initialize random weights

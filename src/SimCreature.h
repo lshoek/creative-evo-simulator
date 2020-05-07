@@ -14,7 +14,7 @@ class SimCreature
 {
 public:
 	// Initialization from a graph genome
-	SimCreature(btVector3 position, const DirectedGraph& graph, btDynamicsWorld* ownerWorld);
+	SimCreature(btVector3 position, std::shared_ptr<DirectedGraph> graph, btDynamicsWorld* ownerWorld);
 	// Spawns a walker with a specified number of legs
 	SimCreature(btVector3 position, uint32_t numLegs, btDynamicsWorld* ownerWorld, bool bInit);
 	~SimCreature();
@@ -22,7 +22,9 @@ public:
 	void update(double timeStep);
 	void draw();
 
+	bool feasibilityCheck();
 	void randomizeSensoryMotorWeights();
+
 	btTypedConstraint** getJoints();
 	btRigidBody** getRigidBodies();
 	SimNode** getSimNodes();
@@ -65,7 +67,7 @@ private:
 	void buildPhenome(DirectedGraph* graph);
 	void dfs(
 		GraphNode* graphNode, GraphConnection* incoming, SimNode* parentSimNode, DirectedGraph* graph, 
-		btVector3 parentDims, btScalar cascadingScale, std::vector<int> recursionLimits, int& segmentIndex
+		btVector3 parentDims, btScalar cascadingScale, btScalar attachment, std::vector<int> recursionLimits, int& segmentIndex
 	);
 
 	bool bInitialized = false;
@@ -73,8 +75,8 @@ private:
 
 	btDynamicsWorld* m_ownerWorld;
 
-	GenomeBase* m_controlPolicyGenome;
-	DirectedGraph* m_morphologyGenome;
+	GenomeBase* m_controlPolicyGenome = NULL;
+	DirectedGraph* m_morphologyGenome = NULL;
 
 	btVector3 m_spawnPosition;
 

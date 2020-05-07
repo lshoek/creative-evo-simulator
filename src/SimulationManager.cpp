@@ -81,7 +81,34 @@ void SimulationManager::init()
         _targetFrameTimeMillis = _fixedTimeStepMillis;
     }
 
-    _testMorphologyGenome.unwrap();
+    _testBodyGenome = std::make_shared<DirectedGraph>();
+    _testBodyGenome->unfold();
+
+    // Try to build a feasible creature genome
+    if (bUseMorphologyGenomes && bFeasibilityChecks) {
+        bool bNoFeasibleCreatureFound = true;
+        int attempts = 0;
+        SimCreature* testCreature;
+
+        ofLog() << "building feasible creature genome...";
+        while (bNoFeasibleCreatureFound) {
+            testCreature = new SimCreature(btVector3(0, 0, 0), _testBodyGenome, _world);
+
+            if (testCreature->feasibilityCheck()) {
+                bNoFeasibleCreatureFound = false;
+
+                ofLog() << "success! attempts: " << attempts;
+                //_testBodyGenome->save();
+            }
+            else {
+                // Replace the managed object
+                _testBodyGenome = std::make_shared<DirectedGraph>();
+                _testBodyGenome->unfold();
+                delete testCreature;
+            }
+            attempts++;
+        }
+    }
     bInitialized = true;
 }
 
@@ -196,7 +223,7 @@ int SimulationManager::runSimulationInstance(GenomeBase& genome, int ticket, flo
     canv->addToWorld();
 
     SimCreature* crtr = (bUseMorphologyGenomes) ?
-        new SimCreature(position, _testMorphologyGenome, _world) :
+        new SimCreature(position, _testBodyGenome, _world) :
         new SimCreature(position, _numWalkerLegs, _world, true);
 
     crtr->setAppearance(_nodeShader, _nodeMaterial, _nodeTexture);
@@ -449,9 +476,9 @@ MorphologyInfo SimulationManager::getWalkerMorphologyInfo()
     return MorphologyInfo(numBodyParts, numJoints);
 }
 
-DirectedGraph SimulationManager::getMorphologyGenome()
+std::shared_ptr<DirectedGraph> SimulationManager::getMorphologyGenome()
 {
-    return _testMorphologyGenome;
+    return _testBodyGenome;
 }
 
 void SimulationManager::writeToPixels(const ofTexture& tex, ofPixels& pix)
@@ -516,7 +543,7 @@ bool SimulationManager::IsMorphologyGenomeModeEnabled()
 
 void SimulationManager::dealloc()
 {
-    if (_terrainNode)           delete _terrainNode;
+    if (_terrainNode) delete _terrainNode;
 
     for (auto &s : _simulationInstances) {
         delete s;

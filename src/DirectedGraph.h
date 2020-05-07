@@ -8,27 +8,39 @@ class DirectedGraph
 {
 public:
 	DirectedGraph();
+	DirectedGraph(const DirectedGraph& srcGraph);
+	~DirectedGraph();
 
 	void initRandom();
 	void initCurl();
-	void unwrap();
+	void unfold();
 
 	void addNode(GraphNode* node);
-	void addConnection(GraphNode* parent, GraphNode* child, bool bIsTerminal);
-	void addConnection(GraphNode* parent, GraphNode* child, GraphConnection::JointInfo info, bool bIsTerminal);
+	void addConnection(GraphNode* parent, GraphNode* child, const GraphConnection::JointInfo& info);
 
-	int getNodeIndex(GraphNode* node);
 	int getNumNodesUnwrapped();
 	int getNumJointsUnwrapped();
 
 	GraphNode* getRootNode();
 	const std::vector<GraphNode*>& getNodes();
 
-private:
-	std::vector<GraphNode*> _nodes;
+	void save();
+	void load(uint32_t id);
 
+private:
+	int getNodeIndex(GraphNode* node);
+
+	// Random & mutation
+	GraphNode::PrimitiveInfo randomPrimitive(btScalar min, btScalar max);
+	GraphConnection::JointInfo randomJoint();
+	btVector3 randomPointOnSphere();
+
+	std::vector<GraphNode*> _nodes;
 	GraphNode* _rootNode;
-	std::default_random_engine _rng;
+
+	std::mt19937 _rng;
+	std::random_device _rd;
+	std::uniform_real_distribution<> _distrib;
 
 	void dfs(GraphNode* node);
 	void dfsTraverse(GraphNode* node, std::vector<int> recursionLimits);

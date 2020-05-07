@@ -1,43 +1,92 @@
 #include "DirectedGraphNode.h"
 #include "DirectedGraphConnection.h"
+#include <iomanip>
 
-GraphNode::GraphNode(std::string id, PrimitiveInfo info, bool isRoot, uint32_t recursionLimit) :
-	id(id), primitiveInfo(info), _bIsRootNode(isRoot), _recursionLimit(recursionLimit) {}
+#include "nlohmann/json.hpp"
 
-GraphNode::GraphNode(std::string id, bool isRoot, uint32_t recursionLimit) :
-	id(id), primitiveInfo(PrimitiveInfo()), _bIsRootNode(isRoot), _recursionLimit(recursionLimit) {}
+using json = nlohmann::json;
+void from_json(const json& j, GraphNode::PrimitiveInfo& p);
+void to_json(json& j, const GraphNode::PrimitiveInfo& p);
+
+GraphNode::GraphNode() {}
+
+GraphNode::GraphNode(PrimitiveInfo info, bool isRoot) :
+	primitiveInfo(info), _bIsRootNode(isRoot) {}
 
 GraphNode::GraphNode(const GraphNode& g) :
-	id(g.id), primitiveInfo(g.primitiveInfo), _bIsRootNode(g._bIsRootNode), _recursionLimit(g._recursionLimit), _graphIndex(g._graphIndex)
-{
-	for (GraphConnection* c : g.conns) {
-		addConnection(c->child, c->bIsTerminalFlag);
-	}
-}
+	primitiveInfo(g.primitiveInfo), _bIsRootNode(g._bIsRootNode) {}
 
-void GraphNode::addConnection(GraphNode* child, GraphConnection::JointInfo info, bool bIsTerminal) {
-	conns.push_back(new GraphConnection(this, child, info, bIsTerminal));
-}
-
-void GraphNode::addConnection(GraphNode* child, bool bIsTerminal) {
-	conns.push_back(new GraphConnection(this, child, bIsTerminal));
+void GraphNode::addConnection(GraphNode* child, const GraphConnection::JointInfo& info) {
+	conns.push_back(new GraphConnection(this, child, info));
 }
 
 uint32_t GraphNode::getRecursionLimit() {
-	return _recursionLimit;
+	return primitiveInfo.recursionLimit;
 }
 
 uint32_t GraphNode::getGraphIndex()
 {
-	return _graphIndex;
+	return primitiveInfo.index;
 }
 
 void GraphNode::setGraphIndex(uint32_t index)
 {
-	_graphIndex = index;
+	primitiveInfo.index = index;
 }
 
 bool GraphNode::IsRootNode() 
 {
 	return _bIsRootNode;
+}
+
+void GraphNode::save(std::string path)
+{
+	json j = primitiveInfo;
+	
+	ofFile f(path);
+	f << std::setw(4) << j << std::endl;
+	f.close();
+}
+
+void GraphNode::load(ofFile f)
+{
+	json j;
+	f >> j;
+	GraphNode::PrimitiveInfo fromFile = j.get<GraphNode::PrimitiveInfo>();
+	bool bIsRoot = fromFile.index == 0; // todo: probably works but need to fix later
+}
+
+
+
+void to_json(json& j, const GraphNode::PrimitiveInfo& p)
+{
+	j = json{
+		{"index", p.index},
+		{"primitiveType", p.primitiveType},
+		{"jointType", p.jointType},
+		{"dimensions_x", double(p.dimensions.x())},
+		{"dimensions_y", double(p.dimensions.y())},
+		{"dimensions_z", double(p.dimensions.z())},
+		{"parentAttachmentPlane_x", double(p.parentAttachmentPlane.x())},
+		{"parentAttachmentPlane_y", double(p.parentAttachmentPlane.y())},
+		{"parentAttachmentPlane_z", double(p.parentAttachmentPlane.z())},
+	};
+}
+
+void from_json(const json& j, GraphNode::PrimitiveInfo& p)
+{
+	j.at("index").get_to(p.index);
+	j.at("primitiveType").get_to(p.primitiveType);
+	j.at("jointType").get_to(p.jointType);
+
+	double x, y, z;
+	j.at("dimensions_x").get_to(x);
+	j.at("dimensions_x").get_to(y);
+	j.at("dimensions_x").get_to(z);
+	p.dimensions = btVector3(x, y, z);
+
+	j.at("parentAttachmentPlane_x").get_to(x);
+	j.at("parentAttachmentPlane_x").get_to(y);
+	j.at("parentAttachmentPlane_x").get_to(z);
+	p.parentAttachmentPlane = btVector3(x, y, z);
 }

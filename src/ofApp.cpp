@@ -22,6 +22,10 @@ void ofApp::setup()
 	ofLogToConsole();
 	//ofLog() << "Num threads: " << std::thread::hardware_concurrency();
 
+	uint64_t seed = GetTickCount();
+	ofLog() << "seed: " << seed;
+	ofSeedRandom(seed);
+
 	settings = ofxIniSettings("settings.ini");
 	bEvolve = settings.get("mode.evolve", true);
 	bSimulate = settings.get("mode.simulate", true);
@@ -49,11 +53,12 @@ void ofApp::setup()
 
 void ofApp::startSimulation()
 {
-	simulationManager.init();
 	simulationManager.setMaxParallelSims(settings.get("evo.max_parallel_evals", 4));
 	simulationManager.setMorphologyGenomeModeEnabled(settings.get("mode.body_genomes", true));
+	simulationManager.bFeasibilityChecks = settings.get("mode.feasibility_checks", true);
 	simulationManager.bDebugDraw = settings.get("mode.debugdraw", true);
 	simulationManager.bCameraSnapFocus = settings.get("mode.snapfocus", true);
+	simulationManager.init();
 	simulationManager.startSimulation();
 }
 

@@ -17,9 +17,9 @@ void NEATManager::setup(SimulationManager* sim)
 	// get morphology info to build network
 	NEAT::Genome templateGenome;
 	if (sim->IsMorphologyGenomeModeEnabled()) {
-		DirectedGraph graph = sim->getMorphologyGenome();
+		std::shared_ptr<DirectedGraph> graphPtr = sim->getMorphologyGenome();
 		templateGenome = NEAT::Genome(0,
-			graph.getNumNodesUnwrapped(), graph.getNumNodesUnwrapped(), graph.getNumJointsUnwrapped(), false,
+			graphPtr->getNumNodesUnwrapped(), graphPtr->getNumNodesUnwrapped(), graphPtr->getNumJointsUnwrapped(), false,
 			NEAT::ActivationFunction::TANH,
 			NEAT::ActivationFunction::TANH,
 			1, params, 1

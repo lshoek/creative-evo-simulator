@@ -15,33 +15,33 @@ public:
 	{
 	public:
 		static btVector3 getPointWorldToLocal(const btTransform& localObjectCenterOfMassTransform, const btVector3& point) {
-			return localObjectCenterOfMassTransform.inverse() * point; // transforms the point from the world frame into the local frame
+			return localObjectCenterOfMassTransform.inverse() * point;
 		}
 
 		static btVector3 getPointLocalToWorld(const btTransform& localObjectCenterOfMassTransform, const btVector3& point) {
-			return localObjectCenterOfMassTransform * point; // transforms the point from the world frame into the local frame
+			return localObjectCenterOfMassTransform * point;
 		}
 
 		static btVector3 getAxisWorldToLocal(const btTransform& localObjectCenterOfMassTransform, const btVector3& axis) {
-			btTransform local1 = localObjectCenterOfMassTransform.inverse(); // transforms the axis from the local frame into the world frame
+			btTransform local1 = localObjectCenterOfMassTransform.inverse();
 			btVector3 zero(0, 0, 0);
 			local1.setOrigin(zero);
 			return local1 * axis;
 		}
 
 		static btVector3 getAxisLocalToWorld(const btTransform& localObjectCenterOfMassTransform, const btVector3& axis) {
-			btTransform local1 = localObjectCenterOfMassTransform; // transforms the axis from the local frame into the world frame
+			btTransform local1 = localObjectCenterOfMassTransform;
 			btVector3 zero(0, 0, 0);
 			local1.setOrigin(zero);
 			return local1 * axis;
 		}
 
 		static btTransform getTransformWorldToLocal(const btTransform& localObjectCenterOfMassTransform, const btTransform& transform) {
-			return localObjectCenterOfMassTransform.inverse() * transform; // transforms the axis from the local frame into the world frame
+			return localObjectCenterOfMassTransform.inverse() * transform;
 		}
 
 		static btTransform getTransformLocalToWorld(const btTransform& localObjectCenterOfMassTransform, const btTransform& transform) {
-			return localObjectCenterOfMassTransform * transform; // transforms the axis from the local frame into the world frame
+			return localObjectCenterOfMassTransform * transform;
 		}
 
 	};
@@ -49,6 +49,11 @@ public:
 	static btVector3 sign(btVector3 v)
 	{
 		return btVector3(v.x() >= 0 ? 1. : -1., v.y() >= 0 ? 1. : -1., v.z() >= 0 ? 1. : -1.);
+	}
+
+	static btVector3 flip(btVector3 v)
+	{
+		return btVector3(v.x() > 0 ? 0. : 1., v.y() > 0 ? 0. : 1., v.z() > 0 ? 0. : 1.);
 	}
 
 	// Origin lies inside the box so there is always an intersection

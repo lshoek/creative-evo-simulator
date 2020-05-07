@@ -123,7 +123,7 @@
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>D:\tools\vcpkg\installed\x64-windows\include\bullet;D:\tools\MultiNEAT\src;..\..\..\addons\ofxImGui\src;..\..\..\addons\ofxImGui\libs\imgui\src;..\..\..\addons\ofxIniSettings\src;..\..\..\addons\ofxGrabCam\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\tools\json\single_include;D:\tools\vcpkg\installed\x64-windows\include\bullet;D:\tools\MultiNEAT\src;..\..\..\addons\ofxImGui\src;..\..\..\addons\ofxImGui\libs\imgui\src;..\..\..\addons\ofxIniSettings\src;..\..\..\addons\ofxGrabCam\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs>CompileAsCpp</CompileAs>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ObjectFileName>$(IntDir)</ObjectFileName>

@@ -48,7 +48,7 @@ public:
     void nextSimulation();
 
     MorphologyInfo getWalkerMorphologyInfo();
-    DirectedGraph getMorphologyGenome();
+    std::shared_ptr<DirectedGraph> getMorphologyGenome();
     void initTestEnvironment();
 
     void setMaxParallelSims(int max);
@@ -58,6 +58,7 @@ public:
     bool bDebugDraw = false;
     bool bTestMode = false;
     bool bCameraSnapFocus = true;
+    bool bFeasibilityChecks = false;
 
     glm::vec3 lightPosition;
     glm::vec3 lightDirection;
@@ -80,7 +81,7 @@ private:
 
     ofxGrabCam cam;
     SimNode* _terrainNode;
-    DirectedGraph _testMorphologyGenome;
+    std::shared_ptr<DirectedGraph> _testBodyGenome;
 
     // physics
     btBroadphaseInterface* _broadphase;

@@ -1,32 +1,65 @@
 #pragma once
 #include "DirectedGraph.h"
 #include "SimUtils.h"
-#include "MathUtils.h"
-#include <random>
+#include "ofFileUtils.h"
+#include "ofUtils.h"
 
-GraphNode::PrimitiveInfo randomPrimitive(btScalar min, btScalar max);
-GraphConnection::JointInfo randomJoint(default_random_engine& rng);
+#include "nlohmann/json.hpp"
 
-// simple test graph for now 
+using json = nlohmann::json;
+
+#define NTRS_BODY_GENOME_DIR "output/genomes/morphology/"
+#define NTRS_NODE_EXT ".node"
+#define NTRS_CONN_EXT ".conn"
+
 DirectedGraph::DirectedGraph() 
 {
+    std::random_device::result_type seed = _rd();
+    //ofLog() << "DirectedGraph seed: " << seed;
+
+    _rng = std::mt19937(seed);
+    _distrib = std::uniform_real_distribution<>(0, 1);
+
     initRandom();
-    //initCurl();
 }
+
+DirectedGraph::DirectedGraph(const DirectedGraph& srcGraph)
+{
+    // Build nodes and add indices accordingly
+    _nodes.resize(srcGraph._nodes.size());
+    for (GraphNode* n : srcGraph._nodes) {
+        _nodes[n->getGraphIndex()] = new GraphNode(*n);
+    }
+    for (GraphNode* n : srcGraph._nodes) {
+        GraphNode* targetNodePtr = _nodes[n->getGraphIndex()];
+        for (GraphConnection* c : n->conns) {
+            addConnection(targetNodePtr, _nodes[c->child->getGraphIndex()], c->jointInfo);
+        }
+    }
+    for (GraphNode* n : _nodes) {
+        if (n->IsRootNode()) {
+            _rootNode = n;
+            break;
+        }
+    }
+};
 
 void DirectedGraph::initRandom()
 {
-    GraphNode* root = new GraphNode("a", randomPrimitive(GraphNode::maxSize*0.25, GraphNode::maxSize), true, 3);
-    GraphNode* anotherNode = new GraphNode("b", randomPrimitive(GraphNode::minSize, GraphNode::maxSize), false, 1);
-    GraphNode* endNode = new GraphNode("c", randomPrimitive(GraphNode::minSize, GraphNode::maxSize), false, 1);
+    // Build nodes
+    GraphNode* root = new GraphNode(randomPrimitive(GraphNode::maxSize*0.25, GraphNode::maxSize), true);
+    GraphNode* anotherNode = new GraphNode(randomPrimitive(GraphNode::minSize, GraphNode::maxSize), false);
+    GraphNode* endNode = new GraphNode(randomPrimitive(GraphNode::minSize, GraphNode::maxSize), false);
 
-    root->addConnection(root, randomJoint(_rng), false);
-    root->addConnection(anotherNode, randomJoint(_rng), false);
-    anotherNode->addConnection(endNode, randomJoint(_rng), true);
+    // Register indices in graph
+    addNode(root);
+    addNode(anotherNode);
+    addNode(endNode);
 
-    _nodes.push_back(root);
-    _nodes.push_back(anotherNode);
-    _nodes.push_back(endNode);
+    // Add connections
+    root->addConnection(root, randomJoint());
+    root->addConnection(anotherNode, randomJoint());
+    anotherNode->addConnection(endNode, randomJoint());
 
     _rootNode = root;
 }
@@ -34,54 +67,56 @@ void DirectedGraph::initRandom()
 // Verify that creature initialization works as it should
 void DirectedGraph::initCurl()
 {
-    GraphNode::PrimitiveInfo primInfoTemplate{0, btVector3(0.5, 1.0, 2.0), true};
+    GraphNode::PrimitiveInfo primInfoTemplate{0, 5, btVector3(0.5, 1.0, 2.0)};
     GraphConnection::JointInfo jointInfoTemplate{};
     jointInfoTemplate.scalingFactor = 0.75;
-    jointInfoTemplate.parentAnchorDir = btVector3(0.5, -0.5, 1.0).rotate(btVector3(0, 1, 0), SIMD_HALF_PI);
-    jointInfoTemplate.childAnchorDir = btVector3(0.06125, 0.5, 1.0);
 
-    GraphNode* root = new GraphNode("a", primInfoTemplate, true, 5);
-    root->addConnection(root, jointInfoTemplate, false);
-    _nodes.push_back(root);
+    //jointInfoTemplate.parentAnchorDir = btVector3(0.5, -0.5, 1.0).rotate(btVector3(0, 1, 0), SIMD_HALF_PI);
+    jointInfoTemplate.childAnchorDir = btVector3(0.25, 0.75, 1.0);
+
+    GraphNode* root = new GraphNode(primInfoTemplate, true);
+    root->addConnection(root, jointInfoTemplate);
+    addNode(root);
 
     _rootNode = root;
 }
 
-GraphNode::PrimitiveInfo randomPrimitive(btScalar min, btScalar max)
+GraphNode::PrimitiveInfo DirectedGraph::randomPrimitive(btScalar min, btScalar max)
 {
     GraphNode::PrimitiveInfo info;
 
     info.dimensions = btVector3(
-        ofRandom(max - min) + min,
-        ofRandom(max - min) + min,
-        ofRandom(max - min) + min
+        _distrib(_rng) * (max - min) + min,
+        _distrib(_rng) * (max - min) + min,
+        _distrib(_rng) * (max - min) + min
     );
+    info.parentAttachmentPlane = randomPointOnSphere();
+    info.recursionLimit = int(_distrib(_rng)*5.0) + 1;
     return info;
 }
 
-GraphConnection::JointInfo randomJoint(default_random_engine& rng)
+GraphConnection::JointInfo DirectedGraph::randomJoint()
 {
     GraphConnection::JointInfo info;
-    float ax = ofRandom(1.0f);
+    float ax = _distrib(_rng);
+    //std::normal_distribution<double> norm(0.0, 1.0);
 
-    std::normal_distribution<double> norm(0.0, 1.0);
-    glm::vec3 fwd = glm::vec3(0, 0, 1);
-    btQuaternion q = btQuaternion::getIdentity();
-
-    // This is currently leads to lots of broken randomly initialized phenomes
-    // A system is required for preventing infeasible morphologies to be placed in the world
-    info.parentAnchorDir = SimUtils::glmToBullet(MathUtils::randomPointOnSphere());
-    info.childAnchorDir = SimUtils::glmToBullet(MathUtils::randomPointOnSphere());
-
-    info.reflection = btVector3(0, 0, 0);
-    info.rotation = q.slerp(SimUtils::glmToBullet(glm::rotation(fwd, MathUtils::randomPointOnSphere())), norm(rng));
+    info.childAnchorDir = randomPointOnSphere();
     info.axis = ax < 0.3333f ? btVector3(1, 0, 0) : ax < 0.6666f ? btVector3(0, 1, 0) : btVector3(0, 0, 1);
     info.scalingFactor = 0.75;
 
     return info;
 }
 
-void DirectedGraph::unwrap() 
+btVector3 DirectedGraph::randomPointOnSphere()
+{
+    btScalar theta = 2 * SIMD_PI * _distrib(_rng);
+    btScalar phi = acos(1 - 2 * _distrib(_rng));
+    btVector3 p(sin(phi) * cos(theta), sin(phi) * sin(theta), cos(phi));
+    return p;
+}
+
+void DirectedGraph::unfold() 
 {
     _bTraversed = false;
     _numNodesUnwrapped = 0;
@@ -97,16 +132,12 @@ void DirectedGraph::unwrap()
 void DirectedGraph::addNode(GraphNode* node)
 {
     _nodes.push_back(node);
+    node->setGraphIndex(getNodeIndex(node));
 }
 
-void DirectedGraph::addConnection(GraphNode* parent, GraphNode* child, bool bIsTerminal)
+void DirectedGraph::addConnection(GraphNode* parent, GraphNode* child, const GraphConnection::JointInfo& info)
 {
-    parent->addConnection(child, bIsTerminal);
-}
-
-void DirectedGraph::addConnection(GraphNode* parent, GraphNode* child, GraphConnection::JointInfo info, bool bIsTerminal)
-{
-    parent->addConnection(child, info, bIsTerminal);
+    parent->addConnection(child, info);
 }
 
 GraphNode* DirectedGraph::getRootNode()
@@ -163,5 +194,43 @@ void DirectedGraph::dfsTraverse(GraphNode* node, std::vector<int> recursionLimit
             _numJointsUnwrapped++;
             dfsTraverse(c->child, recursionLimits);
         }
+    }
+}
+
+void DirectedGraph::save()
+{
+    const ofDirectory genomeDir = ofDirectory(ofToDataPath(NTRS_BODY_GENOME_DIR, true));
+    const std::vector<ofFile> files = genomeDir.getFiles();
+
+    std::string id = ofToString(genomeDir.getFiles().size());
+    ofDirectory::createDirectory(genomeDir.getAbsolutePath() + '\\' + id);
+
+    int nodeCount = 0;
+    for (GraphNode* n : _nodes) {
+        std::string path = genomeDir.getAbsolutePath() + '\\' + id + '\\' + ofToString(nodeCount) + NTRS_NODE_EXT;
+        n->save(path);
+        nodeCount++;
+    }
+}
+
+void DirectedGraph::load(uint32_t id)
+{
+    const ofDirectory genomeDir = ofDirectory(ofToDataPath(NTRS_BODY_GENOME_DIR, true));
+    std::string path = genomeDir.getAbsolutePath() + '\\' + ofToString(id);
+
+    const std::vector<ofFile> files = ofDirectory(path).getFiles();
+
+    _nodes.clear();
+    for (ofFile f : files) {
+        GraphNode* n = new GraphNode();
+        n->load(f);
+        addNode(n);
+    }
+}
+
+DirectedGraph::~DirectedGraph()
+{
+    for (GraphNode* n : _nodes) {
+        delete n;
     }
 }
