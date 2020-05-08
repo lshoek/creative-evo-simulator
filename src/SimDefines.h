@@ -1,5 +1,10 @@
 #pragma once
 
+/// Global paths
+#define NTRS_BODY_GENOME_DIR "output/genomes/morphology/"
+#define NTRS_NODE_EXT "node"
+#define NTRS_CONN_EXT "conn"
+
 /// Collision detection tags
 #define AnonymousTag 0
 #define BodyTag 1

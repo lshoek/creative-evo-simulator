@@ -231,7 +231,7 @@
     <ClCompile Include="src\SimCanvasNode.cpp" />
     <ClCompile Include="src\GenomeBase.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\NEATManager.cpp" />
+    <ClCompile Include="src\EvoManager.cpp" />
     <ClCompile Include="src\ofApp.cpp" />
     <ClCompile Include="src\SimCam.cpp" />
     <ClCompile Include="src\SimCreature.cpp" />
@@ -288,8 +288,8 @@
     <ClInclude Include="src\FitnessFunc.h" />
     <ClInclude Include="src\GenomeBase.h" />
     <ClInclude Include="src\MathUtils.h" />
-    <ClInclude Include="src\NEATManager.h" />
-    <ClInclude Include="src\NEATUtils.h" />
+    <ClInclude Include="src\EvoManager.h" />
+    <ClInclude Include="src\EvoUtils.h" />
     <ClInclude Include="src\ofApp.h" />
     <ClInclude Include="src\SimCam.h" />
     <ClInclude Include="src\SimCreature.h" />

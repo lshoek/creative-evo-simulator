@@ -7,18 +7,18 @@
 #include "SimulationManager.h"
 #include "SimSharedData.h"
 
-class NEATManager : public ofThread
+class EvoManager : public ofThread
 {
 public:
 	void setup(SimulationManager* sim);
     void draw();
     void exit();
 
-    void startEvolution();
-    void evolutionLoop();
+    void report();
 
-    bool tick();
-    bool evaluatePopulation();
+    void startEvolution();
+    void stopEvolution();
+    bool isEvolutionActive();
 
     NEAT::Population* getPopulation();
     const NEAT::Parameters& getParams();
@@ -31,11 +31,16 @@ public:
     float getPctGenEvaluated();
 
     ofEvent<void> onNewBestFound;
+    ofEvent<void> onEvolutionStopped;
 
     void setMaxParallelEvals(int max);
 
 private:
     virtual void threadedFunction() override;
+
+    void evolutionLoop();
+    bool tick();
+    bool evaluatePopulation();
 
     PaintFitnessFunc paintFitnessFunc;
     SimFitnessFunc* fitnessFuncPtr;
@@ -52,7 +57,9 @@ private:
 
     float pctGenEvaluated = 0.0f;
 
+    bool bEvolutionActive = false;
     bool bThreaded = true;
+    bool bStopSimulationQueued = false;
     bool bHasFitnessFunc;
 
     NEAT::Genome deadGenome;

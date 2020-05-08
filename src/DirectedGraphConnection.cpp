@@ -1,8 +1,13 @@
 #include "DirectedGraphConnection.h"
 #include "DirectedGraphNode.h"
 #include "nlohmann/json.hpp"
+#include <iomanip>
 
 using json = nlohmann::json;
+void from_json(const json& j, GraphConnection::JointInfo& info);
+void to_json(json& j, const GraphConnection::JointInfo& info);
+
+GraphConnection::GraphConnection() {}
 
 GraphConnection::GraphConnection(GraphNode* parent, GraphNode* child, const JointInfo& info) :
 	parent(parent), child(child)
@@ -13,6 +18,33 @@ GraphConnection::GraphConnection(GraphNode* parent, GraphNode* child, const Join
 	jointInfo = info;
 	jointInfo.fromIndex = parent->primitiveInfo.index;
 	jointInfo.toIndex = child->primitiveInfo.index;
+}
+
+void GraphConnection::setParent(GraphNode* node)
+{
+	parent = node;
+}
+
+void GraphConnection::setChild(GraphNode* node)
+{
+	child = node;
+}
+
+void GraphConnection::save(std::string path)
+{
+	json j = jointInfo;
+
+	ofFile f(path, ofFile::WriteOnly, false);
+	f << std::setw(4) << j << std::endl;
+	f.close();
+}
+
+void GraphConnection::load(ofFile& f)
+{
+	json j;
+	f >> j;
+	GraphConnection::JointInfo fromFile = j.get<GraphConnection::JointInfo>();
+	jointInfo = fromFile;
 }
 
 

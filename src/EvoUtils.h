@@ -4,7 +4,7 @@
 
 using namespace boost::assign;
 
-static class NEATUtils 
+static class EvoUtils 
 {
 private:
 	static std::vector<std::vector<double>> sheetSpace(double start, double stop, int dim, double z) {

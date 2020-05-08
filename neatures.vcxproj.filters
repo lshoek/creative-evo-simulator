@@ -84,9 +84,6 @@
     <ClCompile Include="..\..\..\..\tools\MultiNEAT\src\Utils.cpp">
       <Filter>libs\MultiNEAT</Filter>
     </ClCompile>
-    <ClCompile Include="src\NEATManager.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\addons\ofxImGui\libs\imgui\src\imgui.cpp">
       <Filter>addons\ofxImGui\libs\imgui\src</Filter>
     </ClCompile>
@@ -168,6 +165,9 @@
     <ClCompile Include="src\DirectedGraphConnection.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\EvoManager.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ofApp.h">
@@ -223,9 +223,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\Utils.h">
       <Filter>libs\MultiNEAT</Filter>
-    </ClInclude>
-    <ClInclude Include="src\NEATManager.h">
-      <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\addons\ofxImGui\libs\imgui\src\imgui.h">
       <Filter>addons\ofxImGui\libs\imgui\src</Filter>
@@ -302,9 +299,6 @@
     <ClInclude Include="src\SimUtils.h">
       <Filter>src\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="src\NEATUtils.h">
-      <Filter>src\Utils</Filter>
-    </ClInclude>
     <ClInclude Include="src\toolbox.h">
       <Filter>src\Utils</Filter>
     </ClInclude>
@@ -343,6 +337,12 @@
     </ClInclude>
     <ClInclude Include="src\SimDefines.h">
       <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\EvoManager.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\EvoUtils.h">
+      <Filter>src\Utils</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

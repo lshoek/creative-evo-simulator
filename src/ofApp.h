@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ofMain.h"
-#include "NEATManager.h"
+#include "EvoManager.h"
 #include "SimulationManager.h"
 #include "ofxGrabCam.h"
 #include "ofxImGui.h"
@@ -21,8 +21,9 @@ public:
 
 	void imGui();
 
-	void startSimulation();
+	void initSimulation();
 	void startEvolution();
+	void stopEvolution();
 
 	void windowResized(int w, int h);
 	void keyPressed(int key);
@@ -30,10 +31,11 @@ public:
 	void queueRenderEvent();
 
 private:
-    NEATManager neatManager;
+    EvoManager evoManager;
 	SimulationManager simulationManager;
 
 	ofEventListener renderEventQueuedListener;
+	ofEventListener evolutionStoppedListener;
 
 	ofRectangle previewRect;
 	ofRectangle viewRect;
@@ -44,11 +46,26 @@ private:
 	ofxImGui::Gui gui;
 	ofxIniSettings settings;
 
-	bool bRenderEventQueued = false;
+	// Gui toggles
+	bool bWindow = true;
 
+	// App toggles
+	bool bRenderEventQueued = false;
 	bool bEvolve = true;
 	bool bSimulate = true;
 	bool bDebugGrid = true;
 	bool bDraw = true;
 	bool bGui = true;
+
+	struct GuiFileItem
+	{
+		GuiFileItem(const char* fname) : fileName(fname) {}
+		std::string fileName;
+
+		const char* getRawFileName() const
+		{
+			return fileName.c_str();
+		}
+	};
+	std::vector<GuiFileItem> genomesOnDisk;
 };

@@ -34,6 +34,11 @@ void GraphNode::setGraphIndex(uint32_t index)
 	primitiveInfo.index = index;
 }
 
+void GraphNode::setIsRootNode(bool bIsRoot)
+{
+	_bIsRootNode = bIsRoot;
+}
+
 bool GraphNode::IsRootNode() 
 {
 	return _bIsRootNode;
@@ -43,20 +48,26 @@ void GraphNode::save(std::string path)
 {
 	json j = primitiveInfo;
 	
-	ofFile f(path);
+	ofFile f(path, ofFile::WriteOnly, false);
 	f << std::setw(4) << j << std::endl;
 	f.close();
 }
 
-void GraphNode::load(ofFile f)
+void GraphNode::load(ofFile& file)
 {
 	json j;
-	f >> j;
+	file >> j;
 	GraphNode::PrimitiveInfo fromFile = j.get<GraphNode::PrimitiveInfo>();
+	primitiveInfo = fromFile;
 	bool bIsRoot = fromFile.index == 0; // todo: probably works but need to fix later
 }
 
-
+GraphNode::~GraphNode() 
+{
+	for (GraphConnection* c : conns) {
+		delete c;
+	}
+}
 
 void to_json(json& j, const GraphNode::PrimitiveInfo& p)
 {
@@ -64,6 +75,7 @@ void to_json(json& j, const GraphNode::PrimitiveInfo& p)
 		{"index", p.index},
 		{"primitiveType", p.primitiveType},
 		{"jointType", p.jointType},
+		{"recursionLimit", p.recursionLimit},
 		{"dimensions_x", double(p.dimensions.x())},
 		{"dimensions_y", double(p.dimensions.y())},
 		{"dimensions_z", double(p.dimensions.z())},
@@ -78,6 +90,7 @@ void from_json(const json& j, GraphNode::PrimitiveInfo& p)
 	j.at("index").get_to(p.index);
 	j.at("primitiveType").get_to(p.primitiveType);
 	j.at("jointType").get_to(p.jointType);
+	j.at("recursionLimit").get_to(p.recursionLimit);
 
 	double x, y, z;
 	j.at("dimensions_x").get_to(x);

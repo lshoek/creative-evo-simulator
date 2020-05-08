@@ -1,5 +1,6 @@
 #pragma once
 #include "bullet/btBulletCollisionCommon.h"
+#include "ofFileUtils.h"
 
 class GraphNode;
 
@@ -17,7 +18,14 @@ public:
 		JointInfo(btVector3 anchorDir, btScalar scale, btVector3 axis) :
 			childAnchorDir(anchorDir), scalingFactor(scale), axis(axis) {}
 	};
+	GraphConnection();
 	GraphConnection(GraphNode* from, GraphNode* to, const JointInfo& info);
+
+	void setParent(GraphNode* parent);
+	void setChild(GraphNode* child);
+
+	void save(std::string path);
+	void load(ofFile& file);
 
 	JointInfo jointInfo;
 

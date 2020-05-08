@@ -22,6 +22,7 @@ void SimulationManager::init()
     cam.setNearClip(0.01f);
     cam.setFarClip(1000.0f);
     cam.setPosition(8.0f, 8.0f, 4.0f);
+    cam.setFixUpDirectionEnabled(true);
     cam.lookAt(glm::vec3(0));
 
     _nodeTexture = std::make_shared<ofTexture>();
@@ -50,8 +51,8 @@ void SimulationManager::init()
     _terrainMaterial = std::make_shared<ofMaterial>();
     _terrainMaterial->setup(mtl_settings);
 
-    lightPosition = glm::vec3(0.0f, 20.0f, 0.0f);
-    lightDirection = glm::vec3(0.0f, 1.0f, 0.75f);
+    lightPosition = MathUtils::randomPointOnSphere() * 8.0f;
+    lightPosition.y = 20.0f;
 
     _light = std::make_shared<ofLight>();
     _light->setDirectional();
@@ -59,7 +60,6 @@ void SimulationManager::init()
     _light->setDiffuseColor(ofColor::white);
     _light->setSpecularColor(ofColor::white);
     _light->setPosition(lightPosition);
-    _light->lookAt(_light->getPosition() + lightDirection);
 
     // physics -- init
     initPhysics();
@@ -81,43 +81,38 @@ void SimulationManager::init()
         _targetFrameTimeMillis = _fixedTimeStepMillis;
     }
 
-    _testBodyGenome = std::make_shared<DirectedGraph>();
-    _testBodyGenome->unfold();
+    simulationSpeed = 0;
+    _selectedBodyGenome = std::make_shared<DirectedGraph>();
+    _selectedBodyGenome->unfold();
+    _testCreature = std::make_shared<SimCreature>(btVector3(.0, 2.0, .0), _selectedBodyGenome, _world);
+    _testCreature->setAppearance(_nodeShader, _nodeMaterial, _nodeTexture);
+    _testCreature->addToWorld();
 
-    // Try to build a feasible creature genome
-    if (bUseMorphologyGenomes && bFeasibilityChecks) {
-        bool bNoFeasibleCreatureFound = true;
-        int attempts = 0;
-        SimCreature* testCreature;
-
-        ofLog() << "building feasible creature genome...";
-        while (bNoFeasibleCreatureFound) {
-            testCreature = new SimCreature(btVector3(0, 0, 0), _testBodyGenome, _world);
-
-            if (testCreature->feasibilityCheck()) {
-                bNoFeasibleCreatureFound = false;
-
-                ofLog() << "success! attempts: " << attempts;
-                _testBodyGenome->print();
-                //_testBodyGenome->save();
-            }
-            else {
-                // Replace the managed object
-                _testBodyGenome = std::make_shared<DirectedGraph>();
-                _testBodyGenome->unfold();
-                delete testCreature;
-            }
-            attempts++;
-        }
-    }
     bInitialized = true;
 }
 
 void SimulationManager::startSimulation()
 {
-    if (bInitialized) {
+    if (bInitialized && !bSimulationActive) {
+        bSimulationActive = true;
+        if (_testCreature) {
+            _testCreature->removeFromWorld();
+        }
+        simulationSpeed = 1.0; 
+
+        // Reset timing
         _startTime = _clock.getTimeMilliseconds();
+        _frameTimeAccumulator = 0.0;
+        _simulationTime = 0.0;
         _clock.reset();
+    }
+}
+
+void SimulationManager::stopSimulation()
+{
+    if (bInitialized && bSimulationActive) {
+        bStopSimulationQueued = true;
+        abortSimInstances();
     }
 }
 
@@ -200,6 +195,7 @@ int SimulationManager::queueSimulationInstance(const GenomeBase& genome, float d
     // Set back to zero after a single non-parallell evaluation
     simInstanceId = (bMultiEval) ? (simInstanceId + 1) % simInstanceLimit : 0;
 
+    ofLog() << "queued sim instance " << ticket;
     return ticket;
 }
 
@@ -223,8 +219,8 @@ int SimulationManager::runSimulationInstance(GenomeBase& genome, int ticket, flo
     canv->enableBounds();
     canv->addToWorld();
 
-    SimCreature* crtr = (bUseMorphologyGenomes) ?
-        new SimCreature(position, _testBodyGenome, _world) :
+    SimCreature* crtr = (bUseBodyGenomes) ?
+        new SimCreature(position, _selectedBodyGenome, _world) :
         new SimCreature(position, _numWalkerLegs, _world, true);
 
     crtr->setAppearance(_nodeShader, _nodeMaterial, _nodeTexture);
@@ -233,6 +229,7 @@ int SimulationManager::runSimulationInstance(GenomeBase& genome, int ticket, flo
 
     _simulationInstances.push_back(new SimInstance(ticket, crtr, canv, _simulationTime, duration));
 
+    ofLog() << "running sim instance " << ticket;
     return ticket;
 }
 
@@ -292,28 +289,30 @@ void SimulationManager::handleCollisions(btDynamicsWorld* worldPtr)
 
 void SimulationManager::updateTime()
 {
-    _time = _clock.getTimeMilliseconds();
-    _frameTime = _time - _prevTime;
-    _prevTime = _time;
+    if (bSimulationActive) {
+        _time = _clock.getTimeMilliseconds();
+        _frameTime = _time - _prevTime;
+        _prevTime = _time;
 
-    _runTime = _time - _startTime;
-    _simulationSpeed = simulationSpeed;
+        _runTime = _time - _startTime;
+        _simulationSpeed = simulationSpeed;
 
-    // prevents physics time accumulator from summing up too much time (i.e. when debugging)
-    if (_frameTime > _targetFrameTimeMillis) {
-        _frameTime = _targetFrameTimeMillis;  
-    }
-    _frameTimeAccumulator += _frameTime;
-    int steps = floor((_frameTimeAccumulator / _fixedTimeStepMillis) + 0.5);
-
-    if (steps > 0) {
-        btScalar timeToProcess = steps * _frameTime * simulationSpeed;
-        while (timeToProcess >= 0.01) {
-            performTrueSteps(_fixedTimeStep);
-            timeToProcess -= _fixedTimeStepMillis;
+        // prevents physics time accumulator from summing up too much time (i.e. when debugging)
+        if (_frameTime > _targetFrameTimeMillis) {
+            _frameTime = _targetFrameTimeMillis;
         }
-        // Residual value carries over to next frame
-        _frameTimeAccumulator -= _frameTime * steps;
+        _frameTimeAccumulator += _frameTime;
+        int steps = floor((_frameTimeAccumulator / _fixedTimeStepMillis) + 0.5);
+
+        if (steps > 0) {
+            btScalar timeToProcess = steps * _frameTime * simulationSpeed;
+            while (timeToProcess >= 0.01) {
+                performTrueSteps(_fixedTimeStep);
+                timeToProcess -= _fixedTimeStepMillis;
+            }
+            // Residual value carries over to next frame
+            _frameTimeAccumulator -= _frameTime * steps;
+        }
     }
 }
 
@@ -373,8 +372,17 @@ void SimulationManager::updateSimInstances(double timeStep)
             delete _simulationInstances[i];
             _simulationInstances.erase(_simulationInstances.begin() + i);
 
-            // optional
-            //saveToDisk(pix);
+            if (bSaveArtifactsToDisk) {
+                saveToDisk(pix);
+            }
+        }
+    }
+    if (bStopSimulationQueued && !isSimulationInstanceActive()) {
+        bSimulationActive = false;
+        bStopSimulationQueued = false;
+        simulationSpeed = 0;
+        if (_testCreature) {
+            _testCreature->addToWorld();
         }
     }
 }
@@ -410,16 +418,20 @@ void SimulationManager::draw()
         _nodeShader->setUniform3f("eyePos", cam.getPosition());
         _nodeShader->end();
 
-
         _terrainNode->draw();
-        for (auto& s : _simulationInstances) {
-            s->getCanvas()->draw();
-            s->getCreature()->draw();
+        if (bSimulationActive) {
+            for (auto& s : _simulationInstances) {
+                s->getCanvas()->draw();
+                s->getCreature()->draw();
+            }
+        }
+        else if (_testCreature) {
+            _testCreature->draw();
         }
     }
     else {
         _world->debugDrawWorld();
-        ofDrawIcoSphere(lightPosition, 2.0f);
+        //ofDrawIcoSphere(lightPosition, 1.0f);
     }
     cam.end();
 }
@@ -460,10 +472,12 @@ ofFbo* SimulationManager::getCanvasFbo()
 
 void SimulationManager::shiftFocus()
 {
-    focusIndex = (focusIndex + 1) % _simulationInstances.size();
+    if (!_simulationInstances.empty()) {
+        focusIndex = (focusIndex + 1) % _simulationInstances.size();
+    }
 }
 
-void SimulationManager::nextSimulation()
+void SimulationManager::abortSimInstances()
 {
     for (SimInstance* i : _simulationInstances) {
         i->abort();
@@ -471,7 +485,7 @@ void SimulationManager::nextSimulation()
 }
 
 // As morphology is fixed this will only work for the walker creature for now
-MorphologyInfo SimulationManager::getWalkerMorphologyInfo()
+MorphologyInfo SimulationManager::getWalkerBodyInfo()
 {
     int numBodyParts = 2 * _numWalkerLegs + 1;
     int numJoints = numBodyParts - 1;
@@ -479,9 +493,55 @@ MorphologyInfo SimulationManager::getWalkerMorphologyInfo()
     return MorphologyInfo(numBodyParts, numJoints);
 }
 
-std::shared_ptr<DirectedGraph> SimulationManager::getMorphologyGenome()
+std::shared_ptr<DirectedGraph> SimulationManager::getBodyGenome()
 {
-    return _testBodyGenome;
+    return _selectedBodyGenome;
+}
+
+void SimulationManager::loadBodyGenomeFromDisk(std::string filename)
+{
+    _selectedBodyGenome = std::make_shared<DirectedGraph>();
+    _selectedBodyGenome->load(filename);
+    _selectedBodyGenome->unfold();
+
+    _testCreature = std::make_shared<SimCreature>(btVector3(.0, 2.0, .0), _selectedBodyGenome, _world);
+    _testCreature->setAppearance(_nodeShader, _nodeMaterial, _nodeTexture);
+    _testCreature->addToWorld();
+}
+
+// Try to build a feasible creature genome
+void SimulationManager::genRandomFeasibleBodyGenome()
+{
+    if (bUseBodyGenomes && bFeasibilityChecks) {
+        bool bNoFeasibleCreatureFound = true;
+        int attempts = 0;
+
+        ofLog() << "building feasible creature genome...";
+        _selectedBodyGenome = std::make_shared<DirectedGraph>();
+        _selectedBodyGenome->unfold();
+
+        std::shared_ptr<SimCreature> tempCreature;
+        while (bNoFeasibleCreatureFound) {
+            auto tempCreature = std::make_shared<SimCreature>(
+                btVector3(0, 2.0, 0), _selectedBodyGenome, _world
+            );
+            if (tempCreature->feasibilityCheck()) {
+                bNoFeasibleCreatureFound = false;
+
+                ofLog() << "success! attempts: " << attempts;
+                _selectedBodyGenome->print();
+                _testCreature = tempCreature;
+                _testCreature->setAppearance(_nodeShader, _nodeMaterial, _nodeTexture);
+                _testCreature->addToWorld();
+            }
+            else {
+                // Replace the managed object
+                _selectedBodyGenome = std::make_shared<DirectedGraph>();
+                _selectedBodyGenome->unfold();
+            }
+            attempts++;
+        }
+    }
 }
 
 void SimulationManager::writeToPixels(const ofTexture& tex, ofPixels& pix)
@@ -523,6 +583,11 @@ bool SimulationManager::isInitialized()
     return bInitialized;
 }
 
+bool SimulationManager::isSimulationActive()
+{
+    return bSimulationActive;
+}
+
 bool SimulationManager::isSimulationInstanceActive()
 {
     return !_simulationInstances.empty();
@@ -532,16 +597,6 @@ void SimulationManager::setMaxParallelSims(int max)
 {
     simInstanceLimit = max;
     simInstanceGridSize = sqrt(max);
-}
-
-void SimulationManager::setMorphologyGenomeModeEnabled(bool b)
-{
-    bUseMorphologyGenomes = b;
-}
-
-bool SimulationManager::IsMorphologyGenomeModeEnabled()
-{
-    return bUseMorphologyGenomes;
 }
 
 void SimulationManager::dealloc()

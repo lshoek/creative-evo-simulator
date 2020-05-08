@@ -1,9 +1,9 @@
-#include "NEATManager.h"
-#include "NEATUtils.h"
+#include "EvoManager.h"
+#include "EvoUtils.h"
 #include "toolbox.h"
 #include <boost/thread.hpp>
 
-void NEATManager::setup(SimulationManager* sim)
+void EvoManager::setup(SimulationManager* sim)
 {
 	// create a fitness function
 	paintFitnessFunc.init(sim);
@@ -14,10 +14,12 @@ void NEATManager::setup(SimulationManager* sim)
 	params.Load(paramFile);
 	paramFile.close();
 
+	ofLog() << "Initializing population... (" << params.PopulationSize << " genomes)";
+
 	// get morphology info to build network
 	NEAT::Genome templateGenome;
-	if (sim->IsMorphologyGenomeModeEnabled()) {
-		std::shared_ptr<DirectedGraph> graphPtr = sim->getMorphologyGenome();
+	if (sim->bUseBodyGenomes) {
+		std::shared_ptr<DirectedGraph> graphPtr = sim->getBodyGenome();
 		templateGenome = NEAT::Genome(0,
 			graphPtr->getNumNodesUnwrapped(), graphPtr->getNumNodesUnwrapped(), graphPtr->getNumJointsUnwrapped(), false,
 			NEAT::ActivationFunction::TANH,
@@ -26,7 +28,7 @@ void NEATManager::setup(SimulationManager* sim)
 		);
 	} 
 	else {
-		MorphologyInfo info = sim->getWalkerMorphologyInfo();
+		MorphologyInfo info = sim->getWalkerBodyInfo();
 		templateGenome = NEAT::Genome(0,
 			info.numSensors, info.numSensors, info.numJoints, false,
 			NEAT::ActivationFunction::TANH,
@@ -36,7 +38,7 @@ void NEATManager::setup(SimulationManager* sim)
 	}
 
 	// create substrate
-	substrate = NEATUtils::CreateSubstrate(3);
+	substrate = EvoUtils::CreateSubstrate(3);
 	//substrate.PrintInfo();
 
 	// create cppn genome using substrate config
@@ -60,8 +62,7 @@ void NEATManager::setup(SimulationManager* sim)
 		"\ninputs:" << templateGenome.NumInputs() <<
 		"\noutputs:" << templateGenome.NumOutputs() <<
 		"\nneurons:" << templateGenome.NumNeurons() << 
-		"\nlinks:" << templateGenome.NumLinks() <<
-		"\n";
+		"\nlinks:" << templateGenome.NumLinks();
 
 	offspringGenomeBasePtr = new GenomeBase(templateGenome);
 	bestGenomeBasePtr = new GenomeBase(templateGenome);
@@ -74,9 +75,11 @@ void NEATManager::setup(SimulationManager* sim)
 
 	maxParallelEvals = 1;
 	targetFitness = 1.0;
+
+	ofLog() << "Initializing population: Done!";
 }
 
-void NEATManager::draw()
+void EvoManager::draw()
 {
 	glm::ivec2 rect = glm::ivec2(512, 512);
 
@@ -124,8 +127,21 @@ void NEATManager::draw()
 	ofPopMatrix();
 }
 
-void NEATManager::startEvolution()
+// Export results to some file
+void EvoManager::report()
 {
+	ofLog() << 
+		"*** Report ***" << std::endl <<
+		"Generations: " << population->GetGeneration() << std::endl <<
+		"Num Evaluations: " << population->m_NumEvaluations << std::endl <<
+		"Highest Fitness: " << population->GetBestFitnessEver() << std::endl <<
+		"Num Genomes: " << population->NumGenomes() << std::endl <<
+		"Num Species: " << population->m_Species.size() << std::endl;
+}
+
+void EvoManager::startEvolution()
+{
+	bEvolutionActive = true;
 	totalTimeMs = ofGetElapsedTimeMillis();
 
 	if (bThreaded) {
@@ -136,12 +152,18 @@ void NEATManager::startEvolution()
 	}
 }
 
-void NEATManager::threadedFunction()
+void EvoManager::stopEvolution()
+{
+	bStopSimulationQueued = true;
+	ofLog() << "Waiting for generation to finish...";
+}
+
+void EvoManager::threadedFunction()
 {
 	evolutionLoop();
 }
 
-void NEATManager::evolutionLoop()
+void EvoManager::evolutionLoop()
 {
 	bool bTargetReached = false;
 
@@ -169,15 +191,29 @@ void NEATManager::evolutionLoop()
 		}
 		// no solution found -> advance to next generation
 		population->Epoch();
+
+		// Prematurely evolution loop if a stop is queued
+		if (bStopSimulationQueued) {
+			break;
+		}
 	}
 
 	totalTimeMs = ofGetElapsedTimeMillis() - totalTimeMs;
 	ofLog() << (bTargetReached ? "Target Reached" : "Evolution Stopped");
 	ofLog() << "time: " << totalTimeMs / float(1000) << "s";
+
+	bStopSimulationQueued = false;
+	bEvolutionActive = false;
+	onEvolutionStopped.notify();
 }
 
-bool NEATManager::tick()
+bool EvoManager::tick()
 {
+	// Prematurely exit evolution loop if a stop is queued
+	if (bStopSimulationQueued) {
+		return bestFitness;
+	}
+
 	bool bNewBest = false;
 
 	// replace worst genome with new and return it
@@ -199,8 +235,10 @@ bool NEATManager::tick()
 	return bNewBest;
 }
 
-bool NEATManager::evaluatePopulation()
+bool EvoManager::evaluatePopulation()
 {
+	bool bBreak = false;
+
 	if (maxParallelEvals > 1)
 	{
 		std::vector<GenomeBase> tempGenomes;
@@ -241,7 +279,14 @@ bool NEATManager::evaluatePopulation()
 					evalThreads.clear();
 				}
 				index++;
+
+				// Prematurely exit evolution loop if a stop is queued
+				if (bStopSimulationQueued) {
+					bBreak = true;
+					break;
+				}
 			}
+			if (bBreak) break;
 		}
 	}
 	else
@@ -260,7 +305,14 @@ bool NEATManager::evaluatePopulation()
 				population->m_Species[i].m_Individuals[j].SetFitness(f);
 				population->m_Species[i].m_Individuals[j].SetEvaluated();
 				index++;
+
+				// Prematurely exit evolution loop if a stop is queued
+				if (bStopSimulationQueued) {
+					bBreak = true;
+					break;
+				}
 			}
+			if (bBreak) break;
 		}
 	}
 
@@ -281,47 +333,52 @@ bool NEATManager::evaluatePopulation()
 	return bNewBest;
 }
 
-NEAT::Population* NEATManager::getPopulation()
+bool EvoManager::isEvolutionActive()
+{
+	return bEvolutionActive;
+}
+
+NEAT::Population* EvoManager::getPopulation()
 {
 	return population;
 }
 
-const NEAT::Parameters& NEATManager::getParams()
+const NEAT::Parameters& EvoManager::getParams()
 {
 	return params;
 }
 
-double NEATManager::getBestFitness()
+double EvoManager::getBestFitness()
 {
 	return bestFitness;
 }
 
-double NEATManager::getTargetFitness()
+double EvoManager::getTargetFitness()
 {
 	return targetFitness;
 }
 
-const std::vector<double>& NEATManager::getFitnessResults()
+const std::vector<double>& EvoManager::getFitnessResults()
 {
 	return fitnessResults;
 }
 
-int NEATManager::getNumGeneration()
+int EvoManager::getNumGeneration()
 {
 	return population->m_Generation;
 }
 
-float NEATManager::getPctGenEvaluated()
+float EvoManager::getPctGenEvaluated()
 {
 	return pctGenEvaluated;
 }
 
-void NEATManager::setMaxParallelEvals(int max)
+void EvoManager::setMaxParallelEvals(int max)
 {
 	maxParallelEvals = max;
 }
 
-void NEATManager::exit()
+void EvoManager::exit()
 {
 	if (bThreaded) {
 		waitForThread();

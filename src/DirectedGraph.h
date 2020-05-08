@@ -26,7 +26,7 @@ public:
 
 	void print();
 	void save();
-	void load(uint32_t id);
+	void load(std::string id);
 
 private:
 	int getNodeIndex(GraphNode* node);

@@ -1,5 +1,6 @@
 #pragma once
 #include "DirectedGraph.h"
+#include "SimDefines.h"
 #include "SimUtils.h"
 #include "ofFileUtils.h"
 #include "ofUtils.h"
@@ -7,10 +8,6 @@
 #include "nlohmann/json.hpp"
 
 using json = nlohmann::json;
-
-#define NTRS_BODY_GENOME_DIR "output/genomes/morphology/"
-#define NTRS_NODE_EXT ".node"
-#define NTRS_CONN_EXT ".conn"
 
 DirectedGraph::DirectedGraph() 
 {
@@ -186,24 +183,25 @@ void DirectedGraph::dfs(GraphNode* node, bool bPrint)
     _numJointsUnwrapped = 0;
 
     // todo: check if node is registered
-    if (bPrint) {
-        ofLog() << node->primitiveInfo.index << " (root) " << node->conns.size() << " conns.";
-    }
     dfsTraverse(node, recursionLimits, bPrint);
     _bTraversed = true;
 }
 
 void DirectedGraph::dfsTraverse(GraphNode* node, std::vector<int> recursionLimits, bool bPrint)
 {
-    int index = getNodeIndex(node);
+    int index = node->primitiveInfo.index;
+    if (bPrint) {
+        std::ostringstream ss;
+        for (GraphConnection* c : node->conns) {
+            ss << c->child->primitiveInfo.index << ", ";
+        }
+        ofLog() << index << " [" << recursionLimits[index] << "] -> " << ss.str();
+    }
     recursionLimits[index]--;
     _numNodesUnwrapped++;
 
     for (GraphConnection* c : node->conns) {
         if (recursionLimits[getNodeIndex(c->child)] > 0) {
-            if (bPrint) {
-                ofLog() << c->parent->primitiveInfo.index << " -> " << c->child->primitiveInfo.index;
-            }
             _numJointsUnwrapped++;
             dfsTraverse(c->child, recursionLimits, bPrint);
         }
@@ -225,24 +223,60 @@ void DirectedGraph::save()
 
     int nodeCount = 0;
     for (GraphNode* n : _nodes) {
-        std::string path = genomeDir.getAbsolutePath() + '\\' + id + '\\' + ofToString(nodeCount) + NTRS_NODE_EXT;
-        n->save(path);
+        std::string path = genomeDir.getAbsolutePath() + '\\' + id + '\\' + ofToString(nodeCount) + '.';
+        n->save(path + NTRS_NODE_EXT);
+
+        for (GraphConnection* c : n->conns) {
+            c->save(path + NTRS_CONN_EXT);
+        }
         nodeCount++;
     }
 }
 
-void DirectedGraph::load(uint32_t id)
+void DirectedGraph::load(std::string id)
 {
     const ofDirectory genomeDir = ofDirectory(ofToDataPath(NTRS_BODY_GENOME_DIR, true));
-    std::string path = genomeDir.getAbsolutePath() + '\\' + ofToString(id);
+    std::string path = genomeDir.getAbsolutePath() + '\\' + id;
 
-    const std::vector<ofFile> files = ofDirectory(path).getFiles();
+    std::vector<ofFile> files = ofDirectory(path).getFiles();
 
     _nodes.clear();
-    for (ofFile f : files) {
-        GraphNode* n = new GraphNode();
-        n->load(f);
-        addNode(n);
+    for (ofFile& f : files) {
+        f.changeMode(ofFile::ReadOnly, false);
+        if (f.getExtension() == NTRS_NODE_EXT) {
+            GraphNode* n = new GraphNode();
+            n->load(f);
+            addNode(n);
+
+            // Save root flag to primitive ionfo as well to make this work
+            //if (n->IsRootNode()) {
+            //    _rootNode = n;
+            //}
+
+            if (n->primitiveInfo.index == 0) {
+                n->setIsRootNode(true);
+                _rootNode = n;
+            }
+        }
+    }
+    for (ofFile& f : files) {
+        if (f.getExtension() == NTRS_CONN_EXT) {
+
+            // This one is only made for the purpose of loading primitive info
+            GraphConnection* c = new GraphConnection();
+            c->load(f);
+
+            for (GraphNode* n : _nodes) {
+                if (n->primitiveInfo.index == c->jointInfo.fromIndex) {
+                    n->addConnection(_nodes[c->jointInfo.toIndex], c->jointInfo);
+                    //c->setParent(n);
+                }
+                //if (n->primitiveInfo.index == c->jointInfo.toIndex) {
+                //    c->setChild(n);
+                //}
+            }
+            delete c;
+        }
     }
 }
 

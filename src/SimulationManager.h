@@ -22,6 +22,7 @@ class SimulationManager
 public:
     void init();
     void startSimulation();
+    void stopSimulation();
 
     void updateTime();
     void updateSimInstances(double timeStep);
@@ -36,6 +37,7 @@ public:
     void loadShaders();
 
     bool isInitialized();
+    bool isSimulationActive();
     bool isSimulationInstanceActive();
 
     ofFbo* getCanvasFbo();
@@ -45,20 +47,23 @@ public:
     SimCreature* getFocusCreature();
     glm::vec3 getFocusOrigin();
     void shiftFocus();
-    void nextSimulation();
+    void abortSimInstances();
 
-    MorphologyInfo getWalkerMorphologyInfo();
-    std::shared_ptr<DirectedGraph> getMorphologyGenome();
+    MorphologyInfo getWalkerBodyInfo();
+    std::shared_ptr<DirectedGraph> getBodyGenome();
+
+    void loadBodyGenomeFromDisk(std::string filename);
+    void genRandomFeasibleBodyGenome();
     void initTestEnvironment();
 
     void setMaxParallelSims(int max);
-    void setMorphologyGenomeModeEnabled(bool b);
-    bool IsMorphologyGenomeModeEnabled();
 
     bool bDebugDraw = false;
     bool bTestMode = false;
     bool bCameraSnapFocus = true;
     bool bFeasibilityChecks = false;
+    bool bUseBodyGenomes = true;
+    bool bSaveArtifactsToDisk = false;
 
     glm::vec3 lightPosition;
     glm::vec3 lightDirection;
@@ -81,7 +86,9 @@ private:
 
     ofxGrabCam cam;
     SimNode* _terrainNode;
-    std::shared_ptr<DirectedGraph> _testBodyGenome;
+
+    std::shared_ptr<DirectedGraph> _selectedBodyGenome;
+    std::shared_ptr<SimCreature> _testCreature;
 
     // physics
     btBroadphaseInterface* _broadphase;
@@ -97,7 +104,7 @@ private:
     btClock _clock;
     btScalar _startTime = 0;            // clock time that simulation started (ms)
     btScalar _runTime = 0;              // clock time simulation has run (ms)
-    btScalar _simulationSpeed = 1.0;    // speed of simulation relative to clock time
+    btScalar _simulationSpeed = 0.0;    // speed of simulation relative to clock time
     btScalar _simulationTime = 0;       // simulation time after speedup (s)
 
     const btScalar _fixedTimeStep = 1.0 / 60.0;
@@ -126,7 +133,8 @@ private:
     btScalar canvasMargin = 4.0;
 
     bool bInitialized = false;
-    bool bUseMorphologyGenomes = true;
+    bool bSimulationActive = false;
+    bool bStopSimulationQueued = false;
 
     int simInstanceId = 0;
     int simInstanceGridSize = 2;

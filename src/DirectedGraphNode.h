@@ -25,6 +25,7 @@ public:
 	GraphNode();
 	GraphNode(PrimitiveInfo info, bool isRoot);
 	GraphNode(const GraphNode& g);
+	~GraphNode();
 
 	void addConnection(GraphNode* child, const GraphConnection::JointInfo& info);
 
@@ -32,11 +33,12 @@ public:
 	uint32_t getGraphIndex();
 	void setGraphIndex(uint32_t index);
 
+	void setIsRootNode(bool bIsRootNode);
 	bool IsRootNode();
 
 	PrimitiveInfo primitiveInfo;
 	void save(std::string path);
-	void load(ofFile file);
+	void load(ofFile& file);
 
 	std::vector<GraphConnection*> conns;
 
