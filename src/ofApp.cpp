@@ -295,7 +295,6 @@ void ofApp::keyPressed(int key)
 
 void ofApp::exit()
 {
-	if (bSimulate) {
-		evoManager.exit();
-	}
+	stopEvolution();
+	evoManager.exit();
 }

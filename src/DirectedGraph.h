@@ -8,6 +8,7 @@ class DirectedGraph
 {
 public:
 	DirectedGraph();
+	DirectedGraph(bool bInitRandom);
 	DirectedGraph(const DirectedGraph& srcGraph);
 	~DirectedGraph();
 

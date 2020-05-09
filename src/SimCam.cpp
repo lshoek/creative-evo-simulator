@@ -1,4 +1,5 @@
 #include "SimCam.h"
+#include "SimUtils.h"
 #include "toolbox.h"
 
 void SimCam::setup()
@@ -11,7 +12,7 @@ void SimCam::update()
 {
 	if (bHasFocusNode) 
 	{
-		glm::vec3 focus = focusNodePtr->getPosition();
+		glm::vec3 focus = SimUtils::bulletToGlm(focusNodePtr->getPosition());
 		forward = glm::normalize(focus - ofCamera::getPosition());
 
 		// update distance to target

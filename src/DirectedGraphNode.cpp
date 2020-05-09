@@ -17,7 +17,13 @@ GraphNode::GraphNode(const GraphNode& g) :
 	primitiveInfo(g.primitiveInfo), _bIsRootNode(g._bIsRootNode) {}
 
 void GraphNode::addConnection(GraphNode* child, const GraphConnection::JointInfo& info) {
-	conns.push_back(new GraphConnection(this, child, info));
+	_conns.push_back(new GraphConnection(this, child, info));
+	primitiveInfo.bodyEnd = 0;
+}
+
+const std::vector<GraphConnection*>& GraphNode::getConnections()
+{
+	return _conns;
 }
 
 uint32_t GraphNode::getRecursionLimit() {
@@ -64,7 +70,7 @@ void GraphNode::load(ofFile& file)
 
 GraphNode::~GraphNode() 
 {
-	for (GraphConnection* c : conns) {
+	for (GraphConnection* c : _conns) {
 		delete c;
 	}
 }
@@ -75,6 +81,7 @@ void to_json(json& j, const GraphNode::PrimitiveInfo& p)
 		{"index", p.index},
 		{"primitiveType", p.primitiveType},
 		{"jointType", p.jointType},
+		{"bodyEnd", p.bodyEnd},
 		{"recursionLimit", p.recursionLimit},
 		{"dimensions_x", double(p.dimensions.x())},
 		{"dimensions_y", double(p.dimensions.y())},
@@ -90,16 +97,17 @@ void from_json(const json& j, GraphNode::PrimitiveInfo& p)
 	j.at("index").get_to(p.index);
 	j.at("primitiveType").get_to(p.primitiveType);
 	j.at("jointType").get_to(p.jointType);
+	j.at("bodyEnd").get_to(p.bodyEnd);
 	j.at("recursionLimit").get_to(p.recursionLimit);
 
 	double x, y, z;
 	j.at("dimensions_x").get_to(x);
-	j.at("dimensions_x").get_to(y);
-	j.at("dimensions_x").get_to(z);
+	j.at("dimensions_y").get_to(y);
+	j.at("dimensions_z").get_to(z);
 	p.dimensions = btVector3(x, y, z);
 
 	j.at("parentAttachmentPlane_x").get_to(x);
-	j.at("parentAttachmentPlane_x").get_to(y);
-	j.at("parentAttachmentPlane_x").get_to(z);
+	j.at("parentAttachmentPlane_y").get_to(y);
+	j.at("parentAttachmentPlane_z").get_to(z);
 	p.parentAttachmentPlane = btVector3(x, y, z);
 }

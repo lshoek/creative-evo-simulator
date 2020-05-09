@@ -33,51 +33,51 @@ void SimNodeBase::createBody(btVector3 position, float mass, void* userPointer)
     _body->setUserIndex(_tag);
 }
 
-void SimNodeBase::setTransform(glm::mat4 transform)
+void SimNodeBase::setTransform(btTransform transform)
 {
     if (_body) {
-        _body->setWorldTransform(SimUtils::glmToBullet(transform));
+        _body->setWorldTransform(transform);
     }
 }
 
-glm::mat4 SimNodeBase::getTransform()
+btTransform SimNodeBase::getTransform()
 {
     if (_body) {
-        return SimUtils::bulletToGlm(_body->getWorldTransform());
+        return _body->getWorldTransform();
     }
-    else return glm::identity<glm::mat4>();
+    else return btTransform::getIdentity();
 }
 
-void SimNodeBase::setPosition(glm::vec3 position)
+void SimNodeBase::setPosition(btVector3 position)
 {
     if (_body) {
         btTransform trans = _body->getWorldTransform();
-        trans.setOrigin(SimUtils::glmToBullet(position));
+        trans.setOrigin(position);
         _body->setWorldTransform(trans);
     }
 }
 
-glm::vec3 SimNodeBase::getPosition()
+btVector3 SimNodeBase::getPosition()
 {
     if (_body) {
-        return SimUtils::bulletToGlm(_body->getWorldTransform().getOrigin());
+        return _body->getWorldTransform().getOrigin();
     }
-    else return glm::vec3();
+    else return btVector3(.0, .0, .0);
 }
 
-void SimNodeBase::setRotation(glm::quat rotation)
+void SimNodeBase::setRotation(btQuaternion rotation)
 {
     if (_body) {
-        _body->getWorldTransform().setRotation(SimUtils::glmToBullet(rotation));
+        _body->getWorldTransform().setRotation(rotation);
     }
 }
 
-glm::quat SimNodeBase::getRotation()
+btQuaternion SimNodeBase::getRotation()
 {
     if (_body) {
-        return SimUtils::bulletToGlm(_body->getWorldTransform().getRotation());
+        return _body->getWorldTransform().getRotation();
     }
-    else return glm::identity<glm::quat>();
+    else return btQuaternion::getIdentity();
 }
 
 // rigidbody
@@ -88,8 +88,11 @@ bool SimNodeBase::hasBody() { return _body != nullptr; }
 btCollisionShape* SimNodeBase::getShape() { return _shape; }
 
 // meta
-std::string SimNodeBase::getName() { return _name; }
-int SimNodeBase::getTag() { return _tag; }
+void SimNodeBase::setTag(uint32_t tag) { 
+    _tag = tag;
+    _body->setUserIndex(_tag);
+}
+uint32_t SimNodeBase::getTag() { return _tag; }
 
 // owner
 void SimNodeBase::addToWorld() { _ownerWorld->addRigidBody(_body); }
@@ -105,6 +108,9 @@ void SimNodeBase::setAppearance(std::shared_ptr<ofShader> shader, std::shared_pt
     _material = mtl;
     _texture = tex;
     bUseTexture = true;
+}
+void SimNodeBase::setColor(ofColor c) {
+    _color = c;
 }
 void SimNodeBase::setTexture(std::shared_ptr<ofTexture> texture) {
     _texture = texture;

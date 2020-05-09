@@ -34,7 +34,7 @@ void SimNode::draw()
     if (bRender) {
         if (_shader) {
             ofPushMatrix();
-            ofMultMatrix(getTransform());
+            ofMultMatrix(SimUtils::bulletToGlm(getTransform()));
 
             _shader->begin();
             if (bUseTexture) {

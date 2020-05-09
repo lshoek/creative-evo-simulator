@@ -39,17 +39,17 @@ SimCreature::SimCreature(btVector3 position, uint32_t numLegs, btDynamicsWorld* 
 
 void SimCreature::buildPhenome(DirectedGraph* graph)
 {
-	m_numBodyParts = graph->getNumNodesUnwrapped();
-	m_numJoints = m_numBodyParts - 1;
+	m_numBodies = graph->getNumNodesUnwrapped();
+	m_numJoints = m_numBodies - 1;
 	m_numBallPointers = 0;
 	m_numLegs = 0;
 
 	randomizeSensoryMotorWeights();
 
-	m_nodes.resize(m_numBodyParts);
-	m_bodies.resize(m_numBodyParts);
+	m_nodes.resize(m_numBodies);
+	m_bodies.resize(m_numBodies);
 	m_joints.reserve(m_numJoints);
-	m_touchSensors.resize(m_numBodyParts);
+	m_touchSensors.resize(m_numBodies);
 
 	std::vector<int> recursionLimits(graph->getNodes().size());
 	for (int i = 0; i < recursionLimits.size(); i++) {
@@ -165,6 +165,10 @@ void SimCreature::dfs(
 
 		simNodePtr->setRigidBody(body);
 		simNodePtr->setMesh(std::make_shared<ofMesh>(ofMesh::box(boxSize.x(), boxSize.y(), boxSize.z())));
+		if (graphNode->primitiveInfo.bodyEnd != 0) {
+			simNodePtr->setTag(BrushTag | BodyTag);
+			simNodePtr->setColor(INK);
+		}
 
 		m_nodes[segmentIndex] = simNodePtr;
 		m_bodies[segmentIndex] = body;
@@ -196,9 +200,9 @@ void SimCreature::dfs(
 	}
 
 	int connectionIndex = 0;
-	for (GraphConnection* c : graphNode->conns) {
+	for (GraphConnection* c : graphNode->getConnections()) {
 		if (recursionLimits[c->child->getGraphIndex()] > 0) {
-			btScalar attachment = connectionIndex/float(graphNode->conns.size());
+			btScalar attachment = connectionIndex/float(graphNode->getConnections().size());
 			dfs(c->child, c, simNodePtr, graph, parentDims, cascadingScale, attachment, recursionLimits, segmentIndex);
 		}
 		connectionIndex++;
@@ -215,8 +219,8 @@ void SimCreature::initWalker(btVector3 position, uint32_t numLegs, btDynamicsWor
 	// calculate indices
 	m_numLegs = numLegs;
 	m_numBallPointers = m_numLegs;
-	m_numBodyParts = 2 * m_numLegs + 1;
-	m_numJoints = m_numBodyParts - 1;
+	m_numBodies = 2 * m_numLegs + 1;
+	m_numJoints = m_numBodies - 1;
 
 	randomizeSensoryMotorWeights();
 
@@ -229,8 +233,8 @@ void SimCreature::initWalker(btVector3 position, uint32_t numLegs, btDynamicsWor
 	m_ballPointMesh = std::make_shared<ofMesh>(ofMesh::sphere(gForeLegRadius*0.9f));
 
 	// Setup geometry
-	m_nodes.reserve(m_numBodyParts);
-	for (int i = 0; i < m_numBodyParts; i++) {
+	m_nodes.reserve(m_numBodies);
+	for (int i = 0; i < m_numBodies; i++) {
 		m_nodes.push_back(new SimNode(BodyTag, m_ownerWorld));
 	}
 	m_ballPointerNodes.resize(m_numBallPointers);
@@ -240,7 +244,7 @@ void SimCreature::initWalker(btVector3 position, uint32_t numLegs, btDynamicsWor
 	}
 
 	// body
-	m_shapes.resize(m_numBodyParts);
+	m_shapes.resize(m_numBodies);
 	m_ballPointerShapes.resize(m_numBallPointers);
 
 	m_shapes[0] = new btCapsuleShape(gRootBodyRadius, gRootBodyHeight); // root body capsule
@@ -274,13 +278,13 @@ void SimCreature::initWalker(btVector3 position, uint32_t numLegs, btDynamicsWor
 
 	btTransform originTrans = trans;
 
-	m_bodies.resize(m_numBodyParts);
+	m_bodies.resize(m_numBodies);
 	m_ballPointerBodies.resize(m_numBallPointers);
 
 	m_bodies[0] = localCreateRigidBody(1.0, bodyOffsetTrans * trans, m_shapes[0], this);
 	m_ownerWorld->addRigidBody(m_bodies[0]);
 
-	m_bodyRelativeTransforms.resize(m_numBodyParts);
+	m_bodyRelativeTransforms.resize(m_numBodies);
 	m_bodyRelativeTransforms[0] = btTransform::getIdentity();
 	m_bodyTouchSensorIndexMap.insert(btHashPtr(m_bodies[0]), 0);
 
@@ -376,7 +380,7 @@ void SimCreature::initWalker(btVector3 position, uint32_t numLegs, btDynamicsWor
 	}
 
 	// Setup some damping on the m_bodies
-	for (int i = 0; i < m_numBodyParts; ++i)
+	for (int i = 0; i < m_numBodies; ++i)
 	{
 		m_bodies[i]->setUserPointer(this);
 		m_bodies[i]->setDamping(0.05, 0.85);
@@ -392,7 +396,7 @@ void SimCreature::initWalker(btVector3 position, uint32_t numLegs, btDynamicsWor
 		m_ballPointerBodies[i]->setUserPointer(this);
 		m_ballPointerNodes[i]->setRigidBody(m_ballPointerBodies[i]);
 	}
-	m_touchSensors.resize(m_numBodyParts);
+	m_touchSensors.resize(m_numBodies);
 
 	// Should not yet be in world
 	removeFromWorld();
@@ -452,10 +456,10 @@ btRigidBody* localCreateRigidBody(btScalar mass, const btTransform& startTransfo
 	btDefaultMotionState* motionState = new btDefaultMotionState(startTransform);
 	btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionState, shape, localInertia);
 	btRigidBody* body = new btRigidBody(rbInfo);
-	body->setUserPointer(userPtr);
 	body->setDamping(0.05, 0.85);
 	body->setDeactivationTime(0.8);
 	body->setSleepingThresholds(0.5f, 0.5f);
+	body->setUserPointer(userPtr);
 
 	return body;
 }
@@ -489,10 +493,10 @@ bool SimCreature::feasibilityCheck()
 //initialize random weights
 void SimCreature::randomizeSensoryMotorWeights()
 {
-	m_sensoryMotorWeights.resize(m_numBodyParts * m_numJoints);
-	for (int i = 0; i < m_numBodyParts; i++) {
+	m_sensoryMotorWeights.resize(m_numBodies * m_numJoints);
+	for (int i = 0; i < m_numBodies; i++) {
 		for (int j = 0; j < m_numJoints; j++) {
-			m_sensoryMotorWeights[i + j * m_numBodyParts] = (double)ofRandom(1.0f) * 2.0f - 1.0f;
+			m_sensoryMotorWeights[i + j * m_numBodies] = (double)ofRandom(1.0f) * 2.0f - 1.0f;
 		}
 	}
 }
@@ -534,7 +538,7 @@ void SimCreature::setTouchSensor(void* bodyPointer)
 
 void SimCreature::clearTouchSensors()
 {
-	for (int i = 0; i < m_numBodyParts; i++) {
+	for (int i = 0; i < m_numBodies; i++) {
 		m_touchSensors[i] = 0.0;
 	}
 }
@@ -553,7 +557,7 @@ void SimCreature::addToWorld()
 {
 	int i;
 	// add all bodies and shapes
-	for (i = 0; i < m_numBodyParts; ++i) {
+	for (i = 0; i < m_numBodies; ++i) {
 		m_ownerWorld->addRigidBody(m_bodies[i]);
 	}
 
@@ -574,7 +578,7 @@ void SimCreature::removeFromWorld()
 	}
 
 	// Remove all bodies
-	for (i = 0; i < m_numBodyParts; ++i) {
+	for (i = 0; i < m_numBodies; ++i) {
 		m_ownerWorld->removeRigidBody(m_bodies[i]);
 	}
 }
@@ -588,17 +592,17 @@ btVector3 SimCreature::getCenterOfMassPosition() const
 {
 	btVector3 finalPosition(0, 0, 0);
 
-	for (int i = 0; i < m_numBodyParts; i++) {
+	for (int i = 0; i < m_numBodies; i++) {
 		finalPosition += m_bodies[i]->getCenterOfMassPosition();
 	}
-	finalPosition /= m_numBodyParts;
+	finalPosition /= m_numBodies;
 	return finalPosition;
 }
 
 void SimCreature::resetAt(const btVector3& position)
 {
 	btTransform resetPosition(btQuaternion::getIdentity(), position);
-	for (int i = 0; i < m_numBodyParts; ++i) {
+	for (int i = 0; i < m_numBodies; ++i) {
 		m_bodies[i]->setWorldTransform(resetPosition * m_bodyRelativeTransforms[i]);
 		if (m_bodies[i]->getMotionState()) {
 			m_bodies[i]->getMotionState()->setWorldTransform(resetPosition * m_bodyRelativeTransforms[i]);

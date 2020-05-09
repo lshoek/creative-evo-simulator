@@ -13,6 +13,7 @@ public:
 		uint32_t index = 0;
 		uint32_t primitiveType = PrimitiveType_Box;
 		uint32_t jointType = JointType_Hinge;
+		uint32_t bodyEnd = 1;
 		uint32_t recursionLimit = 1;
 		btVector3 dimensions = btVector3(1.0, 1.0, 1.0);
 		btVector3 parentAttachmentPlane = btVector3(1.0, 0.0, 0.0);
@@ -28,6 +29,7 @@ public:
 	~GraphNode();
 
 	void addConnection(GraphNode* child, const GraphConnection::JointInfo& info);
+	const std::vector<GraphConnection*>& getConnections();
 
 	uint32_t getRecursionLimit();
 	uint32_t getGraphIndex();
@@ -40,11 +42,10 @@ public:
 	void save(std::string path);
 	void load(ofFile& file);
 
-	std::vector<GraphConnection*> conns;
-
 	static constexpr btScalar minSize = 0.125;
 	static constexpr btScalar maxSize = 1.5;
 	
 private:
+	std::vector<GraphConnection*> _conns;
 	bool _bIsRootNode = false;
 };

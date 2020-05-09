@@ -96,7 +96,7 @@ void SimCanvasNode::draw()
 {
     if (_shader) {
         ofPushMatrix();
-        ofMultMatrix(getTransform());
+        ofMultMatrix(SimUtils::bulletToGlm(getTransform()));
 
         _shader->begin();
         if (bUseTexture) {
@@ -165,8 +165,8 @@ void SimCanvasNode::enableBounds()
             _bounds[i]->initBox(btVector3(0, 0, 0), btVector3(_canvasSize+_margin, _canvasSize, thickness), 0);
 
             glm::quat rot = glm::rotation(ax, glm::rotate(ax, float(HALF_PI) * i, glm::vec3(0, 1, 0)));
-            _bounds[i]->setRotation(rot);
-            _bounds[i]->setPosition((getPosition() + glm::vec3(0, _canvasSize, 0)) + rot * fromCenter);
+            _bounds[i]->setRotation(SimUtils::glmToBullet(rot));
+            _bounds[i]->setPosition((getPosition() + SimUtils::glmToBullet(glm::vec3(0, _canvasSize, 0) + rot * fromCenter)));
             _bounds[i]->addToWorld();
             _bounds[i]->bRender = false;
         }

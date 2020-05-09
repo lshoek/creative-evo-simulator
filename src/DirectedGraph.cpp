@@ -9,7 +9,9 @@
 
 using json = nlohmann::json;
 
-DirectedGraph::DirectedGraph() 
+DirectedGraph::DirectedGraph() {}
+
+DirectedGraph::DirectedGraph(bool bInitRandom) 
 {
     std::random_device::result_type seed = _rd();
     //ofLog() << "DirectedGraph seed: " << seed;
@@ -17,8 +19,10 @@ DirectedGraph::DirectedGraph()
     _rng = std::mt19937(seed);
     _distrib = std::uniform_real_distribution<>(0, 1);
 
-    //initCurl();
-    initRandom();
+    if (bInitRandom) {
+        //initCurl();
+        initRandom();
+    }
 }
 
 DirectedGraph::DirectedGraph(const DirectedGraph& srcGraph)
@@ -30,7 +34,7 @@ DirectedGraph::DirectedGraph(const DirectedGraph& srcGraph)
     }
     for (GraphNode* n : srcGraph._nodes) {
         GraphNode* targetNodePtr = _nodes[n->getGraphIndex()];
-        for (GraphConnection* c : n->conns) {
+        for (GraphConnection* c : n->getConnections()) {
             addConnection(targetNodePtr, _nodes[c->child->getGraphIndex()], c->jointInfo);
         }
     }
@@ -123,9 +127,9 @@ void DirectedGraph::unfold()
 {
     _bTraversed = false;
 
-    for (GraphNode* gn : _nodes) {
-        gn->setGraphIndex(getNodeIndex(gn));
-    }
+    //for (GraphNode* gn : _nodes) {
+    //    gn->setGraphIndex(getNodeIndex(gn));
+    //}
     dfs(_rootNode, false);
 }
 
@@ -192,7 +196,7 @@ void DirectedGraph::dfsTraverse(GraphNode* node, std::vector<int> recursionLimit
     int index = node->primitiveInfo.index;
     if (bPrint) {
         std::ostringstream ss;
-        for (GraphConnection* c : node->conns) {
+        for (GraphConnection* c : node->getConnections()) {
             ss << c->child->primitiveInfo.index << ", ";
         }
         ofLog() << index << " [" << recursionLimits[index] << "] -> " << ss.str();
@@ -200,7 +204,7 @@ void DirectedGraph::dfsTraverse(GraphNode* node, std::vector<int> recursionLimit
     recursionLimits[index]--;
     _numNodesUnwrapped++;
 
-    for (GraphConnection* c : node->conns) {
+    for (GraphConnection* c : node->getConnections()) {
         if (recursionLimits[getNodeIndex(c->child)] > 0) {
             _numJointsUnwrapped++;
             dfsTraverse(c->child, recursionLimits, bPrint);
@@ -222,12 +226,15 @@ void DirectedGraph::save()
     ofDirectory::createDirectory(genomeDir.getAbsolutePath() + '\\' + id);
 
     int nodeCount = 0;
+    int connCount = 0;
     for (GraphNode* n : _nodes) {
         std::string path = genomeDir.getAbsolutePath() + '\\' + id + '\\' + ofToString(nodeCount) + '.';
         n->save(path + NTRS_NODE_EXT);
 
-        for (GraphConnection* c : n->conns) {
+        for (GraphConnection* c : n->getConnections()) {
+            path = genomeDir.getAbsolutePath() + '\\' + id + '\\' + ofToString(connCount) + '.';
             c->save(path + NTRS_CONN_EXT);
+            connCount++;
         }
         nodeCount++;
     }
@@ -248,11 +255,6 @@ void DirectedGraph::load(std::string id)
             n->load(f);
             addNode(n);
 
-            // Save root flag to primitive ionfo as well to make this work
-            //if (n->IsRootNode()) {
-            //    _rootNode = n;
-            //}
-
             if (n->primitiveInfo.index == 0) {
                 n->setIsRootNode(true);
                 _rootNode = n;
@@ -269,11 +271,7 @@ void DirectedGraph::load(std::string id)
             for (GraphNode* n : _nodes) {
                 if (n->primitiveInfo.index == c->jointInfo.fromIndex) {
                     n->addConnection(_nodes[c->jointInfo.toIndex], c->jointInfo);
-                    //c->setParent(n);
                 }
-                //if (n->primitiveInfo.index == c->jointInfo.toIndex) {
-                //    c->setChild(n);
-                //}
             }
             delete c;
         }

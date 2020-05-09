@@ -82,7 +82,7 @@ void SimulationManager::init()
     }
 
     simulationSpeed = 0;
-    _selectedBodyGenome = std::make_shared<DirectedGraph>();
+    _selectedBodyGenome = std::make_shared<DirectedGraph>(true);
     _selectedBodyGenome->unfold();
     _testCreature = std::make_shared<SimCreature>(btVector3(.0, 2.0, .0), _selectedBodyGenome, _world);
     _testCreature->setAppearance(_nodeShader, _nodeMaterial, _nodeTexture);
@@ -245,18 +245,17 @@ void SimulationManager::handleCollisions(btDynamicsWorld* worldPtr)
 
         for (int j = 0; j < contactManifold->getNumContacts(); j++)
         {
-            // collision with something other than itself
-            if ((o1->getUserIndex() == BodyTag && o2->getUserIndex() != BodyTag) ||
-                (o1->getUserIndex() != BodyTag && o2->getUserIndex() == BodyTag))
+            if (o1->getUserIndex() & BodyTag && o2->getUserIndex() & ~BodyTag ||
+                o1->getUserIndex() & ~BodyTag && o2->getUserIndex() & BodyTag)
             {
                 SimCreature* creaturePtr = nullptr;
 
                 // brushtag should always have a simcreature as user pointer
-                if (o1->getUserIndex() == BodyTag) {
+                if (o1->getUserIndex() & BodyTag) {
                     creaturePtr = (SimCreature*)o1->getUserPointer();
                     creaturePtr->setTouchSensor(o1);
                 }
-                else if (o2->getUserIndex() == BodyTag) {
+                else if (o2->getUserIndex() & BodyTag) {
                     creaturePtr = (SimCreature*)o2->getUserPointer();
                     creaturePtr->setTouchSensor(o2);
                 }
@@ -265,21 +264,19 @@ void SimulationManager::handleCollisions(btDynamicsWorld* worldPtr)
                     worldPtr->getDebugDrawer()->drawSphere(pt.getPositionWorldOnA(), 10.0, btVector3(1., 0., 0.));
                 }
             }
-            // todo: Currently using bodytag because of the added complexity of also checking for brushtags. Reconsideration is required.
-            if ((o1->getUserIndex() == BodyTag && o2->getUserIndex() == CanvasTag) ||
-                (o1->getUserIndex() == CanvasTag && o2->getUserIndex() == BodyTag))
+            if ((o1->getUserIndex() & BrushTag && o2->getUserIndex() & CanvasTag) ||
+                (o1->getUserIndex() & CanvasTag && o2->getUserIndex() & BrushTag))
             {
                 SimCanvasNode* canvasPtr = nullptr;
 
-                // brushtag should always have a simcreature as user pointer
-                if (o1->getUserIndex() == CanvasTag) {
+                if (o1->getUserIndex() & CanvasTag) {
                     canvasPtr = (SimCanvasNode*)o1->getUserPointer();
                 }
-                else if (o2->getUserIndex() == CanvasTag) {
+                else if (o2->getUserIndex() & CanvasTag) {
                     canvasPtr = (SimCanvasNode*)o2->getUserPointer();
                 }
                 btManifoldPoint& pt = contactManifold->getContactPoint(j);
-                btVector3 localPt = pt.getPositionWorldOnA() - SimUtils::glmToBullet(canvasPtr->getPosition());
+                btVector3 localPt = pt.getPositionWorldOnA() - canvasPtr->getPosition();
                 canvasPtr->addBrushStroke(localPt, pt.getAppliedImpulse());
             }
         }
@@ -500,9 +497,10 @@ std::shared_ptr<DirectedGraph> SimulationManager::getBodyGenome()
 
 void SimulationManager::loadBodyGenomeFromDisk(std::string filename)
 {
-    _selectedBodyGenome = std::make_shared<DirectedGraph>();
+    _selectedBodyGenome = std::make_shared<DirectedGraph>(true);
     _selectedBodyGenome->load(filename);
     _selectedBodyGenome->unfold();
+    _selectedBodyGenome->print();
 
     _testCreature = std::make_shared<SimCreature>(btVector3(.0, 2.0, .0), _selectedBodyGenome, _world);
     _testCreature->setAppearance(_nodeShader, _nodeMaterial, _nodeTexture);
@@ -517,7 +515,7 @@ void SimulationManager::genRandomFeasibleBodyGenome()
         int attempts = 0;
 
         ofLog() << "building feasible creature genome...";
-        _selectedBodyGenome = std::make_shared<DirectedGraph>();
+        _selectedBodyGenome = std::make_shared<DirectedGraph>(true);
         _selectedBodyGenome->unfold();
 
         std::shared_ptr<SimCreature> tempCreature;
@@ -536,7 +534,7 @@ void SimulationManager::genRandomFeasibleBodyGenome()
             }
             else {
                 // Replace the managed object
-                _selectedBodyGenome = std::make_shared<DirectedGraph>();
+                _selectedBodyGenome = std::make_shared<DirectedGraph>(true);
                 _selectedBodyGenome->unfold();
             }
             attempts++;

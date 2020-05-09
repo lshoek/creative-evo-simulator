@@ -104,7 +104,7 @@ private:
 	std::shared_ptr<ofMesh> m_bodyMesh;
 	std::shared_ptr<ofMesh> m_ballPointMesh;
 
-	uint32_t m_numBodyParts;
+	uint32_t m_numBodies;
 	uint32_t m_numJoints;
 	uint32_t m_numLegs;
 	uint32_t m_numBallPointers;
@@ -130,6 +130,7 @@ private:
 	btScalar gForeLegLength = 0.75f;
 	btScalar gForeLegRadius = 0.08f;
 
+	const ofColor INK = ofColor::fromHex(0x333333);
 	const glm::vec3 right = glm::vec3(1, 0, 0);
 	const glm::vec3 up = glm::vec3(0, 1, 0);
 	const glm::vec3 fwd = glm::vec3(0, 0, 1);

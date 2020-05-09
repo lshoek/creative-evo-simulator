@@ -6,13 +6,13 @@
 #define NTRS_CONN_EXT "conn"
 
 /// Collision detection tags
-#define AnonymousTag 0
-#define BodyTag 1
-#define JointTag 2
-#define BrushTag 3
-#define TerrainTag 4
-#define CanvasTag 5
-#define BoundsTag 6
+#define AnonymousTag	1<<0
+#define BodyTag			1<<1
+#define JointTag		1<<2
+#define BrushTag		1<<3
+#define TerrainTag		1<<4
+#define CanvasTag		1<<5
+#define BoundsTag		1<<6
 
 /// GraphNode Primitive types
 #define PrimitiveType_Box 0

@@ -20,28 +20,29 @@ public:
 	btRigidBody* getRigidBody();
 	btCollisionShape* getShape();
 
-	std::string getName();
-	int getTag();
+	void setTag(uint32_t tag);
+	uint32_t getTag();
 
 	bool hasBody();
 
 	void addToWorld();
 	void removeFromWorld();
 
-	void setTransform(glm::mat4 transform);
-	glm::mat4 getTransform();
+	void setTransform(btTransform transform);
+	btTransform getTransform();
 
-	void setPosition(glm::vec3 position);
-	glm::vec3 getPosition();
+	void setPosition(btVector3 position);
+	btVector3 getPosition();
 
-	void setRotation(glm::quat rotation);
-	glm::quat getRotation();
+	void setRotation(btQuaternion rotation);
+	btQuaternion getRotation();
 
 	void setShader(std::shared_ptr<ofShader> shader);
 	std::shared_ptr<ofShader> getShader();
 
 	void setAppearance(std::shared_ptr<ofShader> shader, std::shared_ptr<ofMaterial> mtl, std::shared_ptr<ofTexture> tex);
 
+	void setColor(ofColor c);
 	void setTexture(std::shared_ptr<ofTexture> texture);
 	void setMaterial(std::shared_ptr<ofMaterial> mtl);
 	void setLight(std::shared_ptr<ofLight> light);
@@ -55,9 +56,7 @@ protected:
 
 	btCollisionShape* _shape;
 	btRigidBody* _body;
-
-	std::string _name;
-	int _tag;
+	uint32_t _tag;
 
 	ofColor _color;
 	std::shared_ptr<ofShader> _shader;
