@@ -175,6 +175,11 @@ void EvoManager::evolutionLoop()
 		bNewBest = evaluatePopulation();
 		bNewBest |= tick();
 
+		// Prematurely evolution loop if a stop is queued
+		if (bStopSimulationQueued) {
+			break;
+		}
+
 		if (bNewBest) {
 			bestGenomeBasePtr->setGenome(population->GetBestGenome());
 			
@@ -191,11 +196,6 @@ void EvoManager::evolutionLoop()
 		}
 		// no solution found -> advance to next generation
 		population->Epoch();
-
-		// Prematurely evolution loop if a stop is queued
-		if (bStopSimulationQueued) {
-			break;
-		}
 	}
 
 	totalTimeMs = ofGetElapsedTimeMillis() - totalTimeMs;

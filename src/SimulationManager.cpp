@@ -298,6 +298,9 @@ void SimulationManager::updateTime()
         if (_frameTime > _targetFrameTimeMillis) {
             _frameTime = _targetFrameTimeMillis;
         }
+        else if (_frameTime < .0) {
+            _frameTime = .0;
+        }
         _frameTimeAccumulator += _frameTime;
         int steps = floor((_frameTimeAccumulator / _fixedTimeStepMillis) + 0.5);
 
