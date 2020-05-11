@@ -53,7 +53,7 @@ public:
     std::shared_ptr<DirectedGraph> getBodyGenome();
 
     void loadBodyGenomeFromDisk(std::string filename);
-    void genRandomFeasibleBodyGenome();
+    void generateRandomBodyGenome();
     void initTestEnvironment();
 
     void setMaxParallelSims(int max);
@@ -140,6 +140,7 @@ private:
     int simInstanceGridSize = 2;
     uint32_t simInstanceLimit = 256;
     uint32_t focusIndex = 0;
+    uint32_t maxGenGenomeAttempts = 10000;
 
     // for fixed walker creature
     uint32_t _numWalkerLegs = 8;

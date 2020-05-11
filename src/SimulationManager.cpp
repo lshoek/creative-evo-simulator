@@ -5,14 +5,13 @@
 #include "ofMath.h"
 #include "toolbox.h"
 #include "DirectedGraph.h"
-
-#define NTRS_ARTWORK_PATH "output/artworks/"
+#include "SimDefines.h"
 
 void worldUpdateCallback(btDynamicsWorld* world, btScalar timeStep);
 
 void SimulationManager::init()
 {
-    _canvasRes = glm::ivec2(256, 256);
+    _canvasRes = glm::ivec2(128, 128);
     _simulationInstances.reserve(simInstanceLimit);
     _simulationInstanceCallbackQueue.reserve(simInstanceLimit);
 
@@ -66,7 +65,7 @@ void SimulationManager::init()
     initTerrain();
 
     // pixel buffer object for writing image data to disk fast
-    _imageSaverThread.setup(NTRS_ARTWORK_PATH);
+    _imageSaverThread.setup(NTRS_ARTIFACTS_PATH);
     writePixels.allocate(_canvasRes.x, _canvasRes.y, GL_RGBA);
     for (int i = 0; i < 2; i++) {
         pixelWriteBuffers[i].allocate(_canvasRes.x*_canvasRes.y*4, GL_DYNAMIC_READ);
@@ -470,7 +469,7 @@ glm::vec3 SimulationManager::getFocusOrigin()
 
 ofFbo* SimulationManager::getCanvasFbo()
 {
-    if (!_simulationInstances.empty()) {
+    if (!_simulationInstances.empty() && focusIndex < _simulationInstances.size()) {
         _simulationInstances[focusIndex]->getCanvas()->getCanvasFbo();
     }
     else return nullptr;
@@ -478,7 +477,7 @@ ofFbo* SimulationManager::getCanvasFbo()
 
 void SimulationManager::shiftFocus()
 {
-    if (!_simulationInstances.empty()) {
+    if (!_simulationInstances.empty() && focusIndex < _simulationInstances.size()) {
         focusIndex = (focusIndex + 1) % _simulationInstances.size();
     }
 }
@@ -517,9 +516,9 @@ void SimulationManager::loadBodyGenomeFromDisk(std::string filename)
 }
 
 // Try to build a feasible creature genome
-void SimulationManager::genRandomFeasibleBodyGenome()
+void SimulationManager::generateRandomBodyGenome()
 {
-    if (bUseBodyGenomes && bFeasibilityChecks) {
+    if (bUseBodyGenomes) {
         bool bNoFeasibleCreatureFound = true;
         int attempts = 0;
 
@@ -528,15 +527,15 @@ void SimulationManager::genRandomFeasibleBodyGenome()
         _selectedBodyGenome->unfold();
 
         std::shared_ptr<SimCreature> tempCreature;
-        while (bNoFeasibleCreatureFound) {
-            auto tempCreature = std::make_shared<SimCreature>(
+        while (bNoFeasibleCreatureFound && attempts < maxGenGenomeAttempts) {
+            std::shared_ptr<SimCreature> tempCreature = std::make_shared<SimCreature>(
                 btVector3(0, 2.0, 0), _selectedBodyGenome, _world
             );
-            if (tempCreature->feasibilityCheck()) {
+            bool bSuccess = bFeasibilityChecks ? tempCreature->feasibilityCheck() : true;
+            if (bSuccess) {
                 bNoFeasibleCreatureFound = false;
-
-                ofLog() << "success! attempts: " << attempts;
                 _selectedBodyGenome->print();
+
                 _testCreature = tempCreature;
                 _testCreature->setAppearance(_nodeShader, _nodeMaterial, _nodeTexture);
                 _testCreature->addToWorld();
@@ -547,6 +546,12 @@ void SimulationManager::genRandomFeasibleBodyGenome()
                 _selectedBodyGenome->unfold();
             }
             attempts++;
+        }
+        if (bFeasibilityChecks) {
+            std::string logMsg = (bNoFeasibleCreatureFound) ?
+                "failed! reach max attempts: " + ofToString(attempts) :
+                "success! attempts: " + ofToString(attempts);
+            ofLog() << logMsg;
         }
     }
 }

@@ -72,6 +72,4 @@ private:
     int lastOffspringId;
 
     std::vector<double> fitnessResults;
-
-    uint64_t totalTimeMs = 0;
 };

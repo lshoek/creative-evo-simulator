@@ -34,7 +34,7 @@ private:
 	int getNodeIndex(GraphNode* node);
 
 	// Random & mutation
-	GraphNode::PrimitiveInfo randomPrimitive(btScalar min, btScalar max, int minRecursionLimit);
+	GraphNode::PrimitiveInfo randomPrimitive(btScalar min, btScalar max, uint32_t minRecursions, uint32_t maxRecursions);
 	GraphConnection::JointInfo randomJoint();
 	btVector3 randomPointOnSphere();
 

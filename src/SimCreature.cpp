@@ -490,7 +490,8 @@ bool SimCreature::feasibilityCheck()
 		btCollisionObject* o2 = (btCollisionObject*)(contactManifold->getBody1());
 
 		// Check for collision with self (excluding linked bodies)
-		if (o1->getUserPointer() == this && o2->getUserPointer() == this) {
+		if (((SimNode*)o1->getUserPointer())->getCreaturePtr() == this && 
+			((SimNode*)o2->getUserPointer())->getCreaturePtr() == this) {
 			bIsFeasible = false;
 		}
 		// Make sure to remove all manifolds again

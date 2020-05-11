@@ -134,19 +134,44 @@ void EvoManager::draw()
 // Export results to some file
 void EvoManager::report()
 {
-	ofLog() << 
-		"*** Report ***" << std::endl <<
-		"Generations: " << population->GetGeneration() << std::endl <<
-		"Num Evaluations: " << population->m_NumEvaluations << std::endl <<
-		"Highest Fitness: " << population->GetBestFitnessEver() << std::endl <<
-		"Num Genomes: " << population->NumGenomes() << std::endl <<
-		"Num Species: " << population->m_Species.size() << std::endl;
+	std::string sessionDirName = "Session_" + ofGetTimestampString();
+	ofDirectory sessionDir(NTRS_REPORTS_DIR + sessionDirName);
+	sessionDir.create(false);
+
+	std::string reportFilePath = sessionDir.getAbsolutePath() + "/REPORT.txt";
+	std::string populationFilePath = sessionDir.getAbsolutePath() + "/POPULATION";
+	std::string bestGenomeFilePath = sessionDir.getAbsolutePath() + "/BEST_GENOME";
+
+	ofFile f(reportFilePath, ofFile::WriteOnly, false);
+
+	f << "*** Report ***" << std::endl <<
+		"Fitness: " << population->GetBestFitnessEver() << '/' << targetFitness << std::endl <<
+		"Generations: " << population->GetGeneration() << '/' << maxNumGenerations << std::endl <<
+		"Total Evaluations: " << population->m_NumEvaluations << std::endl <<
+		"Total genomes per population: " << population->NumGenomes() << std::endl <<
+		"Total species: " << population->m_Species.size() << std::endl << std::endl <<
+		"";
+
+	// Overall best genome per species
+	// Artifact IDs
+	// Control policy genomes
+	// Body genomes
+	// For each species: highest fitness at each GEN
+
+	for (int i = 0; i < fitnessResults.size(); i++) {
+		f << "Highest Fitness at GEN" << i << " : " << fitnessResults[i] << std::endl;
+	}
+
+	ofLog() << f.getFileBuffer();
+	f.close();
+
+	population->Save(populationFilePath.c_str());
+	population->GetBestGenome().Save(bestGenomeFilePath.c_str());
 }
 
 void EvoManager::startEvolution()
 {
 	bEvolutionActive = true;
-	totalTimeMs = ofGetElapsedTimeMillis();
 
 	if (bThreaded) {
 		startThread();
@@ -202,12 +227,12 @@ void EvoManager::evolutionLoop()
 		population->Epoch();
 	}
 
-	totalTimeMs = ofGetElapsedTimeMillis() - totalTimeMs;
-	ofLog() << (bTargetReached ? "Target Reached" : "Evolution Stopped");
-	ofLog() << "time: " << totalTimeMs / float(1000) << "s";
+	// Evolution has stopped
+	report();
 
 	bStopSimulationQueued = false;
 	bEvolutionActive = false;
+
 	onEvolutionStopped.notify();
 }
 

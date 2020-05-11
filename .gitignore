@@ -24,6 +24,7 @@ bld/
 [Oo]bj/
 [Ll]og/
 
+bin/data/output/reports
 bin/data/output/artworks
 
 # Exclude binaries and etc

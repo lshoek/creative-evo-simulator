@@ -58,7 +58,7 @@ void ofApp::initSimulation()
 	}
 }
 
-// todo: the simulator and evolution module don't wait for each other to finish, 
+// Note: the simulator and evolution module don't wait for each other to finish, 
 // which can cause problems on certain user-input.
 void ofApp::startEvolution()
 {
@@ -160,7 +160,10 @@ void ofApp::imGui()
 					stopEvolution();
 				}
 				if (ImGui::MenuItem("Generate Genome", NULL, false)) {
-					simulationManager.genRandomFeasibleBodyGenome();
+					simulationManager.generateRandomBodyGenome();
+				}
+				if (ImGui::MenuItem("Feasibility Checks", NULL, simulationManager.bFeasibilityChecks)) {
+					simulationManager.bFeasibilityChecks = !simulationManager.bFeasibilityChecks;
 				}
 				if (ImGui::MenuItem("Save Genome", NULL, false)) {
 					simulationManager.getBodyGenome()->save();
@@ -201,28 +204,37 @@ void ofApp::imGui()
 
 		if (bWindow)
 		{
-			ImVec2 size(240, 480);
+			ImVec2 size(240, 540);
 			ImGui::SetNextWindowSize(size);
 			ImGui::SetNextWindowBgAlpha(0.75f);
 			ImGui::Begin("Monitor");
 
 			if (bSimulate) {
 				if (simulationManager.isInitialized()) {
-					ImGui::Text("Simulation Time");
+					ImGui::Text("Simulation Time:");
 					ImGui::Text("%.02f", simulationManager.getSimulationTime());
-					ImGui::SliderInt("sim_speed", (int*)&simulationManager.simulationSpeed, 0, 16);
-
-					// Todo: prevent from failing
+					ImGui::Separator();
+					ImGui::Text("Simulation Speed:");
+					ImGui::SliderInt("", (int*)&simulationManager.simulationSpeed, 0, 16);
+					ImGui::Separator();
 					if (simulationManager.isSimulationInstanceActive()) {
-						//ImGui::SliderFloat("motor_strength", &simulationManager.getFocusCreature()->m_motorStrength, 0, 1);
-						//ImGui::SliderFloat("target_freq", &simulationManager.getFocusCreature()->m_targetFrequency, 1, 60);
-						ImGui::Image((void*)(intptr_t)simulationManager.getCanvasFbo()->getTexture().getTextureData().textureID, ImVec2(size.x, size.x));
-						ImGui::Separator();
+						if (simulationManager.getCanvasFbo() != nullptr) {
+							ImGui::Text("Creature Artifact:");
+							ImGui::Image((void*)(intptr_t)simulationManager.getCanvasFbo()->getTexture().getTextureData().textureID, ImVec2(size.x, size.x));
+							ImGui::Separator();
+						}
+						if (simulationManager.getFocusCreature() != nullptr) {
+							ImGui::Text("Global Motor Strength:");
+							ImGui::SliderFloat("", &simulationManager.getFocusCreature()->m_motorStrength, 0, 1);
+							ImGui::Separator();
+						}
 					}
 					glm::vec3 cpos = simulationManager.getCamera()->getPosition();
-					ImGui::Text("Camera Position");
+					ImGui::Text("Camera Position:");
 					ImGui::Text("(%.02f, %.02f, %.02f)", cpos.x, cpos.y, cpos.z);
-					ImGui::Text("dbg_draw: %s", simulationManager.bDebugDraw ? "on" : "off");
+					ImGui::Separator();
+					ImGui::Text("Debug Draw: %s", simulationManager.bDebugDraw ? "ON" : "OFF");
+					ImGui::Separator();
 				}
 			}
 			if (evoManager.isEvolutionActive()) {
@@ -231,18 +243,19 @@ void ofApp::imGui()
 					evoManager.getFitnessResults().end()
 				);
 				if (!fitnessFloats.empty()) {
+					ImGui::Text("Best Fitness per Generation:");
 					ImGui::PlotLines(
 						"Fitness", &fitnessFloats[0], fitnessFloats.size(), 0, 0,
 						0, evoManager.getTargetFitness(), ImVec2(size.x, 96)
 					);
+					ImGui::Separator();
 				}
-				//ImGui::Image((void*)(intptr_t)cppnFbo.getTexture().getTextureData().textureID, ImVec2(size.x, size.x));
-				ImGui::Text("current_gen: %d", evoManager.getNumGeneration());
-				ImGui::Text("evaluated: %.02f%%", evoManager.getPctGenEvaluated() * 100.0f);
-				ImGui::Text("best_fitness: %.03f/%.03f", evoManager.getBestFitness(), evoManager.getTargetFitness());
+				ImGui::Text("Current Generation: %d", evoManager.getNumGeneration());
+				ImGui::Text("Evaluated: %.02f%%", evoManager.getPctGenEvaluated() * 100.0f);
+				ImGui::Text("Best Fitness: %.03f/%.03f", evoManager.getBestFitness(), evoManager.getTargetFitness());
 				ImGui::Separator();
 			}
-			ImGui::Text("fps: %.02f", ofGetFrameRate());
+			ImGui::Text("FPS: %.02f", ofGetFrameRate());
 			ImGui::End();
 		}
 	}

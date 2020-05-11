@@ -49,9 +49,9 @@ DirectedGraph::DirectedGraph(const DirectedGraph& srcGraph)
 void DirectedGraph::initRandom()
 {
     // Build nodes
-    GraphNode* root = new GraphNode(randomPrimitive(GraphNode::maxSize*0.25, GraphNode::maxSize, 2), true);
-    GraphNode* anotherNode = new GraphNode(randomPrimitive(GraphNode::minSize, GraphNode::maxSize, 1), false);
-    GraphNode* endNode = new GraphNode(randomPrimitive(GraphNode::minSize, GraphNode::maxSize, 1), false);
+    GraphNode* root = new GraphNode(randomPrimitive(GraphNode::maxSize*0.25, GraphNode::maxSize, 3, 3), true);
+    GraphNode* anotherNode = new GraphNode(randomPrimitive(GraphNode::minSize, GraphNode::maxSize, 1, 3), false);
+    GraphNode* endNode = new GraphNode(randomPrimitive(GraphNode::minSize, GraphNode::maxSize, 1, 3), false);
 
     // Register indices in graph
     addNode(root);
@@ -60,6 +60,7 @@ void DirectedGraph::initRandom()
 
     // Add connections
     root->addConnection(root, randomJoint());
+    root->addConnection(anotherNode, randomJoint());
     root->addConnection(anotherNode, randomJoint());
     anotherNode->addConnection(endNode, randomJoint());
 
@@ -88,10 +89,11 @@ void DirectedGraph::initCurl()
     _rootNode = a;
 }
 
-GraphNode::PrimitiveInfo DirectedGraph::randomPrimitive(btScalar min, btScalar max, int minRecursionLimit)
+GraphNode::PrimitiveInfo DirectedGraph::randomPrimitive(btScalar min, btScalar max, uint32_t minRecursions, uint32_t maxRecursions)
 {
     GraphNode::PrimitiveInfo info;
-    uint32_t maxRecursions = 4;
+    minRecursions = minRecursions > 0 ? minRecursions : 1;
+    maxRecursions = maxRecursions > minRecursions ? maxRecursions : minRecursions;
 
     info.dimensions = btVector3(
         _distrib(_rng) * (max - min) + min,
@@ -99,7 +101,7 @@ GraphNode::PrimitiveInfo DirectedGraph::randomPrimitive(btScalar min, btScalar m
         _distrib(_rng) * (max - min) + min
     );
     info.parentAttachmentPlane = randomPointOnSphere();
-    info.recursionLimit = uint32_t(_distrib(_rng)*maxRecursions) + minRecursionLimit > 0 ? minRecursionLimit : 1;
+    info.recursionLimit = uint32_t(_distrib(_rng)*(maxRecursions-minRecursions)) + minRecursions;
     return info;
 }
 
