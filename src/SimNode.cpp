@@ -1,10 +1,12 @@
 #include "SimNode.h"
+#include "SimCreature.h"
+#include "SimDefines.h"
 #include "SimUtils.h"
 #include "toolbox.h"
 
 SimNode::SimNode(int tag, btDynamicsWorld* owner) : SimNodeBase(tag, owner)
 {
-    _color = ofColor::fromHsb(ofRandom(255), 0.75f * 255, 1.0f * 255, 1.0f * 255);
+    setColor(ofColor::fromHsb(ofRandom(255), 0.75f * 255, 1.0f * 255, 1.0f * 255));
 }
 SimNode::SimNode(int tag, ofColor color, btDynamicsWorld* owner) : SimNodeBase(tag, color, owner) {}
 
@@ -53,6 +55,50 @@ void SimNode::draw()
             ofPopMatrix();
         }
     }
+}
+
+SimCreature* SimNode::getCreaturePtr()
+{
+    return _ownerCreature;
+}
+
+void SimNode::setCreatureOwner(SimCreature* creaturePtr)
+{
+    _ownerCreature = creaturePtr;
+}
+
+bool SimNode::isBrush()
+{
+    return _body->getUserIndex() & BrushTag;
+}
+
+bool SimNode::isBrushActivated()
+{
+    return _brushPressure >= _brushMinThreshold;
+}
+
+float SimNode::getBrushPressure()
+{
+    return _brushPressure;
+}
+
+void SimNode::setBrushPressure(float pressure)
+{
+    if (isBrush()) {
+        _brushPressure = pressure;
+        _color = isBrushActivated() ? _inkColor : _cachedColor;
+    }
+}
+
+void SimNode::setColor(ofColor color)
+{
+    SimNodeBase::setColor(color);
+    _cachedColor = color;
+}
+
+void SimNode::setInkColor(ofColor inkColor)
+{
+    _inkColor = inkColor;
 }
 
 SimNode::~SimNode()

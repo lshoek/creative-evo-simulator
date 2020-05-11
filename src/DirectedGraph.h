@@ -19,8 +19,9 @@ public:
 	void addNode(GraphNode* node);
 	void addConnection(GraphNode* parent, GraphNode* child, const GraphConnection::JointInfo& info);
 
-	int getNumNodesUnwrapped();
-	int getNumJointsUnwrapped();
+	uint32_t getNumNodesUnfolded();
+	uint32_t getNumEndNodesUnfolded();
+	uint32_t getNumJointsUnfolded();
 
 	GraphNode* getRootNode();
 	const std::vector<GraphNode*>& getNodes();
@@ -47,7 +48,8 @@ private:
 	void dfs(GraphNode* node, bool bPrint);
 	void dfsTraverse(GraphNode* node, std::vector<int> recursionLimits, bool bPrint);
 
-	int _numNodesUnwrapped = 0;
-	int _numJointsUnwrapped = 0;
+	uint32_t _numNodesUnfolded = 0;
+	uint32_t _numEndNodesUnfolded = 0;
+	uint32_t _numJointsUnfolded = 0;
 	bool _bTraversed = false;
 };

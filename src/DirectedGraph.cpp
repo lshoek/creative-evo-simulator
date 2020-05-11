@@ -91,6 +91,7 @@ void DirectedGraph::initCurl()
 GraphNode::PrimitiveInfo DirectedGraph::randomPrimitive(btScalar min, btScalar max, int minRecursionLimit)
 {
     GraphNode::PrimitiveInfo info;
+    uint32_t maxRecursions = 4;
 
     info.dimensions = btVector3(
         _distrib(_rng) * (max - min) + min,
@@ -98,7 +99,7 @@ GraphNode::PrimitiveInfo DirectedGraph::randomPrimitive(btScalar min, btScalar m
         _distrib(_rng) * (max - min) + min
     );
     info.parentAttachmentPlane = randomPointOnSphere();
-    info.recursionLimit = int(_distrib(_rng)*3.0) + minRecursionLimit > 0 ? minRecursionLimit : 1;
+    info.recursionLimit = uint32_t(_distrib(_rng)*maxRecursions) + minRecursionLimit > 0 ? minRecursionLimit : 1;
     return info;
 }
 
@@ -161,20 +162,28 @@ int DirectedGraph::getNodeIndex(GraphNode* node)
     return std::distance(_nodes.begin(), it);
 }
 
-int DirectedGraph::getNumNodesUnwrapped()
+uint32_t DirectedGraph::getNumNodesUnfolded()
 {
     if (!_bTraversed) {
         dfs(_rootNode, false);
     }
-    return _numNodesUnwrapped;
+    return _numNodesUnfolded;
 }
 
-int DirectedGraph::getNumJointsUnwrapped()
+uint32_t DirectedGraph::getNumEndNodesUnfolded()
 {
     if (!_bTraversed) {
         dfs(_rootNode, false);
     }
-    return _numJointsUnwrapped;
+    return _numEndNodesUnfolded;
+}
+
+uint32_t DirectedGraph::getNumJointsUnfolded()
+{
+    if (!_bTraversed) {
+        dfs(_rootNode, false);
+    }
+    return _numJointsUnfolded;
 }
 
 void DirectedGraph::dfs(GraphNode* node, bool bPrint)
@@ -183,8 +192,9 @@ void DirectedGraph::dfs(GraphNode* node, bool bPrint)
     for (int i = 0; i < recursionLimits.size(); i++) {
         recursionLimits[i] = _nodes[i]->getRecursionLimit();
     }
-    _numNodesUnwrapped = 0;
-    _numJointsUnwrapped = 0;
+    _numNodesUnfolded = 0;
+    _numEndNodesUnfolded = 0;
+    _numJointsUnfolded = 0;
 
     // todo: check if node is registered
     dfsTraverse(node, recursionLimits, bPrint);
@@ -202,11 +212,12 @@ void DirectedGraph::dfsTraverse(GraphNode* node, std::vector<int> recursionLimit
         ofLog() << index << " [" << recursionLimits[index] << "] -> " << ss.str();
     }
     recursionLimits[index]--;
-    _numNodesUnwrapped++;
+    _numNodesUnfolded++;
 
+    if (node->getConnections().empty()) _numEndNodesUnfolded++;
     for (GraphConnection* c : node->getConnections()) {
         if (recursionLimits[getNodeIndex(c->child)] > 0) {
-            _numJointsUnwrapped++;
+            _numJointsUnfolded++;
             dfsTraverse(c->child, recursionLimits, bPrint);
         }
     }

@@ -20,8 +20,12 @@ void EvoManager::setup(SimulationManager* sim)
 	NEAT::Genome templateGenome;
 	if (sim->bUseBodyGenomes) {
 		std::shared_ptr<DirectedGraph> graphPtr = sim->getBodyGenome();
+		uint32_t numBrushToggles = graphPtr->getNumEndNodesUnfolded();
 		templateGenome = NEAT::Genome(0,
-			graphPtr->getNumNodesUnwrapped(), graphPtr->getNumNodesUnwrapped(), graphPtr->getNumJointsUnwrapped(), false,
+			graphPtr->getNumNodesUnfolded(), 
+			graphPtr->getNumNodesUnfolded(),
+			graphPtr->getNumJointsUnfolded() + numBrushToggles,
+			false,
 			NEAT::ActivationFunction::TANH,
 			NEAT::ActivationFunction::TANH,
 			1, params, 1

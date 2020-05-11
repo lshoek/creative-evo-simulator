@@ -252,11 +252,11 @@ void SimulationManager::handleCollisions(btDynamicsWorld* worldPtr)
 
                 // brushtag should always have a simcreature as user pointer
                 if (o1->getUserIndex() & BodyTag) {
-                    creaturePtr = (SimCreature*)o1->getUserPointer();
+                    creaturePtr = ((SimNode*)o1->getUserPointer())->getCreaturePtr();
                     creaturePtr->setTouchSensor(o1);
                 }
-                else if (o2->getUserIndex() & BodyTag) {
-                    creaturePtr = (SimCreature*)o2->getUserPointer();
+                else {
+                    creaturePtr = ((SimNode*)o2->getUserPointer())->getCreaturePtr();
                     creaturePtr->setTouchSensor(o2);
                 }
                 btManifoldPoint& pt = contactManifold->getContactPoint(j);
@@ -268,19 +268,25 @@ void SimulationManager::handleCollisions(btDynamicsWorld* worldPtr)
                 (o1->getUserIndex() & CanvasTag && o2->getUserIndex() & BrushTag))
             {
                 SimCanvasNode* canvasPtr = nullptr;
+                SimNode* brushNodePtr = nullptr;
 
                 if (o1->getUserIndex() & CanvasTag) {
                     canvasPtr = (SimCanvasNode*)o1->getUserPointer();
+                    brushNodePtr = (SimNode*)o2->getUserPointer();
                 }
-                else if (o2->getUserIndex() & CanvasTag) {
+                else {
                     canvasPtr = (SimCanvasNode*)o2->getUserPointer();
+                    brushNodePtr = (SimNode*)o1->getUserPointer();
                 }
-                btManifoldPoint& pt = contactManifold->getContactPoint(j);
-                btVector3 localPt = pt.getPositionWorldOnA() - canvasPtr->getPosition();
-                canvasPtr->addBrushStroke(localPt, pt.getAppliedImpulse());
+
+                if (brushNodePtr->isBrushActivated()) {
+                    btManifoldPoint& pt = contactManifold->getContactPoint(j);
+                    btVector3 localPt = pt.getPositionWorldOnA() - canvasPtr->getPosition();
+                    canvasPtr->addBrushStroke(localPt, brushNodePtr->getBrushPressure());
+                }
             }
         }
-        //contactManifold->clearManifold();	
+        //contactManifold->clearManifold();
     }
 }
 

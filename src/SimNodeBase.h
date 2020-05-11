@@ -10,7 +10,7 @@ class SimNodeBase
 public:
 	SimNodeBase(int tag, btDynamicsWorld* owner);
 	SimNodeBase(int tag, ofColor color, btDynamicsWorld* owner);
-	~SimNodeBase();
+	virtual ~SimNodeBase();
 
 	virtual void draw() = 0;
 
@@ -42,7 +42,7 @@ public:
 
 	void setAppearance(std::shared_ptr<ofShader> shader, std::shared_ptr<ofMaterial> mtl, std::shared_ptr<ofTexture> tex);
 
-	void setColor(ofColor c);
+	virtual void setColor(ofColor c);
 	void setTexture(std::shared_ptr<ofTexture> texture);
 	void setMaterial(std::shared_ptr<ofMaterial> mtl);
 	void setLight(std::shared_ptr<ofLight> light);

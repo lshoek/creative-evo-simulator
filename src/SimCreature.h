@@ -32,9 +32,9 @@ public:
 	// Makes a deep copy of the genome and stores/uses it until the simulation instance is finished.
 	void setControlPolicyGenome(const GenomeBase& genome);
 
+	double getTouchSensor(int i);
 	void setTouchSensor(void* bodyPointer);
 	void clearTouchSensors();
-	double getTouchSensor(int i);
 	btScalar* getSensoryMotorWeights();
 
 	void addToWorld();
@@ -43,7 +43,7 @@ public:
 	btVector3 getSpawnPosition() const;
 	btVector3 getCenterOfMassPosition() const;
 
-	void resetAt(const btVector3& position);
+	void clearForces();
 
 	btScalar getEvaluationTime() const;
 	void setEvaluationTime(btScalar evaluationTime);
@@ -81,11 +81,13 @@ private:
 	btVector3 m_spawnPosition;
 
 	// standard rigid bodies and shapes for creature
-	std::vector<btCollisionShape*> m_shapes;
 	std::vector<btRigidBody*> m_bodies;
 	std::vector<SimNode*> m_nodes;
-	std::vector<btTransform> m_bodyRelativeTransforms;
+	std::vector<SimNode*> m_brushNodes;
 	std::vector<btTypedConstraint*> m_joints;
+
+	std::vector<btCollisionShape*> m_shapes;
+	std::vector<btTransform> m_bodyRelativeTransforms;
 
 	// ball pointers are collision shapes that detect contact with a canvas
 	std::vector<btCollisionShape*> m_ballPointerShapes;
@@ -107,7 +109,7 @@ private:
 	uint32_t m_numBodies;
 	uint32_t m_numJoints;
 	uint32_t m_numLegs;
-	uint32_t m_numBallPointers;
+	uint32_t m_numBrushes;
 
 	// body part hash, touch sensor index
 	btHashMap<btHashPtr, int> m_bodyTouchSensorIndexMap;

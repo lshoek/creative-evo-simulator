@@ -12,7 +12,7 @@ public:
 	void update();
 	virtual void draw() override;
 
-	void addBrushStroke(btVector3 location, float impulse);
+	void addBrushStroke(btVector3 location, float pressure);
 
 	glm::ivec2 getCanvasResolution();
 	ofFbo* getCanvasFbo();
@@ -23,7 +23,7 @@ public:
 private:
 	struct BrushCoord {
 		glm::vec2 coord;
-		float impulse;
+		float pressure;
 		float active;
 
 		static int size() {
