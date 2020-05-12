@@ -50,6 +50,7 @@ void ofApp::initSimulation()
 {
 	if (!simulationManager.isInitialized()) {
 		simulationManager.setMaxParallelSims(settings.get("evo.max_parallel_evals", 4));
+		simulationManager.bAxisAlignedAttachments = settings.get("mode.axis_aligned_attachments", false);
 		simulationManager.bUseBodyGenomes = settings.get("mode.body_genomes", true);
 		simulationManager.bFeasibilityChecks = settings.get("mode.feasibility_checks", true);
 		simulationManager.bDebugDraw = settings.get("mode.debugdraw", true);
@@ -159,12 +160,17 @@ void ofApp::imGui()
 				if (ImGui::MenuItem("Stop", NULL, false)) {
 					stopEvolution();
 				}
+				ImGui::Separator();
 				if (ImGui::MenuItem("Generate Genome", NULL, false)) {
 					simulationManager.generateRandomBodyGenome();
 				}
 				if (ImGui::MenuItem("Feasibility Checks", NULL, simulationManager.bFeasibilityChecks)) {
 					simulationManager.bFeasibilityChecks = !simulationManager.bFeasibilityChecks;
 				}
+				if (ImGui::MenuItem("Axis Aligned Attachments", NULL, simulationManager.bAxisAlignedAttachments)) {
+					simulationManager.bAxisAlignedAttachments = !simulationManager.bAxisAlignedAttachments;
+				}
+				ImGui::Separator();
 				if (ImGui::MenuItem("Save Genome", NULL, false)) {
 					simulationManager.getBodyGenome()->save();
 				}
@@ -188,6 +194,7 @@ void ofApp::imGui()
 				if (ImGui::MenuItem("Save Artifacts", NULL, simulationManager.bSaveArtifactsToDisk)) {
 					simulationManager.bSaveArtifactsToDisk = !simulationManager.bSaveArtifactsToDisk;
 				}
+				ImGui::Separator();
 				if (ImGui::MenuItem("Reload Shaders", "r", false)) {
 					simulationManager.loadShaders();
 				}

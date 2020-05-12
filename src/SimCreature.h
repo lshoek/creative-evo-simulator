@@ -133,9 +133,11 @@ private:
 	btScalar gForeLegRadius = 0.08f;
 
 	const ofColor INK = ofColor::fromHex(0x333333);
-	const glm::vec3 right = glm::vec3(1, 0, 0);
-	const glm::vec3 up = glm::vec3(0, 1, 0);
-	const glm::vec3 fwd = glm::vec3(0, 0, 1);
+
+	const btVector3 FORWARD = btVector3(1, 0, 0);
+	const btVector3 UP = btVector3(0, 1, 0);
+	const btVector3 RIGHT = btVector3(0, 0, 1);
+	const btVector3 AXES[3] = { FORWARD, UP, RIGHT };
 
 	bool bIsDebugCreature = false;
 };

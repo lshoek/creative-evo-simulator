@@ -46,18 +46,36 @@ public:
 
 	};
 
-	static btVector3 sign(btVector3 v)
+	static btVector3 sign(const btVector3& v)
 	{
 		return btVector3(v.x() >= 0 ? 1. : -1., v.y() >= 0 ? 1. : -1., v.z() >= 0 ? 1. : -1.);
 	}
 
-	static btVector3 flip(btVector3 v)
+	static btVector3 flip(const btVector3& v)
 	{
 		return btVector3(v.x() > 0 ? 0. : 1., v.y() > 0 ? 0. : 1., v.z() > 0 ? 0. : 1.);
 	}
 
+	static btVector3 minAbsDotAxis(const btVector3& v)
+	{
+		//float xDot = abs(v.dot(btVector3(1, 0, 0)));
+		//float yDot = abs(v.dot(btVector3(0, 1, 0)));
+		//float zDot = abs(v.dot(btVector3(0, 0, 1)));
+
+		btVector3 p;
+		double Ax = abs(v.x()), Ay = abs(v.y()), Az = abs(v.z());
+		if (Ax < Ay) {
+			p = Ax < Az ? btVector3(0, -v.z(), v.y()) : btVector3(-v.y(), v.x(), 0);
+		}
+		else {
+			p = Ay < Az ? btVector3(v.z(), 0, -v.x()) : btVector3(-v.y(), v.x(), 0);
+		}
+		return p;
+		//return (xDot < yDot && xDot < zDot) ? btVector3(1, 0, 0) : (yDot < zDot) ? btVector3(0, 1, 0) : btVector3(0, 0, 1);
+	}
+
 	// Origin lies inside the box so there is always an intersection
-	static btScalar distToSurface(btVector3 dir, btVector3 boxExtents, btVector3& perp)
+	static btScalar distToSurface(const btVector3& dir, const btVector3& boxExtents, btVector3& perp)
 	{
 		btVector3 o = btVector3(0, 0, 0);
 		btVector3 surf = btVector3(1, 0, 0);

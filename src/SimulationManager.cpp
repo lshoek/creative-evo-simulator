@@ -79,10 +79,12 @@ void SimulationManager::init()
     else {
         _targetFrameTimeMillis = _fixedTimeStepMillis;
     }
-
     simulationSpeed = 0;
-    _selectedBodyGenome = std::make_shared<DirectedGraph>(true);
+
+    _selectedBodyGenome = std::make_shared<DirectedGraph>(true, bAxisAlignedAttachments);
     _selectedBodyGenome->unfold();
+    _selectedBodyGenome->print();
+
     _testCreature = std::make_shared<SimCreature>(btVector3(.0, 2.0, .0), _selectedBodyGenome, _world);
     _testCreature->setAppearance(_nodeShader, _nodeMaterial, _nodeTexture);
     _testCreature->addToWorld();
@@ -505,7 +507,7 @@ std::shared_ptr<DirectedGraph> SimulationManager::getBodyGenome()
 
 void SimulationManager::loadBodyGenomeFromDisk(std::string filename)
 {
-    _selectedBodyGenome = std::make_shared<DirectedGraph>(true);
+    _selectedBodyGenome = std::make_shared<DirectedGraph>(true, bAxisAlignedAttachments);
     _selectedBodyGenome->load(filename);
     _selectedBodyGenome->unfold();
     _selectedBodyGenome->print();
@@ -523,7 +525,7 @@ void SimulationManager::generateRandomBodyGenome()
         int attempts = 0;
 
         ofLog() << "building feasible creature genome...";
-        _selectedBodyGenome = std::make_shared<DirectedGraph>(true);
+        _selectedBodyGenome = std::make_shared<DirectedGraph>(true, bAxisAlignedAttachments);
         _selectedBodyGenome->unfold();
 
         std::shared_ptr<SimCreature> tempCreature;
@@ -542,7 +544,7 @@ void SimulationManager::generateRandomBodyGenome()
             }
             else {
                 // Replace the managed object
-                _selectedBodyGenome = std::make_shared<DirectedGraph>(true);
+                _selectedBodyGenome = std::make_shared<DirectedGraph>(true, bAxisAlignedAttachments);
                 _selectedBodyGenome->unfold();
             }
             attempts++;

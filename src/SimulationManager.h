@@ -63,6 +63,7 @@ public:
     bool bCameraSnapFocus = true;
     bool bFeasibilityChecks = false;
     bool bUseBodyGenomes = true;
+    bool bAxisAlignedAttachments = false;
     bool bSaveArtifactsToDisk = false;
 
     glm::vec3 lightPosition;
@@ -140,7 +141,7 @@ private:
     int simInstanceGridSize = 2;
     uint32_t simInstanceLimit = 256;
     uint32_t focusIndex = 0;
-    uint32_t maxGenGenomeAttempts = 10000;
+    uint32_t maxGenGenomeAttempts = 5000;
 
     // for fixed walker creature
     uint32_t _numWalkerLegs = 8;

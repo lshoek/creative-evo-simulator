@@ -3,16 +3,18 @@
 #include "DirectedGraphConnection.h"
 #include "ofLog.h"
 #include <random>
+#include <set>
 
 class DirectedGraph
 {
 public:
 	DirectedGraph();
-	DirectedGraph(bool bInitRandom);
+	DirectedGraph(bool bInitRandom, bool bAxisAlignedAttachments);
 	DirectedGraph(const DirectedGraph& srcGraph);
 	~DirectedGraph();
 
-	void initRandom();
+	void initRandom(bool bAxisAlignedAttachments);
+	void initPrefabStructure();
 	void initCurl();
 	void unfold();
 
@@ -32,11 +34,13 @@ public:
 
 private:
 	int getNodeIndex(GraphNode* node);
+	std::vector<uint32_t> getIndices(bool connected);
 
 	// Random & mutation
-	GraphNode::PrimitiveInfo randomPrimitive(btScalar min, btScalar max, uint32_t minRecursions, uint32_t maxRecursions);
-	GraphConnection::JointInfo randomJoint();
+	GraphNode::PrimitiveInfo randomPrimitive(btScalar min, btScalar max, uint32_t minRecursions, uint32_t maxRecursions, bool bAxisAlignedAttachments);
+	GraphConnection::JointInfo randomJoint(bool bAxisAlignedAttachments);
 	btVector3 randomPointOnSphere();
+	btVector3 randomAxis();
 
 	std::vector<GraphNode*> _nodes;
 	GraphNode* _rootNode;
@@ -47,6 +51,8 @@ private:
 
 	void dfs(GraphNode* node, bool bPrint);
 	void dfsTraverse(GraphNode* node, std::vector<int> recursionLimits, bool bPrint);
+
+	std::set<uint32_t> _connectedNodeIndices;
 
 	uint32_t _numNodesUnfolded = 0;
 	uint32_t _numEndNodesUnfolded = 0;

@@ -1,0 +1,13 @@
+{
+    "bodyEnd": 0,
+    "dimensions_x": 1.1182656288146973,
+    "dimensions_y": 1.4542816877365112,
+    "dimensions_z": 0.8833315968513489,
+    "index": 0,
+    "jointType": 1,
+    "parentAttachmentPlane_x": 0.0,
+    "parentAttachmentPlane_y": 1.0,
+    "parentAttachmentPlane_z": 0.0,
+    "primitiveType": 0,
+    "recursionLimit": 2
+}
