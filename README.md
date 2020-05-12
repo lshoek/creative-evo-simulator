@@ -18,6 +18,5 @@ ofx dependencies:
 - ofxGrabCam
 - ofxIniSettings
 
-![Preview](preview/preview-app.jpg)
-![Preview](preview/preview-app-walkers.jpg)
-![Preview](preview/preview-art.jpg)
+![Preview](preview/preview-app-0.jpg)
+![Preview](preview/preview-app-1.jpg)

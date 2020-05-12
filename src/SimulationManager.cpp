@@ -50,8 +50,8 @@ void SimulationManager::init()
     _terrainMaterial = std::make_shared<ofMaterial>();
     _terrainMaterial->setup(mtl_settings);
 
-    lightPosition = MathUtils::randomPointOnSphere() * 8.0f;
-    lightPosition.y = 20.0f;
+    lightPosition = MathUtils::randomPointOnSphere() * 16.0f;
+    lightPosition.y = 16.0f;
 
     _light = std::make_shared<ofLight>();
     _light->setDirectional();
