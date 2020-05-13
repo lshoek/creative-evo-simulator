@@ -209,7 +209,7 @@ void ofApp::imGui()
 				if (ImGui::MenuItem("Debug Renderer", "d", simulationManager.bDebugDraw)) {
 					simulationManager.bDebugDraw = !simulationManager.bDebugDraw;
 				}
-				if (ImGui::MenuItem("Shadows", "d", simulationManager.bShadows)) {
+				if (ImGui::MenuItem("Shadows", NULL, simulationManager.bShadows)) {
 					simulationManager.bShadows = !simulationManager.bShadows;
 				}
 				if (ImGui::MenuItem("Debug Light", NULL, simulationManager.bMouseLight)) {

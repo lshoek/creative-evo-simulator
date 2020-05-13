@@ -37,21 +37,21 @@ void SimulationManager::init()
     _terrainTexture->setTextureMinMagFilter(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
     _terrainTexture->setTextureWrap(GL_REPEAT, GL_REPEAT);
 
-    ofMaterialSettings mtl_settings;
-    mtl_settings.ambient = ofFloatColor(0.375f, 1.0f);
-    mtl_settings.diffuse = ofFloatColor(0.95f, 1.0f);
-    mtl_settings.specular = ofFloatColor(1.0f, 1.0f);
-    mtl_settings.emissive = ofFloatColor(0.0f, 1.0f);
-    mtl_settings.shininess = 32;
+    ofMaterialSettings mtlSettings;
+    mtlSettings.ambient = ofFloatColor(0.375f, 1.0f);
+    mtlSettings.diffuse = ofFloatColor(0.95f, 1.0f);
+    mtlSettings.specular = ofFloatColor(1.0f, 1.0f);
+    mtlSettings.emissive = ofFloatColor(0.0f, 1.0f);
+    mtlSettings.shininess = 32;
 
     _nodeMaterial = std::make_shared<ofMaterial>();
-    _nodeMaterial->setup(mtl_settings);
+    _nodeMaterial->setup(mtlSettings);
 
     _terrainMaterial = std::make_shared<ofMaterial>();
-    _terrainMaterial->setup(mtl_settings);
+    _terrainMaterial->setup(mtlSettings);
 
     lightPosition = MathUtils::randomPointOnSphere() * 16.0f;
-    lightPosition.y = 20.0f;
+    lightPosition.y = _lightDistanceFromFocus;
 
     _light = std::make_shared<ofLight>();
     _light->setDirectional();
@@ -59,10 +59,10 @@ void SimulationManager::init()
     _light->setDiffuseColor(ofColor::white);
     _light->setSpecularColor(ofColor::white);
     _light->setPosition(lightPosition);
-    _light->lookAt(glm::normalize(-lightPosition));
+    _light->lookAt(glm::vec3(0));
 
     //  shadows
-    _shadowMap.setup(1024, ofxShadowMap::Resolution::_24);
+    _shadowMap.setup(1024, ofxShadowMap::Resolution::_32);
 
     // physics -- init
     initPhysics();
@@ -215,10 +215,9 @@ int SimulationManager::runSimulationInstance(GenomeBase& genome, int ticket, flo
     btScalar zpos = (grid_z - simInstanceGridSize / 2) * stride + grid_z * canvasMargin;
 
     btVector3 position(xpos, 0, zpos);
-    btVector3 canvasPos = position + btVector3(0, 0, 0);
 
     SimCanvasNode* canv;
-    canv = new SimCanvasNode(canvasPos, CanvasTag, canvasSize, spaceExt, _canvasRes.x, _canvasRes.y, _world);
+    canv = new SimCanvasNode(position, CanvasTag, canvasSize, spaceExt, _canvasRes.x, _canvasRes.y, _world);
     canv->setAppearance(_nodeShader, _terrainMaterial, _nodeTexture);
     canv->setCanvasUpdateShader(_canvasUpdateShader);
     canv->enableBounds();
@@ -298,15 +297,17 @@ void SimulationManager::handleCollisions(btDynamicsWorld* worldPtr)
 void SimulationManager::lateUpdate()
 {
     if (bMouseLight) {
-        float longitude = ofMap(ofGetMouseX(), 0, ofGetWidth(), -180, 180);
-        float latitude = ofMap(ofGetMouseY(), 0, ofGetHeight(), -90, 10);
-        _light->orbitDeg(longitude, latitude, 25, { 0, 10, 0 });
+        float longitude = ofMap(ofGetMouseX(), 0, ofGetWidth(), -PI, PI);
+        float latitude = ofMap(ofGetMouseY(), 0, ofGetHeight(), -HALF_PI, HALF_PI*0.25f);
+        _light->orbitRad(longitude, latitude, _lightDistanceFromFocus);
     }
     else {
         _light->setPosition(lightPosition);
-        _light->lookAt(glm::normalize(getFocusOrigin() - _light->getPosition()));
+        _light->lookAt(glm::vec3(0));
     }
-
+    if (bCameraSnapFocus) {
+        cam.lookAt(getFocusOrigin());
+    }
     _terrainShader->begin();
     _terrainShader->setUniform3f("light.position", _light->getPosition());
     _terrainShader->setUniform3f("light.direction", _light->getLookAtDir());
@@ -324,12 +325,6 @@ void SimulationManager::lateUpdate()
     _nodeShader->setUniform4f("light.specular", _light->getSpecularColor());
     _nodeShader->setUniform3f("eyePos", cam.getPosition());
     _nodeShader->end();
-
-    if (bCameraSnapFocus) {
-        if (getFocusCreature() != nullptr) {
-            cam.lookAt(getFocusOrigin());
-        }
-    }
 }
 
 void SimulationManager::updateTime()
@@ -438,8 +433,15 @@ void SimulationManager::updateSimInstances(double timeStep)
 void SimulationManager::drawShadowPass()
 {
     if (!bDebugDraw && bShadows) {
-        _shadowMap.begin(*_light, 96.0f, cam.getNearClip(), 128.0f);
+        _shadowMap.begin(*_light, 64.0f, -32.0f, 64.0f);
+
+        // make an exception for the terrain
+        glDisable(GL_CULL_FACE);
         _terrainNode->drawImmediate();
+
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_FRONT);
+
         if (bSimulationActive) {
             for (SimInstance* s : _simulationInstances)
                 s->getCreature()->drawImmediate();
@@ -457,24 +459,39 @@ void SimulationManager::draw()
 {
     if (!bDebugDraw) {
         cam.begin();
+
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
         _terrainNode->draw();
+        glDisable(GL_CULL_FACE);
+
         if (bSimulationActive) {
+
             glDisable(GL_DEPTH_TEST);
+
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_BACK);
             for (SimInstance* s : _simulationInstances)
                 s->getCanvas()->draw();
+
             glEnable(GL_DEPTH_TEST);
 
             for (SimInstance* s : _simulationInstances)
                 s->getCreature()->draw();
+
+            glDisable(GL_CULL_FACE);
         }
         else if (_testCreature) {
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_BACK);
             _testCreature->draw();
+            glDisable(GL_CULL_FACE);
         }
 
         // gizmos
         if (bMouseLight) {
             ofDrawIcoSphere(_light->getGlobalPosition(), 2.0f);
-            ofDrawArrow(_light->getGlobalPosition(), _light->getLookAtDir() * 10.0f);
+            ofDrawArrow(_light->getGlobalPosition(), _light->getGlobalPosition() + _light->getLookAtDir() * 4.0f);
         }
         cam.end();
 

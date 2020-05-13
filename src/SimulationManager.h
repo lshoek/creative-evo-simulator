@@ -73,6 +73,7 @@ public:
     bool bSaveArtifactsToDisk = false;
 
     glm::vec3 lightPosition;
+
     uint32_t simulationSpeed = 1;
 
 private:
@@ -135,7 +136,9 @@ private:
     std::shared_ptr<ofTexture> _terrainTexture;
     std::shared_ptr<ofMaterial> _terrainMaterial;
     std::shared_ptr<ofMaterial> _nodeMaterial;
+
     std::shared_ptr<ofLight> _light;
+    float _lightDistanceFromFocus = 32.0f;
 
     btScalar terrainSize = 64.0;
     btScalar canvasSize = 4.0;
