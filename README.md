@@ -17,6 +17,7 @@ ofx dependencies:
 - ofxImGui
 - ofxGrabCam
 - ofxIniSettings
+- ofxShadowMap (https://github.com/lshoek/ofxShadowMap)
 
 ![Preview](preview/preview-app-0.jpg)
 ![Preview](preview/preview-app-1.jpg)
