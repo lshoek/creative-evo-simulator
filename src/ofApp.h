@@ -55,6 +55,7 @@ private:
 	bool bSimulate = true;
 	bool bDebugGrid = true;
 	bool bDraw = true;
+	bool bShadows = true;
 	bool bGui = true;
 
 	struct GuiFileItem

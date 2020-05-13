@@ -21,6 +21,7 @@ public:
 
 	void update(double timeStep);
 	void draw();
+	void drawImmediate();
 
 	bool feasibilityCheck();
 	void randomizeSensoryMotorWeights();

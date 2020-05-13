@@ -57,6 +57,14 @@ void SimNode::draw()
     }
 }
 
+void SimNode::drawImmediate()
+{
+    ofPushMatrix();
+    ofMultMatrix(SimUtils::bulletToGlm(getTransform()));
+    _mesh->draw();
+    ofPopMatrix();
+}
+
 SimCreature* SimNode::getCreaturePtr()
 {
     return _ownerCreature;

@@ -117,6 +117,14 @@ void SimCanvasNode::draw()
     }
 }
 
+void SimCanvasNode::drawImmediate()
+{
+    ofPushMatrix();
+    ofMultMatrix(SimUtils::bulletToGlm(getTransform()));
+    _mesh->draw();
+    ofPopMatrix();
+}
+
 void SimCanvasNode::addBrushStroke(btVector3 location, float pressure)
 {
     if (_brushQueueSize < BRUSH_COORD_BUF_MAXSIZE)

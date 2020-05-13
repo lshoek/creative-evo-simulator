@@ -11,6 +11,7 @@ public:
 
 	void update();
 	virtual void draw() override;
+	virtual void drawImmediate() override;
 
 	void addBrushStroke(btVector3 location, float pressure);
 

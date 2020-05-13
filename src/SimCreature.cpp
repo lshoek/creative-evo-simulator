@@ -525,6 +525,16 @@ void SimCreature::draw()
 	}
 }
 
+void SimCreature::drawImmediate()
+{
+	for (SimNode*& n : m_nodes) {
+		n->drawImmediate();
+	}
+	for (SimNode*& n : m_ballPointerNodes) {
+		n->drawImmediate();
+	}
+}
+
 btTypedConstraint** SimCreature::getJoints()
 {
 	return &m_joints[0];

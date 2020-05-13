@@ -14,6 +14,7 @@
 #include "GenomeBase.h"
 #include "ofMain.h"
 #include "ofxGrabCam.h"
+#include "ofxShadowMap.h"
 
 typedef std::function<void(uint32_t)> simRunCallback_t;
 
@@ -25,8 +26,10 @@ public:
     void stopSimulation();
 
     void updateTime();
+    void lateUpdate();
     void updateSimInstances(double timeStep);
 
+    void drawShadowPass();
     void draw();
     void dealloc();
 
@@ -59,7 +62,10 @@ public:
     void setMaxParallelSims(int max);
 
     bool bDebugDraw = false;
+    bool bShadows = true;
     bool bTestMode = false;
+    bool bMouseLight = false;
+    bool bViewLightSpaceDepth = false;
     bool bCameraSnapFocus = true;
     bool bFeasibilityChecks = false;
     bool bUseBodyGenomes = true;
@@ -67,7 +73,6 @@ public:
     bool bSaveArtifactsToDisk = false;
 
     glm::vec3 lightPosition;
-    glm::vec3 lightDirection;
     uint32_t simulationSpeed = 1;
 
 private:
@@ -90,6 +95,9 @@ private:
 
     std::shared_ptr<DirectedGraph> _selectedBodyGenome;
     std::shared_ptr<SimCreature> _testCreature;
+
+    // shadows
+    ofxShadowMap _shadowMap;
 
     // physics
     btBroadphaseInterface* _broadphase;

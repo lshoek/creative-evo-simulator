@@ -16,6 +16,7 @@ public:
 	void initPlane(btVector3 position, float size, float mass);
 
 	virtual void draw() override;
+	virtual void drawImmediate() override;
 
 	SimCreature* getCreaturePtr();
 	void setCreatureOwner(SimCreature* creaturePtr);

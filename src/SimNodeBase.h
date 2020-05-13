@@ -13,6 +13,7 @@ public:
 	virtual ~SimNodeBase();
 
 	virtual void draw() = 0;
+	virtual void drawImmediate() = 0;
 
 	btDynamicsWorld* _ownerWorld;
 

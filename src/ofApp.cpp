@@ -100,6 +100,7 @@ void ofApp::update()
 {
 	if (simulationManager.isInitialized()) {
 		simulationManager.updateTime();
+		simulationManager.lateUpdate();
 	}
 }
 
@@ -110,6 +111,7 @@ void ofApp::draw()
 		ofSetHexColor(0xffffff);
 
 		glEnable(GL_BLEND);
+		glEnable(GL_DEPTH_TEST);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		if (bRenderEventQueued) {
@@ -121,15 +123,17 @@ void ofApp::draw()
 		}
 		if (bSimulate)
 		{
+			simulationManager.drawShadowPass();
+
 			frameFbo.begin();
 			ofClear(0, 0);
-
 			simulationManager.draw();
-
 			frameFbo.end();
+
 			frameFbo.draw(viewRect);
 		}
 		glDisable(GL_BLEND);
+		glDisable(GL_DEPTH_TEST);
 	}
 	if (bGui) {
 		imGui();
@@ -146,9 +150,6 @@ void ofApp::imGui()
 			{
 				if (ImGui::MenuItem("Monitor Window", "w", bWindow)) {
 					bWindow = !bWindow;
-				}
-				if (ImGui::MenuItem("Debug Drawer", "d", simulationManager.bDebugDraw)) {
-					simulationManager.bDebugDraw = !simulationManager.bDebugDraw;
 				}
 				ImGui::EndMenu();
 			}
@@ -195,14 +196,30 @@ void ofApp::imGui()
 					simulationManager.bSaveArtifactsToDisk = !simulationManager.bSaveArtifactsToDisk;
 				}
 				ImGui::Separator();
-				if (ImGui::MenuItem("Reload Shaders", "r", false)) {
-					simulationManager.loadShaders();
-				}
-				if (ImGui::MenuItem("Shift Focus", "c", false)) {
+				if (ImGui::MenuItem("Shift Camera Focus", "c", false)) {
 					simulationManager.shiftFocus();
 				}
 				if (ImGui::MenuItem("Skip Generation", "z", false)) {
 					simulationManager.abortSimInstances();
+				}
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("Debug"))
+			{
+				if (ImGui::MenuItem("Debug Renderer", "d", simulationManager.bDebugDraw)) {
+					simulationManager.bDebugDraw = !simulationManager.bDebugDraw;
+				}
+				if (ImGui::MenuItem("Shadows", "d", simulationManager.bShadows)) {
+					simulationManager.bShadows = !simulationManager.bShadows;
+				}
+				if (ImGui::MenuItem("Debug Light", NULL, simulationManager.bMouseLight)) {
+					simulationManager.bMouseLight = !simulationManager.bMouseLight;
+				}
+				if (ImGui::MenuItem("View Lightspace Depth", NULL, simulationManager.bViewLightSpaceDepth)) {
+					simulationManager.bViewLightSpaceDepth = !simulationManager.bViewLightSpaceDepth;
+				}
+				if (ImGui::MenuItem("Reload Shaders", "r", false)) {
+					simulationManager.loadShaders();
 				}
 				ImGui::EndMenu();
 			}
@@ -222,7 +239,7 @@ void ofApp::imGui()
 					ImGui::Text("%.02f", simulationManager.getSimulationTime());
 					ImGui::Separator();
 					ImGui::Text("Simulation Speed:");
-					ImGui::SliderInt("", (int*)&simulationManager.simulationSpeed, 0, 16);
+					ImGui::SliderInt("<", (int*)&simulationManager.simulationSpeed, 0, 16);
 					ImGui::Separator();
 					if (simulationManager.isSimulationInstanceActive()) {
 						if (simulationManager.getCanvasFbo() != nullptr) {
@@ -232,13 +249,16 @@ void ofApp::imGui()
 						}
 						if (simulationManager.getFocusCreature() != nullptr) {
 							ImGui::Text("Global Motor Strength:");
-							ImGui::SliderFloat("", &simulationManager.getFocusCreature()->m_motorStrength, 0, 1);
+							ImGui::SliderFloat("<<", &simulationManager.getFocusCreature()->m_motorStrength, 0, 1);
 							ImGui::Separator();
 						}
 					}
 					glm::vec3 cpos = simulationManager.getCamera()->getPosition();
 					ImGui::Text("Camera Position:");
 					ImGui::Text("(%.02f, %.02f, %.02f)", cpos.x, cpos.y, cpos.z);
+					ImGui::Separator();
+					ImGui::Text("Light Position:");
+					ImGui::InputFloat3("<<<", &simulationManager.lightPosition[0], 2);
 					ImGui::Separator();
 					ImGui::Text("Debug Draw: %s", simulationManager.bDebugDraw ? "ON" : "OFF");
 					ImGui::Separator();

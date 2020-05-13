@@ -29,9 +29,6 @@ void main()
 	vec4 mtlcol = point_light(mtl, light, eyePos, fragPos.xyz, normal_varying.xyz);
 
 	vec4 outcol = texcol * mtlcol;
-
-	// float gamma = 2.2;
-	// outcol.rgb = pow(outcol.rgb, vec3(1.0/gamma));
 	outcol.a *= alpha;
 
 	fragColor = outcol;

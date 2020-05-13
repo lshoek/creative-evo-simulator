@@ -123,7 +123,7 @@
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>D:\tools\json\single_include;D:\tools\vcpkg\installed\x64-windows\include\bullet;D:\tools\MultiNEAT\src;..\..\..\addons\ofxImGui\src;..\..\..\addons\ofxImGui\libs\imgui\src;..\..\..\addons\ofxIniSettings\src;..\..\..\addons\ofxGrabCam\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\tools\json\single_include;D:\tools\vcpkg\installed\x64-windows\include\bullet;D:\tools\MultiNEAT\src;..\..\..\addons\ofxImGui\src;..\..\..\addons\ofxImGui\libs\imgui\src;..\..\..\addons\ofxIniSettings\src;..\..\..\addons\ofxGrabCam\src;..\..\..\addons\ofxShadowMap\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs>CompileAsCpp</CompileAs>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ObjectFileName>$(IntDir)</ObjectFileName>
@@ -167,7 +167,7 @@
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>D:\tools\json\single_include;D:\tools\vcpkg\installed\x64-windows\include\bullet;D:\tools\MultiNEAT\src;..\..\..\addons\ofxImGui\src;..\..\..\addons\ofxImGui\libs\imgui\src;..\..\..\addons\ofxIniSettings\src;..\..\..\addons\ofxGrabCam\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\tools\json\single_include;D:\tools\vcpkg\installed\x64-windows\include\bullet;D:\tools\MultiNEAT\src;..\..\..\addons\ofxImGui\src;..\..\..\addons\ofxImGui\libs\imgui\src;..\..\..\addons\ofxIniSettings\src;..\..\..\addons\ofxGrabCam\src;..\..\..\addons\ofxShadowMap\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs>CompileAsCpp</CompileAs>
       <ObjectFileName>$(IntDir)</ObjectFileName>
     </ClCompile>
@@ -224,6 +224,7 @@
     <ClCompile Include="..\..\..\addons\ofxImGui\src\Helpers.cpp" />
     <ClCompile Include="..\..\..\addons\ofxImGui\src\ofxImGuiLoggerChannel.cpp" />
     <ClCompile Include="..\..\..\addons\ofxIniSettings\src\ofxIniSettings.cpp" />
+    <ClCompile Include="..\..\..\addons\ofxShadowMap\src\ofxShadowMap.cpp" />
     <ClCompile Include="src\DirectedGraph.cpp" />
     <ClCompile Include="src\DirectedGraphConnection.cpp" />
     <ClCompile Include="src\DirectedGraphNode.cpp" />
@@ -276,6 +277,7 @@
     <ClInclude Include="..\..\..\addons\ofxImGui\src\ofxImGui.h" />
     <ClInclude Include="..\..\..\addons\ofxImGui\src\ofxImGuiLoggerChannel.h" />
     <ClInclude Include="..\..\..\addons\ofxIniSettings\src\ofxIniSettings.h" />
+    <ClInclude Include="..\..\..\addons\ofxShadowMap\src\ofxShadowMap.h" />
     <ClInclude Include="src\DirectedGraph.h" />
     <ClInclude Include="src\DirectedGraphConnection.h" />
     <ClInclude Include="src\DirectedGraphNode.h" />
