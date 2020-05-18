@@ -7,12 +7,15 @@ SimNodeBase::SimNodeBase(int tag, ofColor color, btDynamicsWorld* owner) : _tag(
 
 void SimNodeBase::setRigidBody(btRigidBody* body)
 {
+    removeFromWorld();
+    dealloc();
+
     _body = body;
     _body->setUserIndex(_tag);
     _shape = _body->getCollisionShape();
 }
 
-void SimNodeBase::createBody(btVector3 position, float mass, void* userPointer)
+void SimNodeBase::createBody(btVector3 position, btCollisionShape* shape, float mass, void* userPointer)
 {
     btTransform trans = btTransform::getIdentity();
     trans.setOrigin(position);
@@ -21,16 +24,17 @@ void SimNodeBase::createBody(btVector3 position, float mass, void* userPointer)
 
     btScalar bodyMass = mass;
     btVector3 bodyInertia;
-    _shape->calculateLocalInertia(bodyMass, bodyInertia);
+    shape->calculateLocalInertia(bodyMass, bodyInertia);
 
     btRigidBody::btRigidBodyConstructionInfo bodyConstrInfo =
-        btRigidBody::btRigidBodyConstructionInfo(bodyMass, motionState, _shape, bodyInertia);
+        btRigidBody::btRigidBodyConstructionInfo(bodyMass, motionState, shape, bodyInertia);
     bodyConstrInfo.m_restitution = 0.5f;
     bodyConstrInfo.m_friction = 0.5f;
 
-    _body = new btRigidBody(bodyConstrInfo);
-    _body->setUserPointer(userPointer);
-    _body->setUserIndex(_tag);
+    btRigidBody* body = new btRigidBody(bodyConstrInfo);
+    body->setUserPointer(userPointer);
+
+    setRigidBody(body);
 }
 
 void SimNodeBase::setTransform(btTransform transform)
@@ -82,7 +86,7 @@ btQuaternion SimNodeBase::getRotation()
 
 // rigidbody
 btRigidBody* SimNodeBase::getRigidBody() { return _body; }
-bool SimNodeBase::hasBody() { return _body != nullptr; }
+bool SimNodeBase::hasBody() { return _body != 0; }
 
 // shape
 btCollisionShape* SimNodeBase::getShape() { return _shape; }
@@ -94,9 +98,17 @@ void SimNodeBase::setTag(uint32_t tag) {
 }
 uint32_t SimNodeBase::getTag() { return _tag; }
 
-// owner
-void SimNodeBase::addToWorld() { _ownerWorld->addRigidBody(_body); }
-void SimNodeBase::removeFromWorld() { _ownerWorld->removeRigidBody(_body); }
+void SimNodeBase::addToWorld() { 
+    if (_body && !_body->isInWorld()) {
+        _ownerWorld->addRigidBody(_body);
+    }
+}
+
+void SimNodeBase::removeFromWorld() { 
+    if (_body && _body->isInWorld()) {
+        _ownerWorld->removeRigidBody(_body);
+    }
+}
 
 // shader
 void SimNodeBase::setShader(std::shared_ptr<ofShader> shader) { _shader = shader; }
@@ -120,11 +132,18 @@ void SimNodeBase::setMaterial(std::shared_ptr<ofMaterial> mtl) { _material = mtl
 void SimNodeBase::setLight(std::shared_ptr<ofLight> light) { _light = light; }
 void SimNodeBase::setMesh(std::shared_ptr<ofMesh> mesh) { _mesh = mesh; }
 
-SimNodeBase::~SimNodeBase()
-{
-    if (hasBody()) {
+void SimNodeBase::dealloc() {
+    if (_body) {
         delete _body->getMotionState();
         delete _body;
+    }
+    if (_shape) {
         delete _shape;
     }
+}
+
+SimNodeBase::~SimNodeBase()
+{
+    removeFromWorld();
+    dealloc();
 }

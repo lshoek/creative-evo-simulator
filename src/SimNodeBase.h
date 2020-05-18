@@ -26,8 +26,8 @@ public:
 
 	bool hasBody();
 
-	void addToWorld();
-	void removeFromWorld();
+	virtual void addToWorld();
+	virtual void removeFromWorld();
 
 	void setTransform(btTransform transform);
 	btTransform getTransform();
@@ -53,10 +53,11 @@ public:
 	bool bRender = true;
 
 protected:
-	virtual void createBody(btVector3 position, float mass, void* userPointer);
+	virtual void createBody(btVector3 position, btCollisionShape* shape, float mass, void* userPointer);
+	void dealloc();
 
-	btCollisionShape* _shape;
-	btRigidBody* _body;
+	btCollisionShape* _shape = NULL;
+	btRigidBody* _body = NULL;
 	uint32_t _tag;
 
 	ofColor _color;

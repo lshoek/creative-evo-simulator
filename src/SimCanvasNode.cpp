@@ -59,9 +59,10 @@ SimCanvasNode::SimCanvasNode(btVector3 position, float size, float extraBounds, 
 
 void SimCanvasNode::initPlane(btVector3 position, float size)
 {
-    _shape = new btStaticPlaneShape(btVector3(0, 1, 0), 0);
     _mesh = std::make_shared<ofMesh>(tb::gridMesh(2, 2, size * 2, true));
-    createBody(position, 0, this);
+
+    btCollisionShape* shape = new btStaticPlaneShape(btVector3(0, 1, 0), 0);
+    createBody(position, shape, 0, this);
 }
 
 void SimCanvasNode::update()
@@ -239,14 +240,35 @@ void SimCanvasNode::enableBounds()
             glm::quat rot = glm::rotation(ax, glm::rotate(ax, float(HALF_PI) * i, glm::vec3(0, 1, 0)));
             _bounds[i]->setRotation(SimUtils::glmToBullet(rot));
             _bounds[i]->setPosition((getPosition() + SimUtils::glmToBullet(glm::vec3(0, _canvasSize, 0) + rot * fromCenter)));
-            _bounds[i]->addToWorld();
             _bounds[i]->bRender = false;
         }
         _bBounds = true;
     }
 }
 
+void SimCanvasNode::addToWorld()
+{
+    SimNodeBase::addToWorld();
+
+    if (_bBounds) {
+        for (int i = 0; i < 4; i++) {
+            _bounds[i]->addToWorld();
+        }
+    }
+}
+
+void SimCanvasNode::removeFromWorld()
+{
+    SimNodeBase::removeFromWorld();
+
+    if (_bBounds) {
+        for (int i = 0; i < 4; i++) {
+            _bounds[i]->removeFromWorld();
+        }
+    }
+}
+
 SimCanvasNode::~SimCanvasNode()
 {
-    removeFromWorld();
+
 }

@@ -16,6 +16,9 @@ public:
 	virtual void draw() override;
 	virtual void drawImmediate() override;
 
+	virtual void addToWorld() override;
+	virtual void removeFromWorld() override;
+
 	void addBrushStroke(btVector3 location, float pressure);
 
 	glm::ivec2 getCanvasResolution();
@@ -66,7 +69,6 @@ private:
 
 	// neural input
 	cv::Mat _neuralInputMat;
-
 	ofBufferObject _pixelWriteBuffers[2];
 	ofBufferObject* _pboPtr;
 	uint32_t iPbo;
@@ -74,9 +76,11 @@ private:
 	// colors
 	ofColor _brushColor;
 
+	// bounds
 	std::unique_ptr<SimNode> _bounds[4];
 	bool _bBounds = false;
 
+	// special shaders
 	std::shared_ptr<ofShader> _canvasUpdateShader;
 	std::shared_ptr<ofShader> _canvasColorizeShader;
 };

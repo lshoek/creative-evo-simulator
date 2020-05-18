@@ -90,11 +90,11 @@ private:
 
 	// standard rigid bodies and shapes for creature
 	std::vector<btRigidBody*> m_bodies;
+	std::vector<btCollisionShape*> m_shapes;
 	std::vector<SimNode*> m_nodes;
 	std::vector<SimNode*> m_brushNodes;
 	std::vector<btTypedConstraint*> m_joints;
 
-	std::vector<btCollisionShape*> m_shapes;
 	std::vector<btTransform> m_bodyRelativeTransforms;
 
 	std::shared_ptr<ofShader> m_shader;

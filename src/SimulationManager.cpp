@@ -159,8 +159,7 @@ void SimulationManager::initTerrain()
     _terrainNode->initPlane(btVector3(0, 0, 0), terrainSize, 0);
     _terrainNode->setAppearance(_terrainShader, _terrainMaterial, _terrainTexture);
     _terrainNode->setLight(_light);
-
-    _world->addRigidBody(_terrainNode->getRigidBody());
+    _terrainNode->addToWorld();
 } 
 
 void SimulationManager::initTestEnvironment()
@@ -617,7 +616,8 @@ void SimulationManager::generateRandomBodyGenome()
 
         std::shared_ptr<SimCreature> tempCreature;
         while (bNoFeasibleCreatureFound && attempts < maxGenGenomeAttempts) {
-            std::shared_ptr<SimCreature> tempCreature = std::make_shared<SimCreature>(
+
+            tempCreature = std::make_shared<SimCreature>(
                 btVector3(0, 2.0, 0), _selectedBodyGenome, _world
             );
             bool bSuccess = bFeasibilityChecks ? tempCreature->feasibilityCheck() : true;

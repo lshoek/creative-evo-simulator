@@ -553,29 +553,21 @@ void SimCreature::setCanvasSensors(const unsigned char* canvasSensors, double t)
 
 void SimCreature::addToWorld()
 {
-	int i;
-	// add all bodies and shapes
-	for (i = 0; i < m_numBodies; ++i) {
-		m_ownerWorld->addRigidBody(m_bodies[i]);
-	}
-
-	// add all constraints
-	// important! If you add constraints back, you must set bullet physics to disable collision between constrained bodies
-	for (i = 0; i < m_numJoints; ++i) {
+	for (uint32_t i = 0; i < m_numJoints; i++) {
 		m_ownerWorld->addConstraint(m_joints[i], true);
+	}
+	for (SimNode* node : m_nodes) {
+		node->addToWorld();
 	}
 }
 
 void SimCreature::removeFromWorld()
 {
-	// Remove all constraints
-	for (int i = 0; i < m_numJoints; ++i) {
+	for (uint32_t i = 0; i < m_numJoints; i++) {
 		m_ownerWorld->removeConstraint(m_joints[i]);
 	}
-
-	// Remove all bodies
-	for (int i = 0; i < m_numBodies; ++i) {
-		m_ownerWorld->removeRigidBody(m_bodies[i]);
+	for (SimNode* node : m_nodes) {
+		node->removeFromWorld();
 	}
 }
 
@@ -697,19 +689,11 @@ SimCreature::~SimCreature()
 {
 	removeFromWorld();
 
-	// Delete all joints/constraints
-	for (int i = 0; i < m_numJoints; ++i) {
-		delete m_joints[i];
-		m_joints[i] = 0;
+	for (btTypedConstraint* c : m_joints) {
+		delete c;
 	}
-	// Delete all nodes and their corresponding bodies and shapes
-	for (int i = 0; i < m_numBodies; ++i) {
-		delete m_nodes[i];
-		m_nodes[i] = 0;
-	}
-	// Clear brush pointers to deleted nodes
-	for (int i = 0; i < m_numBrushes; ++i) {
-		m_brushNodes[i] = 0;
+	for (SimNode* node : m_nodes) {
+		delete node;
 	}
 	if (m_controlPolicyGenome) delete m_controlPolicyGenome;
 	if (m_morphologyGenome) delete m_morphologyGenome;
