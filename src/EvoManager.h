@@ -47,7 +47,6 @@ private:
 
     NEAT::Population* population;
     NEAT::Parameters params;
-    NEAT::Substrate substrate;
 
     int maxNumGenerations;
     int maxParallelEvals = 1;

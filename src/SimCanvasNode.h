@@ -2,23 +2,32 @@
 #include "SimNode.h"
 #include "ofBufferObject.h"
 #include "ofFbo.h"
+#include "ofxOpenCv.h"
 
 class SimCanvasNode : public SimNodeBase
 {
 public:
-	SimCanvasNode(btVector3 position, int tag, float size, float extraBounds, int x_res, int y_res, btDynamicsWorld* ownerWorld);
+	SimCanvasNode(btVector3 position, float size, float extraBounds, int xRes, int yRes, int xNeuralInput, int yNeuralInput, btDynamicsWorld* ownerWorld);
 	~SimCanvasNode();
 
 	void update();
+	void updateNeuralInputBuffer();
+
 	virtual void draw() override;
 	virtual void drawImmediate() override;
 
 	void addBrushStroke(btVector3 location, float pressure);
 
 	glm::ivec2 getCanvasResolution();
+
+	ofFbo* getCanvasRawFbo();
 	ofFbo* getCanvasFbo();
 
+	ofFbo* getCanvasNeuralInputRawFbo();
+	unsigned char* getNeuralInputsBuffer() const;
+
 	void setCanvasUpdateShader(std::shared_ptr<ofShader> shader);
+	void setCanvasColorizeShader(std::shared_ptr<ofShader> shader);
 	void enableBounds();
 
 private:
@@ -34,26 +43,40 @@ private:
 
 	void initPlane(btVector3 position, float size);
 
+	// canvas
 	glm::ivec2 _canvasRes;
+	glm::ivec2 _canvasNeuralInputRes;
+
 	float _canvasSize;
 	float _margin;
-	
+
+	ofMesh _canvasDrawQuad;
+	ofMesh _canvasLowResDrawQuad;
+
+	// brush coords
 	ofBufferObject _brushCoordBuffer;
 	std::vector<BrushCoord> _brushCoordQueue;
 	unsigned int _brushQueueSize = 0;
 
-	ofMesh _canvasDrawQuad;
-
 	// render buffers
-	ofFbo _canvasFinalFbo;
+	ofFbo _canvasNeuralInputFbo;
+	ofFbo _canvasColorFbo;
 	ofFbo _canvasFbo[2];
 	int iFbo = 0;
 
+	// neural input
+	cv::Mat _neuralInputMat;
+
+	ofBufferObject _pixelWriteBuffers[2];
+	ofBufferObject* _pboPtr;
+	uint32_t iPbo;
+
+	// colors
 	ofColor _brushColor;
-	ofColor _canvasClearColor;
 
 	std::unique_ptr<SimNode> _bounds[4];
 	bool _bBounds = false;
 
 	std::shared_ptr<ofShader> _canvasUpdateShader;
+	std::shared_ptr<ofShader> _canvasColorizeShader;
 };

@@ -24,7 +24,6 @@ public:
 	void drawImmediate();
 
 	bool feasibilityCheck();
-	void randomizeSensoryMotorWeights();
 
 	btTypedConstraint** getJoints();
 	btRigidBody** getRigidBodies();
@@ -33,10 +32,16 @@ public:
 	// Makes a deep copy of the genome and stores/uses it until the simulation instance is finished.
 	void setControlPolicyGenome(const GenomeBase& genome);
 
+	enum SensorMode { Touch, Canvas };
+	SensorMode _sensorMode;
+
+	void setSensorMode(SensorMode mode);
+
 	double getTouchSensor(int i);
 	void setTouchSensor(void* bodyPointer);
 	void clearTouchSensors();
-	btScalar* getSensoryMotorWeights();
+
+	void setCanvasSensors(const unsigned char* canvasSensors, double t);
 
 	void addToWorld();
 	void removeFromWorld();
@@ -47,6 +52,8 @@ public:
 	void clearForces();
 
 	btScalar getEvaluationTime() const;
+	uint64_t getActivationMillis() const;
+
 	void setEvaluationTime(btScalar evaluationTime);
 	bool isInEvaluation() const;
 	void setInEvaluation(bool inEvaluation);
@@ -90,12 +97,6 @@ private:
 	std::vector<btCollisionShape*> m_shapes;
 	std::vector<btTransform> m_bodyRelativeTransforms;
 
-	// ball pointers are collision shapes that detect contact with a canvas
-	std::vector<btCollisionShape*> m_ballPointerShapes;
-	std::vector<btRigidBody*> m_ballPointerBodies;
-	std::vector<SimNode*> m_ballPointerNodes;
-	std::vector<btFixedConstraint*> m_ballPointerJoints;
-
 	std::shared_ptr<ofShader> m_shader;
 	std::shared_ptr<ofTexture> m_texture;
 	std::shared_ptr<ofMaterial> m_material;
@@ -112,11 +113,12 @@ private:
 	uint32_t m_numLegs;
 	uint32_t m_numBrushes;
 
+	uint64_t m_activationMillis = 0;
+
 	// body part hash, touch sensor index
 	btHashMap<btHashPtr, int> m_bodyTouchSensorIndexMap;
 	std::vector<double> m_touchSensors;
-
-	std::vector<btScalar> m_sensoryMotorWeights;
+	std::vector<double> m_canvasSensors;
 
 	int m_index = 0;
 

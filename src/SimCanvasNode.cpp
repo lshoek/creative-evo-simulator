@@ -7,22 +7,38 @@
 // This number should be synced with BRUSH_COORD_BUF_MAXSIZE in canvas.frag.
 #define BRUSH_COORD_BUF_MAXSIZE 8
 
-SimCanvasNode::SimCanvasNode(btVector3 position, int tag, float size, float extraBounds, int x_res, int y_res, btDynamicsWorld* ownerWorld) :
-    SimNodeBase(tag, ownerWorld), _canvasSize(size), _margin(extraBounds)
+SimCanvasNode::SimCanvasNode(btVector3 position, float size, float extraBounds, int xRes, int yRes, int xNeuralInput, int yNeuralInput, btDynamicsWorld* ownerWorld) :
+    SimNodeBase(CanvasTag, ownerWorld), _canvasSize(size), _margin(extraBounds)
 {
     _color = ofColor::white;
     _brushColor = ofColor::black;
-    _canvasClearColor = ofColor::white;
 
-    _canvasRes = glm::ivec2(x_res, y_res);
+    _canvasRes = glm::ivec2(xRes, yRes);
+    _canvasNeuralInputRes = glm::vec2(xNeuralInput, yNeuralInput);
     _canvasDrawQuad = tb::rectMesh(0, 0, _canvasRes.x, _canvasRes.y, true);
+    _canvasLowResDrawQuad = tb::rectMesh(0, 0, _canvasNeuralInputRes.x, _canvasNeuralInputRes.y, true);
 
     initPlane(position, _canvasSize);
-
+    
+    // Single-channel canvas 'height map'
     for (int i = 0; i < 2; i++) {
-        _canvasFbo[i].allocate(_canvasRes.x, _canvasRes.y, GL_RGBA32F);
+        _canvasFbo[i].allocate(_canvasRes.x, _canvasRes.y, GL_R8);
     }
-    _canvasFinalFbo.allocate(_canvasRes.x, _canvasRes.y, GL_RGBA);
+    // Reduced resolution neural input buffer
+    ofFboSettings fboSettings;
+    fboSettings.width = _canvasNeuralInputRes.x;
+    fboSettings.height = _canvasNeuralInputRes.y;
+    fboSettings.internalformat = GL_R8;
+    fboSettings.minFilter = GL_NEAREST;
+    fboSettings.maxFilter = GL_NEAREST;
+    _canvasNeuralInputFbo.allocate(fboSettings);
+
+    // Canvas color and alpha separated
+    _canvasColorFbo.allocate(_canvasRes.x, _canvasRes.y, GL_RGBA);
+
+    _canvasColorFbo.begin();
+    ofClear(_color);
+    _canvasColorFbo.end();
 
     _brushCoordQueue.resize(BRUSH_COORD_BUF_MAXSIZE);
     for (int i = 0; i < BRUSH_COORD_BUF_MAXSIZE; i++) {
@@ -32,6 +48,13 @@ SimCanvasNode::SimCanvasNode(btVector3 position, int tag, float size, float extr
     }
     _brushCoordBuffer.allocate();
     _brushCoordBuffer.setData(BrushCoord::size()*BRUSH_COORD_BUF_MAXSIZE, NULL, GL_DYNAMIC_DRAW);
+
+    // Neural input
+    for (int i = 0; i < 2; i++) {
+        _pixelWriteBuffers[i].allocate(_canvasRes.x * _canvasRes.y, GL_DYNAMIC_READ);
+    }
+    iPbo = 0;
+    _pboPtr = &_pixelWriteBuffers[iPbo];
 }
 
 void SimCanvasNode::initPlane(btVector3 position, float size)
@@ -43,7 +66,7 @@ void SimCanvasNode::initPlane(btVector3 position, float size)
 
 void SimCanvasNode::update()
 {
-    if (_brushQueueSize > 0)
+    if (_canvasUpdateShader && _brushQueueSize > 0)
     {
         // bind coord buffers
         _brushCoordBuffer.bindBase(GL_SHADER_STORAGE_BUFFER, 0);
@@ -53,15 +76,14 @@ void SimCanvasNode::update()
         iFbo = SWAP(iFbo);
 
         glEnable(GL_BLEND);
-        glBlendEquationSeparate(GL_FUNC_ADD, GL_MAX);
-        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
+        glBlendEquation(GL_MAX);
+        glBlendFunc(GL_ONE, GL_ONE);
         _canvasFbo[iFbo].begin();
 
         _canvasFbo[SWAP(iFbo)].draw(0, 0);
 
         _canvasUpdateShader->begin();
         _canvasUpdateShader->setUniform1i("brush_coords_bufsize", _brushQueueSize);
-        _canvasUpdateShader->setUniform4f("color", _brushColor);
 
         _canvasDrawQuad.draw();
         _canvasUpdateShader->end();
@@ -73,23 +95,46 @@ void SimCanvasNode::update()
         _brushCoordBuffer.unbindBase(GL_SHADER_STORAGE_BUFFER, 0);
     }
 
+    // This can be skipped in headless mode
+    if (_canvasColorizeShader) {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        _canvasColorFbo.begin();
+        _canvasColorizeShader->begin();
+        _canvasColorizeShader->setUniformTexture("tex", _canvasFbo[iFbo].getTexture(), 0);
+        _canvasColorizeShader->setUniform4f("brush_color", _brushColor);
+        _canvasDrawQuad.draw();
+        _canvasColorizeShader->end();
+
+        _canvasColorFbo.end();
+        glDisable(GL_BLEND);
+    }
+
     // invalidate values
     for (int i = 0; i < BRUSH_COORD_BUF_MAXSIZE; i++) {
         _brushCoordQueue[i].pressure = -1.0f;
         _brushCoordQueue[i].active = 0.0f;
     }
     _brushQueueSize = 0;
+}
 
-    // draw to final canvas
-    _canvasFinalFbo.begin();
-    ofBackground(_canvasClearColor);
+void SimCanvasNode::updateNeuralInputBuffer()
+{
+    // Reduce height map resolution for neural inputs
+    _canvasNeuralInputFbo.begin();
+    _canvasFbo[iFbo].draw(0, 0, _canvasNeuralInputRes.x, _canvasNeuralInputRes.y);
+    _canvasNeuralInputFbo.end();
 
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    _canvasFbo[iFbo].draw(0, 0);
-    glDisable(GL_BLEND);
+    _canvasFbo[iFbo].copyTo(_pixelWriteBuffers[iPbo]);
+    _pboPtr->bind(GL_PIXEL_UNPACK_BUFFER);
 
-    _canvasFinalFbo.end();
+    unsigned char* bytesPtr = _pboPtr->map<unsigned char>(GL_READ_ONLY);
+    _neuralInputMat = cv::Mat(_canvasNeuralInputRes.x, _canvasNeuralInputRes.y, CV_8UC1, bytesPtr);
+
+    _pboPtr->unmap();
+    _pboPtr->unbind(GL_PIXEL_UNPACK_BUFFER);
+
+    iPbo = SWAP(iPbo);
 }
 
 void SimCanvasNode::draw()
@@ -101,9 +146,9 @@ void SimCanvasNode::draw()
         _shader->begin();
         if (bUseTexture) {
             //_shader->setUniformTexture("tex", _canvasFbo[iFbo].getTexture(), 0);
-            _shader->setUniformTexture("tex", _canvasFinalFbo.getTexture(), 0);
+            _shader->setUniformTexture("tex", _canvasColorFbo.getTexture(), 0);
         }
-        _shader->setUniform4f("color", _color);
+        _shader->setUniform4f("color", ofColor::white);
         _shader->setUniform4f("mtl.ambient", _material->getAmbientColor());
         _shader->setUniform4f("mtl.diffuse", _material->getDiffuseColor());
         _shader->setUniform4f("mtl.specular", _material->getSpecularColor());
@@ -144,18 +189,37 @@ void SimCanvasNode::addBrushStroke(btVector3 location, float pressure)
     }
 }
 
+unsigned char* SimCanvasNode::getNeuralInputsBuffer() const
+{
+    return _neuralInputMat.data;
+}
+
+ofFbo* SimCanvasNode::getCanvasNeuralInputRawFbo()
+{
+    return &_canvasNeuralInputFbo;
+}
+
+ofFbo* SimCanvasNode::getCanvasRawFbo()
+{
+    return &_canvasFbo[iFbo];
+}
+
+ofFbo* SimCanvasNode::getCanvasFbo()
+{
+    return &_canvasColorFbo;
+}
+
 glm::ivec2 SimCanvasNode::getCanvasResolution()
 {
     return _canvasRes;
 }
 
-ofFbo* SimCanvasNode::getCanvasFbo()
-{
-    return &_canvasFinalFbo;
-}
-
 void SimCanvasNode::setCanvasUpdateShader(std::shared_ptr<ofShader> shader) {
     _canvasUpdateShader = shader; 
+}
+
+void SimCanvasNode::setCanvasColorizeShader(std::shared_ptr<ofShader> shader) {
+    _canvasColorizeShader = shader;
 }
 
 void SimCanvasNode::enableBounds()

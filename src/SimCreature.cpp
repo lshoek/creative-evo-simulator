@@ -44,8 +44,6 @@ void SimCreature::buildPhenome(DirectedGraph* graph)
 	m_numJoints = m_numBodies - 1;
 	m_numLegs = 0;
 
-	randomizeSensoryMotorWeights();
-
 	m_nodes.resize(m_numBodies);
 	m_brushNodes.reserve(m_numBrushes);
 	m_bodies.resize(m_numBodies);
@@ -221,8 +219,6 @@ void SimCreature::dfs(
 #pragma region InitWalkerFunc
 void SimCreature::initWalker(btVector3 position, uint32_t numLegs, btDynamicsWorld* ownerWorld)
 {
-	// fixed for now
-	bHasBallPointers = true;
 	m_spawnPosition = position;
 
 	// calculate indices
@@ -230,8 +226,6 @@ void SimCreature::initWalker(btVector3 position, uint32_t numLegs, btDynamicsWor
 	m_numBrushes = m_numLegs;
 	m_numBodies = 2 * m_numLegs + 1;
 	m_numJoints = m_numBodies - 1;
-
-	randomizeSensoryMotorWeights();
 
 	// build meshes for rendering
 	m_bodyMesh = std::make_shared<ofMesh>(ofMesh::sphere(gRootBodyRadius));
@@ -244,15 +238,9 @@ void SimCreature::initWalker(btVector3 position, uint32_t numLegs, btDynamicsWor
 	for (int i = 0; i < m_numBodies; i++) {
 		m_nodes.push_back(new SimNode(BodyTag, m_ownerWorld));
 	}
-	//m_ballPointerNodes.resize(m_numBrushes);
-	//for (int i = 0; i < m_ballPointerNodes.size(); i++) {
-	//	m_ballPointerNodes[i] = new SimNode(BrushTag, ofColor::fromHex(0x33), m_ownerWorld);
-	//	m_ballPointerNodes[i]->setMesh(m_ballPointMesh);
-	//}
 
 	// body
 	m_shapes.resize(m_numBodies);
-	m_ballPointerShapes.resize(m_numBrushes);
 
 	m_shapes[0] = new btCapsuleShape(gRootBodyRadius, gRootBodyHeight); // root body capsule
 	m_nodes[0]->setMesh(m_bodyMesh);
@@ -264,8 +252,6 @@ void SimCreature::initWalker(btVector3 position, uint32_t numLegs, btDynamicsWor
 		m_shapes[2 + 2 * i] = new btCapsuleShape(gForeLegRadius, gForeLegLength); // fore leg capsule
 		m_nodes[1 + 2 * i]->setMesh(m_legMesh);
 		m_nodes[2 + 2 * i]->setMesh(m_foreLegMesh);
-
-		m_ballPointerShapes[i] = new btSphereShape(gForeLegRadius*1.25);
 	}
 
 	// Setup rigid bodies
@@ -286,7 +272,6 @@ void SimCreature::initWalker(btVector3 position, uint32_t numLegs, btDynamicsWor
 	btTransform originTrans = trans;
 
 	m_bodies.resize(m_numBodies);
-	m_ballPointerBodies.resize(m_numBrushes);
 
 	m_bodies[0] = localCreateRigidBody(1.0, bodyOffsetTrans * trans, m_shapes[0]);
 	m_ownerWorld->addRigidBody(m_bodies[0]);
@@ -296,7 +281,6 @@ void SimCreature::initWalker(btVector3 position, uint32_t numLegs, btDynamicsWor
 	m_bodyTouchSensorIndexMap.insert(btHashPtr(m_bodies[0]), 0);
 
 	m_joints.resize(m_numJoints);
-	m_ballPointerJoints.resize(m_numBrushes);
 
 	btHingeConstraint* hingeC;
 	//btConeTwistConstraint* coneC;
@@ -344,8 +328,6 @@ void SimCreature::initWalker(btVector3 position, uint32_t numLegs, btDynamicsWor
 			rootHeightOffset - gForeLegLength,
 			footYUnitPosition * (gRootBodyRadius + gLegLength)
 		));
-		m_ballPointerBodies[i] = localCreateRigidBody(1.0, bodyOffsetTrans * trans, m_ballPointerShapes[i]);
-		m_ballPointerBodies[i]->setCollisionFlags(m_ballPointerBodies[i]->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE);
 
 		// hip joints
 		localA.setIdentity();
@@ -373,17 +355,13 @@ void SimCreature::initWalker(btVector3 position, uint32_t numLegs, btDynamicsWor
 
 		localA.setIdentity();
 		localA.setOrigin(btVector3(0, -gForeLegLength * 0.5, 0));
-		m_ballPointerJoints[i] = new btFixedConstraint(*m_bodies[2 + 2 * i], *m_ballPointerBodies[i], localA, btTransform::getIdentity());
-		
+
 		// debug drawing
 		//m_joints[2 * i]->setDbgDrawSize(1.0f);
 		//m_joints[1 + 2 * i]->setDbgDrawSize(1.0f);
 
 		m_ownerWorld->addRigidBody(m_bodies[1 + 2 * i]);  // add thigh bone
 		m_ownerWorld->addConstraint(m_joints[2 * i], true);  // connect thigh bone with root
-
-		m_ownerWorld->addRigidBody(m_ballPointerBodies[i]);
-		m_ownerWorld->addConstraint(m_ballPointerJoints[i], true);
 	}
 
 	// Setup some damping on the m_bodies
@@ -398,10 +376,6 @@ void SimCreature::initWalker(btVector3 position, uint32_t numLegs, btDynamicsWor
 	// pass rigid bodies to node object (so they can be rendered)
 	for (int i = 0; i < m_nodes.size(); ++i) {
 		m_nodes[i]->setRigidBody(m_bodies[i]);
-	}
-	for (int i = 0; i < m_ballPointerNodes.size(); ++i) {
-		m_ballPointerBodies[i]->setUserPointer(this);
-		m_ballPointerNodes[i]->setRigidBody(m_ballPointerBodies[i]);
 	}
 	m_touchSensors.resize(m_numBodies);
 
@@ -422,8 +396,14 @@ void SimCreature::update(double timeStep)
 		{
 			m_targetAccumulator = 0;
 
-			// activate network
-			const std::vector<double> outputs = m_controlPolicyGenome->activate(m_touchSensors);
+			// activate network (bottleneck hazard)
+			uint64_t start = ofGetElapsedTimeMillis();
+
+			const std::vector<double> outputs = (_sensorMode == SensorMode::Touch) ?
+				m_controlPolicyGenome->activate(m_touchSensors) :
+				m_controlPolicyGenome->activate(m_canvasSensors);
+
+			m_activationMillis = ofGetElapsedTimeMillis() - start;
 
 			// update joints
 			for (int i = 0; i < m_numJoints; i++)
@@ -504,23 +484,9 @@ bool SimCreature::feasibilityCheck()
 	return bIsFeasible;
 }
 
-//initialize random weights
-void SimCreature::randomizeSensoryMotorWeights()
-{
-	m_sensoryMotorWeights.resize(m_numBodies * m_numJoints);
-	for (int i = 0; i < m_numBodies; i++) {
-		for (int j = 0; j < m_numJoints; j++) {
-			m_sensoryMotorWeights[i + j * m_numBodies] = (double)ofRandom(1.0f) * 2.0f - 1.0f;
-		}
-	}
-}
-
 void SimCreature::draw()
 {
 	for (SimNode* &n : m_nodes) {
-		n->draw();
-	}
-	for (SimNode* &n : m_ballPointerNodes) {
 		n->draw();
 	}
 }
@@ -528,9 +494,6 @@ void SimCreature::draw()
 void SimCreature::drawImmediate()
 {
 	for (SimNode*& n : m_nodes) {
-		n->drawImmediate();
-	}
-	for (SimNode*& n : m_ballPointerNodes) {
 		n->drawImmediate();
 	}
 }
@@ -553,6 +516,12 @@ SimNode** SimCreature::getSimNodes()
 void SimCreature::setControlPolicyGenome(const GenomeBase& genome)
 {
 	m_controlPolicyGenome = new GenomeBase(genome);
+	m_canvasSensors.resize(m_controlPolicyGenome->getNN().NumInputs());
+}
+
+void SimCreature::setSensorMode(SensorMode mode)
+{
+	_sensorMode = mode;
 }
 
 double SimCreature::getTouchSensor(int i)
@@ -572,9 +541,14 @@ void SimCreature::clearTouchSensors()
 	}
 }
 
-btScalar* SimCreature::getSensoryMotorWeights()
+void SimCreature::setCanvasSensors(const unsigned char* canvasSensors, double t)
 {
-	return &m_sensoryMotorWeights[0];
+	if (m_controlPolicyGenome) {
+		for (uint32_t i = 0; i < m_controlPolicyGenome->getNN().NumInputs()-2; i++) {
+			m_canvasSensors[i] = static_cast<double>(canvasSensors[i]);
+		}
+		m_canvasSensors[m_controlPolicyGenome->getNN().NumInputs()-1] = t;
+	}
 }
 
 void SimCreature::addToWorld()
@@ -641,11 +615,6 @@ void SimCreature::setAppearance(std::shared_ptr<ofShader> shader, std::shared_pt
 		m_nodes[i]->setMaterial(m_material);
 		m_nodes[i]->setTexture(m_texture);
 	}
-	for (int i = 0; i < m_ballPointerNodes.size(); ++i) {
-		m_ballPointerNodes[i]->setShader(m_shader);
-		m_ballPointerNodes[i]->setMaterial(m_material);
-		m_ballPointerNodes[i]->setTexture(m_texture);
-	}
 }
 
 void SimCreature::setShader(std::shared_ptr<ofShader> shader)
@@ -687,6 +656,11 @@ void SimCreature::setTexture(std::shared_ptr<ofTexture> tex)
 btScalar SimCreature::getEvaluationTime() const
 {
 	return m_evaluationTime;
+}
+
+uint64_t SimCreature::getActivationMillis() const
+{
+	return m_activationMillis;
 }
 
 void SimCreature::setEvaluationTime(btScalar evaluationTime)

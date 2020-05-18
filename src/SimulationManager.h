@@ -21,7 +21,7 @@ typedef std::function<void(uint32_t)> simRunCallback_t;
 class SimulationManager
 {
 public:
-    void init();
+    void init(uint32_t canvasWidth, uint32_t canvasHeight);
     void startSimulation();
     void stopSimulation();
 
@@ -43,11 +43,12 @@ public:
     bool isSimulationActive();
     bool isSimulationInstanceActive();
 
-    ofFbo* getCanvasFbo();
+
     ofxGrabCam* getCamera();
     float getSimulationTime();
 
     SimCreature* getFocusCreature();
+    SimCanvasNode* getFocusCanvas();
     glm::vec3 getFocusOrigin();
     void shiftFocus();
     void abortSimInstances();
@@ -55,11 +56,15 @@ public:
     MorphologyInfo getWalkerBodyInfo();
     std::shared_ptr<DirectedGraph> getBodyGenome();
 
+    glm::ivec2 getCanvasResolution();
+    glm::ivec2 getCanvasNeuronInputResolution();
+
     void loadBodyGenomeFromDisk(std::string filename);
     void generateRandomBodyGenome();
     void initTestEnvironment();
 
     void setMaxParallelSims(int max);
+    void setCanvasNeuronInputResolution(uint32_t width, uint32_t height);
 
     bool bDebugDraw = false;
     bool bShadows = true;
@@ -68,6 +73,7 @@ public:
     bool bViewLightSpaceDepth = false;
     bool bCameraSnapFocus = true;
     bool bFeasibilityChecks = false;
+    bool bCanvasInputNeurons = false;
     bool bUseBodyGenomes = true;
     bool bAxisAlignedAttachments = false;
     bool bSaveArtifactsToDisk = false;
@@ -129,7 +135,7 @@ private:
     // graphics
     std::shared_ptr<ofShader> _terrainShader;
     std::shared_ptr<ofShader> _nodeShader;
-    std::shared_ptr<ofShader> _unlitShader;
+    std::shared_ptr<ofShader> _canvasColorShader;
     std::shared_ptr<ofShader> _canvasUpdateShader;
 
     std::shared_ptr<ofTexture> _nodeTexture;
@@ -154,6 +160,10 @@ private:
     uint32_t focusIndex = 0;
     uint32_t maxGenGenomeAttempts = 5000;
 
+    // canvas
+    glm::ivec2 _canvasResolution;
+    glm::ivec2 _canvasNeuralInputResolution;
+
     // for fixed walker creature
     uint32_t _numWalkerLegs = 8;
 
@@ -164,8 +174,6 @@ private:
     ofPixels writePixels;
     ofBuffer writeBuffer;
     uint32_t iPBO;
-
-    glm::ivec2 _canvasRes;
 
     const glm::vec3 right = glm::vec3(1, 0, 0);
     const glm::vec3 up =    glm::vec3(0, 1, 0);

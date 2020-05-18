@@ -1,19 +1,20 @@
 #include "GenomeBase.h"
+#include "ofLog.h"
 
 void GenomeBase::buildPhenotype()
 {
     m_genome.BuildPhenotype(m_network);
 }
 
-void GenomeBase::buildHyperNEATPhenotype(NEAT::Substrate substrate)
-{
-    m_genome.BuildHyperNEATPhenotype(m_network, substrate);
-}
-
-void GenomeBase::buildESHyperNEATPhenotype(NEAT::Substrate substrate, NEAT::Parameters params)
-{
-    m_genome.BuildESHyperNEATPhenotype(m_network, substrate, params);
-}
+//void GenomeBase::buildHyperNEATPhenotype(NEAT::Substrate substrate)
+//{
+//    m_genome.BuildHyperNEATPhenotype(m_network, substrate);
+//}
+//
+//void GenomeBase::buildESHyperNEATPhenotype(NEAT::Substrate substrate, NEAT::Parameters params)
+//{
+//    m_genome.BuildESHyperNEATPhenotype(m_network, substrate, params);
+//}
 
 const std::vector<double> GenomeBase::activate(std::vector<double> inputs) 
 {
@@ -21,7 +22,7 @@ const std::vector<double> GenomeBase::activate(std::vector<double> inputs)
     m_genome.CalculateDepth();
     m_network.Input(inputs);
 
-    //unsigned int networkDepth = m_network.CalculateNetworkDepth();
+    //unsigned int depth = m_network.CalculateNetworkDepth();
     unsigned int depth = m_genome.GetDepth();
 
     for (unsigned int i = 0; i < depth; i++) {

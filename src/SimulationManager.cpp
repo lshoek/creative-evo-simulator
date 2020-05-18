@@ -9,9 +9,9 @@
 
 void worldUpdateCallback(btDynamicsWorld* world, btScalar timeStep);
 
-void SimulationManager::init()
+void SimulationManager::init(uint32_t canvasWidth, uint32_t canvasHeight)
 {
-    _canvasRes = glm::ivec2(128, 128);
+    _canvasResolution = glm::ivec2(canvasWidth, canvasHeight);
     _simulationInstances.reserve(simInstanceLimit);
     _simulationInstanceCallbackQueue.reserve(simInstanceLimit);
 
@@ -70,9 +70,9 @@ void SimulationManager::init()
 
     // pixel buffer object for writing image data to disk fast
     _imageSaverThread.setup(NTRS_ARTIFACTS_PATH);
-    writePixels.allocate(_canvasRes.x, _canvasRes.y, GL_RGBA);
+    writePixels.allocate(_canvasResolution.x, _canvasResolution.y, GL_RGBA);
     for (int i = 0; i < 2; i++) {
-        pixelWriteBuffers[i].allocate(_canvasRes.x*_canvasRes.y*4, GL_DYNAMIC_READ);
+        pixelWriteBuffers[i].allocate(_canvasResolution.x* _canvasResolution.y*4, GL_DYNAMIC_READ);
     }
     int iPBO = 0;
     pboPtr = &pixelWriteBuffers[iPBO];
@@ -161,12 +161,15 @@ void SimulationManager::initTerrain()
     _terrainNode->setLight(_light);
 
     _world->addRigidBody(_terrainNode->getRigidBody());
-}
+} 
 
 void SimulationManager::initTestEnvironment()
 {
     SimCanvasNode* canv;
-    canv = new SimCanvasNode(btVector3(0, 0, 0), CanvasTag, canvasSize, canvasSize/2, _canvasRes.x, _canvasRes.y, _world);
+    canv = new SimCanvasNode(btVector3(0, 0, 0), canvasSize, canvasSize/2, 
+        _canvasResolution.x, _canvasResolution.y, 
+        _canvasNeuralInputResolution.x, _canvasNeuralInputResolution.y, _world
+    );
     canv->setCanvasUpdateShader(_canvasUpdateShader);
     canv->setAppearance(_terrainShader, _nodeMaterial, _nodeTexture);
     canv->setLight(_light);
@@ -209,17 +212,21 @@ int SimulationManager::runSimulationInstance(GenomeBase& genome, int ticket, flo
     int grid_x = ticket % simInstanceGridSize;
     int grid_z = ticket / simInstanceGridSize;
 
-    btScalar spaceExt = canvasSize/2.0;
-    btScalar stride = canvasSize * 2.0 + spaceExt * 2.0;
+    btScalar spaceExtent = canvasSize/2.0;
+    btScalar stride = canvasSize * 2.0 + spaceExtent * 2.0;
     btScalar xpos = (grid_x - simInstanceGridSize / 2) * stride + grid_x * canvasMargin;
     btScalar zpos = (grid_z - simInstanceGridSize / 2) * stride + grid_z * canvasMargin;
 
     btVector3 position(xpos, 0, zpos);
 
     SimCanvasNode* canv;
-    canv = new SimCanvasNode(position, CanvasTag, canvasSize, spaceExt, _canvasRes.x, _canvasRes.y, _world);
+    canv = new SimCanvasNode(position, canvasSize, spaceExtent, 
+        _canvasResolution.x, _canvasResolution.y, 
+        _canvasNeuralInputResolution.x, _canvasNeuralInputResolution.y, _world
+    );
     canv->setAppearance(_nodeShader, _terrainMaterial, _nodeTexture);
     canv->setCanvasUpdateShader(_canvasUpdateShader);
+    canv->setCanvasColorizeShader(_canvasColorShader);
     canv->enableBounds();
     canv->addToWorld();
 
@@ -227,6 +234,7 @@ int SimulationManager::runSimulationInstance(GenomeBase& genome, int ticket, flo
         new SimCreature(position, _selectedBodyGenome, _world) :
         new SimCreature(position, _numWalkerLegs, _world, true);
 
+    crtr->setSensorMode(bCanvasInputNeurons ? SimCreature::Canvas : SimCreature::Touch);
     crtr->setAppearance(_nodeShader, _nodeMaterial, _nodeTexture);
     crtr->setControlPolicyGenome(genome);
     crtr->addToWorld();
@@ -249,7 +257,8 @@ void SimulationManager::handleCollisions(btDynamicsWorld* worldPtr)
 
         for (int j = 0; j < contactManifold->getNumContacts(); j++)
         {
-            if (o1->getUserIndex() & BodyTag && o2->getUserIndex() & ~BodyTag ||
+            if (!bCanvasInputNeurons &&
+                o1->getUserIndex() & BodyTag && o2->getUserIndex() & ~BodyTag ||
                 o1->getUserIndex() & ~BodyTag && o2->getUserIndex() & BodyTag)
             {
                 SimCreature* creaturePtr = nullptr;
@@ -262,10 +271,6 @@ void SimulationManager::handleCollisions(btDynamicsWorld* worldPtr)
                 else {
                     creaturePtr = ((SimNode*)o2->getUserPointer())->getCreaturePtr();
                     creaturePtr->setTouchSensor(o2);
-                }
-                btManifoldPoint& pt = contactManifold->getContactPoint(j);
-                if (worldPtr->getDebugDrawer() != NULL) {
-                    worldPtr->getDebugDrawer()->drawSphere(pt.getPositionWorldOnA(), 10.0, btVector3(1., 0., 0.));
                 }
             }
             if ((o1->getUserIndex() & BrushTag && o2->getUserIndex() & CanvasTag) ||
@@ -368,7 +373,9 @@ void SimulationManager::performTrueSteps(btScalar timeStep)
 void worldUpdateCallback(btDynamicsWorld* world, btScalar timeStep)
 {
     SimulationManager* sim = (SimulationManager*)world->getWorldUserInfo();
-    sim->updateSimInstances(timeStep);
+    if (sim->isSimulationActive()) {
+        sim->updateSimInstances(timeStep);
+    }
 }
 
 void SimulationManager::updateSimInstances(double timeStep)
@@ -376,6 +383,11 @@ void SimulationManager::updateSimInstances(double timeStep)
     handleCollisions(_world);
 
     for (auto& s : _simulationInstances) {
+        if (bCanvasInputNeurons) {
+            double t = (_simulationTime - s->getStartTime()) / double(s->getDuration());
+            s->getCanvas()->updateNeuralInputBuffer();
+            s->getCreature()->setCanvasSensors(s->getCanvas()->getNeuralInputsBuffer(), t);
+        }
         s->getCreature()->update(timeStep);
         s->getCanvas()->update();
     }
@@ -405,7 +417,7 @@ void SimulationManager::updateSimInstances(double timeStep)
                 // black paint so calculate inverse color
                 total += 1.0 - (p[0] + p[1] + p[2]) / (3.0 * 255.0);
             }
-            total /= double(_canvasRes.x * _canvasRes.y);
+            total /= double(_canvasResolution.x * _canvasResolution.y);
 
             SimResult result;
             result.instanceId = _simulationInstances[i]->getID();
@@ -526,20 +538,20 @@ SimCreature* SimulationManager::getFocusCreature()
     else return nullptr;
 }
 
+SimCanvasNode* SimulationManager::getFocusCanvas()
+{
+    if (!_simulationInstances.empty() && focusIndex < _simulationInstances.size()) {
+        _simulationInstances[focusIndex]->getCanvas();
+    }
+    else return nullptr;
+}
+
 glm::vec3 SimulationManager::getFocusOrigin()
 {
     if (!_simulationInstances.empty() && focusIndex < _simulationInstances.size()) {
         return SimUtils::bulletToGlm(_simulationInstances[focusIndex]->getCreature()->getCenterOfMassPosition());
     }
     else return cam.getGlobalPosition() + cam.getLookAtDir();
-}
-
-ofFbo* SimulationManager::getCanvasFbo()
-{
-    if (!_simulationInstances.empty() && focusIndex < _simulationInstances.size()) {
-        _simulationInstances[focusIndex]->getCanvas()->getCanvasFbo();
-    }
-    else return nullptr;
 }
 
 void SimulationManager::shiftFocus()
@@ -568,6 +580,16 @@ MorphologyInfo SimulationManager::getWalkerBodyInfo()
 std::shared_ptr<DirectedGraph> SimulationManager::getBodyGenome()
 {
     return _selectedBodyGenome;
+}
+
+glm::ivec2 SimulationManager::getCanvasResolution()
+{
+    return _canvasResolution;
+}
+
+glm::ivec2 SimulationManager::getCanvasNeuronInputResolution()
+{
+    return _canvasNeuralInputResolution;
 }
 
 void SimulationManager::loadBodyGenomeFromDisk(std::string filename)
@@ -629,8 +651,8 @@ void SimulationManager::writeToPixels(const ofTexture& tex, ofPixels& pix)
 
     pboPtr->bind(GL_PIXEL_UNPACK_BUFFER);
     unsigned char* p = pboPtr->map<unsigned char>(GL_READ_ONLY);
-    pix.setFromExternalPixels(p, _canvasRes.x, _canvasRes.y, OF_PIXELS_RGBA);
-
+    pix.setFromExternalPixels(p, _canvasResolution.x, _canvasResolution.y, OF_PIXELS_RGBA);
+    
     pboPtr->unmap();
     pboPtr->unbind(GL_PIXEL_UNPACK_BUFFER);
 
@@ -648,7 +670,7 @@ void SimulationManager::loadShaders()
 {
     _terrainShader = std::make_shared<ofShader>();
     _nodeShader = std::make_shared<ofShader>();
-    _unlitShader = std::make_shared<ofShader>();
+    _canvasColorShader = std::make_shared<ofShader>();
     _canvasUpdateShader = std::make_shared<ofShader>();
 
     if (bShadows) {
@@ -659,7 +681,7 @@ void SimulationManager::loadShaders()
         _terrainShader->load("shaders/checkers");
         _nodeShader->load("shaders/phong");
     }
-    _unlitShader->load("shaders/unlit");
+    _canvasColorShader->load("shaders/lum2col");
     _canvasUpdateShader->load("shaders/canvas");
 }
 
@@ -682,6 +704,11 @@ void SimulationManager::setMaxParallelSims(int max)
 {
     simInstanceLimit = max;
     simInstanceGridSize = sqrt(max);
+}
+
+void SimulationManager::setCanvasNeuronInputResolution(uint32_t width, uint32_t height)
+{
+    _canvasNeuralInputResolution = glm::ivec2(width, height);
 }
 
 void SimulationManager::dealloc()

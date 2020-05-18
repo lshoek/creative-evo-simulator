@@ -19,40 +19,44 @@ void EvoManager::setup(SimulationManager* sim)
 	// get morphology info to build network
 	NEAT::Genome templateGenome;
 	if (sim->bUseBodyGenomes) {
+
 		std::shared_ptr<DirectedGraph> graphPtr = sim->getBodyGenome();
+		glm::ivec2 canvasInputSize = sim->getCanvasNeuronInputResolution();
 		uint32_t numBrushToggles = graphPtr->getNumEndNodesUnfolded();
-		templateGenome = NEAT::Genome(0,
-			graphPtr->getNumNodesUnfolded(), 
-			graphPtr->getNumNodesUnfolded(),
-			graphPtr->getNumJointsUnfolded() + numBrushToggles,
-			false,
-			NEAT::ActivationFunction::TANH,
-			NEAT::ActivationFunction::TANH,
-			1, params, 1
-		);
+
+		if (sim->bCanvasInputNeurons) {
+			templateGenome = NEAT::Genome(0,
+				canvasInputSize.x * canvasInputSize.y + 1,
+				(canvasInputSize.x * canvasInputSize.y)/8,
+				graphPtr->getNumJointsUnfolded() + numBrushToggles,
+				false,
+				NEAT::ActivationFunction::TANH,
+				NEAT::ActivationFunction::TANH,
+				1, params, 1
+			);
+		}
+		else {
+			templateGenome = NEAT::Genome(0,
+				graphPtr->getNumNodesUnfolded(),
+				graphPtr->getNumNodesUnfolded(),
+				graphPtr->getNumJointsUnfolded() + numBrushToggles,
+				false,
+				NEAT::ActivationFunction::TANH,
+				NEAT::ActivationFunction::TANH,
+				1, params, 1
+			);
+		}
+
 	} 
 	else {
 		MorphologyInfo info = sim->getWalkerBodyInfo();
 		templateGenome = NEAT::Genome(0,
-			info.numSensors, info.numSensors, info.numJoints, false,
+			info.numSensors, info.numSensors, info.numActuators, false,
 			NEAT::ActivationFunction::TANH,
 			NEAT::ActivationFunction::TANH,
 			1, params, 1
 		);
 	}
-
-	// create substrate
-	substrate = EvoUtils::CreateSubstrate(3);
-	//substrate.PrintInfo();
-
-	// create cppn genome using substrate config
-	//NEAT::Genome templateGenome(0,
-	//	substrate.GetMinCPPNInputs(), 0,
-	//	substrate.GetMinCPPNOutputs(), false,
-	//	NEAT::ActivationFunction::TANH,
-	//	NEAT::ActivationFunction::TANH,
-	//	0, params, 0
-	//);
 
 	// Fully-connected CTRNN constructor causes stackoverflow exception if not checked for loops!
 	//NEAT::Genome templateGenome(0, 
@@ -77,7 +81,6 @@ void EvoManager::setup(SimulationManager* sim)
 	maxNumGenerations = 100;
 	fitnessResults.reserve(maxNumGenerations);
 
-	maxParallelEvals = 1;
 	targetFitness = 1.0;
 
 	ofLog() << "Initializing population: Done!";
@@ -85,50 +88,7 @@ void EvoManager::setup(SimulationManager* sim)
 
 void EvoManager::draw()
 {
-	glm::ivec2 rect = glm::ivec2(512, 512);
 
-	ofPushMatrix();
-	ofScale(rect.x/2, rect.y/2, 0);
-	ofTranslate(rect.x/2, rect.y/2, 0);
-
-	const std::vector<NEAT::Neuron>& neurons = bestGenomeBasePtr->getNN().m_neurons;
-	const std::vector<NEAT::Connection>& conns = bestGenomeBasePtr->getNN().m_connections;
-
-	std::vector<glm::vec3> ncoords;
-	ncoords.resize(neurons.size());
-
-	for (int i = 0; i < neurons.size(); i++) {
-		if (neurons[i].m_substrate_coords.size() > 0) {
-			ncoords[i] = glm::vec3(neurons[i].m_substrate_coords[0], neurons[i].m_substrate_coords[1], neurons[i].m_substrate_coords[2]);
-		}
-	}
-	for (const NEAT::Connection& c : conns) {
-		if (c.m_source_neuron_idx != c.m_target_neuron_idx) {
-			ofDrawLine(ncoords[c.m_source_neuron_idx], ncoords[c.m_target_neuron_idx]);
-		}
-		else { /* handle recurrent connection */ }
-	}
-	ofFill();
-	ofSetHexColor(0xff0088);
-
-	for (glm::vec3& v : ncoords) {
-		ofDrawCircle(v, 0.05f);
-	}
-
-	//ofColor typecol;
-	//for (int i=0; i < neurons.size(); i++) {
-	//	if (neurons[i].m_type == NEAT::INPUT)		typecol = ofColor::fromHex(0xff0088);
-	//	else if (neurons[i].m_type == NEAT::HIDDEN) typecol = ofColor::fromHex(0x88ff00);
-	//	else if (neurons[i].m_type == NEAT::OUTPUT) typecol = ofColor::fromHex(0x0088ff);
-
-	//	ofSetColor(typecol);
-	//	ofDrawCircle(ncoords[i], 0.05f);
-	//}
-
-	ofNoFill();
-	ofSetHexColor(0xffffff);
-
-	ofPopMatrix();
 }
 
 // Export results to some file

@@ -28,7 +28,6 @@ void ofApp::setup()
 	ofSeedRandom(seed);
 
 	settings = ofxIniSettings("settings.ini");
-	bDebugGrid = settings.get("mode.debuggrid", true);
 	bDraw = settings.get("mode.draw", true);
 	bWindow = settings.get("mode.window", true);
 
@@ -49,13 +48,20 @@ void ofApp::setup()
 void ofApp::initSimulation() 
 {
 	if (!simulationManager.isInitialized()) {
-		simulationManager.setMaxParallelSims(settings.get("evo.max_parallel_evals", 4));
-		simulationManager.bAxisAlignedAttachments = settings.get("mode.axis_aligned_attachments", false);
-		simulationManager.bUseBodyGenomes = settings.get("mode.body_genomes", true);
-		simulationManager.bFeasibilityChecks = settings.get("mode.feasibility_checks", true);
+
+		uint32_t canvasSize = settings.get("canvas.size", 128);
+		uint32_t canvasNeuralInputSize = settings.get("genome.canvas_neural_input_size", 32);
+
 		simulationManager.bDebugDraw = settings.get("mode.debugdraw", true);
 		simulationManager.bCameraSnapFocus = settings.get("mode.snapfocus", true);
-		simulationManager.init();
+		simulationManager.bAxisAlignedAttachments = settings.get("genome.axis_aligned_attachments", false);
+		simulationManager.bUseBodyGenomes = settings.get("genome.body_genomes", true);
+		simulationManager.bFeasibilityChecks = settings.get("genome.feasibility_checks", true);
+		simulationManager.bCanvasInputNeurons = settings.get("genome.canvas_neural_input", false);
+
+		simulationManager.setMaxParallelSims(settings.get("evolution.max_parallel_evals", 4));
+		simulationManager.setCanvasNeuronInputResolution(canvasNeuralInputSize, canvasNeuralInputSize);
+		simulationManager.init(canvasSize, canvasSize);
 	}
 }
 
@@ -70,7 +76,7 @@ void ofApp::startEvolution()
 	// Then call the evolution loop
 	if (!evoManager.isEvolutionActive()) {
 		evoManager.setup(&simulationManager);
-		evoManager.setMaxParallelEvals(settings.get("evo.max_parallel_evals", 4));
+		evoManager.setMaxParallelEvals(settings.get("evolution.max_parallel_evals", 4));
 		evoManager.startEvolution();
 		renderEventQueuedListener = evoManager.onNewBestFound.newListener([this] {
 			bRenderEventQueued = true;
@@ -171,6 +177,9 @@ void ofApp::imGui()
 				if (ImGui::MenuItem("Axis Aligned Attachments", NULL, simulationManager.bAxisAlignedAttachments)) {
 					simulationManager.bAxisAlignedAttachments = !simulationManager.bAxisAlignedAttachments;
 				}
+				if (ImGui::MenuItem("Input Canvas Neurons", NULL, simulationManager.bCanvasInputNeurons)) {
+					simulationManager.bCanvasInputNeurons = !simulationManager.bCanvasInputNeurons;
+				}
 				ImGui::Separator();
 				if (ImGui::MenuItem("Save Genome", NULL, false)) {
 					simulationManager.getBodyGenome()->save();
@@ -242,12 +251,16 @@ void ofApp::imGui()
 					ImGui::SliderInt("<", (int*)&simulationManager.simulationSpeed, 0, 16);
 					ImGui::Separator();
 					if (simulationManager.isSimulationInstanceActive()) {
-						if (simulationManager.getCanvasFbo() != nullptr) {
+						if (simulationManager.getFocusCanvas() != nullptr) {
 							ImGui::Text("Creature Artifact:");
-							ImGui::Image((void*)(intptr_t)simulationManager.getCanvasFbo()->getTexture().getTextureData().textureID, ImVec2(size.x, size.x));
+							ImGui::Image((void*)(intptr_t)simulationManager.getFocusCanvas()->getCanvasFbo()->getTexture().getTextureData().textureID, ImVec2(size.x, size.x));
+							ImGui::Text("Neural Input:");
+							ImGui::Image((void*)(intptr_t)simulationManager.getFocusCanvas()->getCanvasNeuralInputRawFbo()->getTexture().getTextureData().textureID, ImVec2(size.x, size.x));
 							ImGui::Separator();
 						}
 						if (simulationManager.getFocusCreature() != nullptr) {
+							ImGui::Text("Activation time:");
+							ImGui::Text("%dms", simulationManager.getFocusCreature()->getActivationMillis());
 							ImGui::Text("Global Motor Strength:");
 							ImGui::SliderFloat("<<", &simulationManager.getFocusCreature()->m_motorStrength, 0, 1);
 							ImGui::Separator();
