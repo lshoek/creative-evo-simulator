@@ -14,9 +14,10 @@ Uses a modified version of openFrameworks 0.11 using boost 1.72 (instead of 1.65
 - MultiNEAT (https://github.com/lshoek/MultiNEAT)
 
 ofx dependencies:
-- ofxImGui
-- ofxGrabCam
-- ofxIniSettings
+- ofxOpenCv
+- ofxImGui (https://github.com/jvcleave/ofxImGui)
+- ofxGrabCam (https://github.com/elliotwoods/ofxGrabCam)
+- ofxIniSettings (https://github.com/companje/ofxIniSettings)
 - ofxShadowMap (https://github.com/lshoek/ofxShadowMap)
 
 ![Preview](preview/preview-app-0.jpg)
