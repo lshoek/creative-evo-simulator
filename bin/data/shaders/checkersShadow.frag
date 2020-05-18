@@ -19,8 +19,6 @@ in vec4 eye;
 in vec4 fragPos;
 in vec4 fragPosLightSpace;
 
-in vec2 shadow_coords[3];
-
 in vec4 color_varying;
 in vec4 normal_varying;
 in vec2 texcoord_varying;
@@ -68,7 +66,6 @@ float shadow_calc(vec4 fragPosLightSpace, vec3 lightDir)
 	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
 	projCoords = projCoords * 0.5 + 0.5;
 
-	float closestDepth = texture(shadowMap, projCoords.xy).r; 
 	float currentDepth = projCoords.z;
 
 	float bias = max(0.01 * (1.0 - dot(normal_varying.xyz, lightDir)), 0.005);
@@ -79,10 +76,7 @@ float shadow_calc(vec4 fragPosLightSpace, vec3 lightDir)
 		float pcfDepth = texture(shadowMap, projCoords.xy + poissonDisk4[i]/poissonSpread).z; 
 		shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;        
 	}
-	shadow /= 4.0;
-
-	// without sampling
-	//shadow = currentDepth > closestDepth + bias ? 1.0 : 0.0;     
+	shadow /= 4.0;  
 
 	if(projCoords.z > 1.0) 
 		shadow = 0.0;
