@@ -15,10 +15,12 @@ layout(std430, binding=0) buffer brushCoordBuffer {
 uniform float alpha = 1.0;
 uniform int brush_coords_bufsize = 0;
 
-const float min_thickness = 0.01;
-const float thickness = 0.01;
-const float fade = 0.0075;
-const float impulse_mult = 0.125/2.0;
+//const float thickness = 0.0;
+//const float min_thickness = 0.005;
+//const float thickness = 0.005;
+//const float impulse_mult = 0.125/2.0;
+
+const float fade = 0.0125;
 
 in vec2 texcoord_varying;
 
@@ -39,9 +41,10 @@ void main(void)
 			float dist_inv = inv(dist);
 
 			//float diam = min_thickness + thickness * b.impulse * impulse_mult;
-			float diam = min_thickness + thickness * impulse_mult;
+			//float diam = min_thickness + thickness * impulse_mult;
+			//float diam = thickness;
 
-			float result = dist_inv * smoothstep(diam+fade, diam, dist);
+			float result = dist_inv * smoothstep(fade, 0.0, dist);
 			pct = max(result, pct);
 		}
 	}
