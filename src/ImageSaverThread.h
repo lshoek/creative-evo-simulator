@@ -8,13 +8,15 @@ public:
 
 	void setup(std::string path);
 
-	void send(ofBuffer* img);
+	void send(ofBuffer* img, std::string info);
 	void waitReady();
 	void threadedFunction();
 
 private:
 	ofPixels _pixels;
-	ofThreadChannel<ofBuffer*> _channel;
+
+	ofThreadChannel<ofBuffer*> _bufferChannel;
+	ofThreadChannel<std::string> _infoChannel;
 	ofThreadChannel<bool> _channelReady;
 
 	std::string _path;

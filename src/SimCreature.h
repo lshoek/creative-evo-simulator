@@ -31,6 +31,7 @@ public:
 
 	// Makes a deep copy of the genome and stores/uses it until the simulation instance is finished.
 	void setControlPolicyGenome(const GenomeBase& genome);
+	GenomeBase* getControlPolicyGenome();
 
 	enum SensorMode { Touch, Canvas };
 	SensorMode _sensorMode;
@@ -41,7 +42,7 @@ public:
 	void setTouchSensor(void* bodyPointer);
 	void clearTouchSensors();
 
-	void setCanvasSensors(const unsigned char* canvasSensors, double t);
+	void setCanvasSensors(const double* canvasSensors, double t);
 
 	void addToWorld();
 	void removeFromWorld();

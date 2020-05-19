@@ -1,9 +1,12 @@
 #pragma once
 
 /// Global paths
-#define NTRS_REPORTS_DIR "output/reports/"
+#define NTRS_SIMS_DIR "output/sims/"
 #define NTRS_BODY_GENOME_DIR "output/genomes/morphology/"
-#define NTRS_ARTIFACTS_PATH "output/artworks/"
+#define NTRS_OUTPUT_DIR "output/"
+
+/// Prefixes
+#define NTRS_ARTIFACTS_PREFIX "artifacts/"
 
 /// Extensions
 #define NTRS_NODE_EXT "node"

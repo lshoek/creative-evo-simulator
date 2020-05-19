@@ -7,7 +7,7 @@ ImageSaverThread::ImageSaverThread()
 
 ImageSaverThread::~ImageSaverThread()
 {
-	_channel.close();
+	_bufferChannel.close();
 	_channelReady.close();
 	waitForThread(true);
 }
@@ -17,9 +17,10 @@ void ImageSaverThread::setup(std::string path)
 	_path = path;
 }
 
-void ImageSaverThread::send(ofBuffer* pixels)
+void ImageSaverThread::send(ofBuffer* pixels, std::string info)
 {
-	_channel.send(pixels);
+	_infoChannel.send(info);
+	_bufferChannel.send(pixels);
 }
 
 void ImageSaverThread::waitReady()
@@ -31,10 +32,13 @@ void ImageSaverThread::waitReady()
 void ImageSaverThread::threadedFunction()
 {
 	ofBuffer* buf;
-	while (_channel.receive(buf))
+	while (_bufferChannel.receive(buf))
 	{
+		std::string info;
+		_infoChannel.receive(info);
+
 		ofFile file;
-		std::string fname = _path + ofGetTimestampString() + ".jpg";
+		std::string fname = _path + info + ".jpg";
 
 		file.open(fname, ofFile::WriteOnly, true);
 		file.writeFromBuffer(*buf);

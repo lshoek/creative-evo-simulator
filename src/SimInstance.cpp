@@ -1,6 +1,6 @@
 #include "SimInstance.h"
 
-SimInstance::SimInstance(int id, SimCreature* crtr, SimCanvasNode* canv, float startTime, float duration) :
+SimInstance::SimInstance(int id, SimCreature* crtr, SimCanvasNode* canv, btScalar startTime, btScalar duration) :
 	_instanceId(id), _world(canv->_ownerWorld), _creature(crtr), _canvas(canv), _startTime(startTime), _duration(duration) {}
 
 void SimInstance::abort()
@@ -18,12 +18,12 @@ int SimInstance::getID()
 	return _instanceId;
 }
 
-int SimInstance::getStartTime()
+btScalar SimInstance::getStartTime()
 {
 	return _startTime;
 }
 
-int SimInstance::getDuration()
+btScalar SimInstance::getDuration()
 {
 	return _duration;
 }

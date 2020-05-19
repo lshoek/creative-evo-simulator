@@ -5,6 +5,8 @@
 
 void EvoManager::setup(SimulationManager* sim)
 {
+	_simManagerPtr = sim;
+
 	// create a fitness function
 	paintFitnessFunc.init(sim);
 	fitnessFuncPtr = &paintFitnessFunc;
@@ -94,8 +96,8 @@ void EvoManager::draw()
 // Export results to some file
 void EvoManager::report()
 {
-	std::string sessionDirName = "Session_" + ofGetTimestampString();
-	ofDirectory sessionDir(NTRS_REPORTS_DIR + sessionDirName);
+	std::string sessionDirName = _simManagerPtr->getUniqueSimId();
+	ofDirectory sessionDir(NTRS_SIMS_DIR + sessionDirName);
 	sessionDir.create(false);
 
 	std::string reportFilePath = sessionDir.getAbsolutePath() + "/REPORT.txt";
@@ -104,7 +106,21 @@ void EvoManager::report()
 
 	ofFile f(reportFilePath, ofFile::WriteOnly, false);
 
+	std::string evalTypeStr = "";
+	switch (_simManagerPtr->evaluationType) {
+	case SimulationManager::EvaluationType::Coverage:
+		evalTypeStr = "Coverage";
+		break;
+	case SimulationManager::EvaluationType::CircleCoverage:
+		evalTypeStr = "CircleCoverage";
+		break;
+	case SimulationManager::EvaluationType::InverseCircleCoverage:
+		evalTypeStr = "InverseCircleCoverage";
+		break;
+	}
+
 	f << "*** Report ***" << std::endl <<
+		"Evaluation Type: " << evalTypeStr <<
 		"Fitness: " << population->GetBestFitnessEver() << '/' << targetFitness << std::endl <<
 		"Generations: " << population->GetGeneration() << '/' << maxNumGenerations << std::endl <<
 		"Total Evaluations: " << population->m_NumEvaluations << std::endl <<

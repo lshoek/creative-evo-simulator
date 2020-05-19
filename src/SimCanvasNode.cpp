@@ -131,6 +131,7 @@ void SimCanvasNode::updateNeuralInputBuffer()
 
     unsigned char* bytesPtr = _pboPtr->map<unsigned char>(GL_READ_ONLY);
     _neuralInputMat = cv::Mat(_canvasNeuralInputRes.x, _canvasNeuralInputRes.y, CV_8UC1, bytesPtr);
+    _neuralInputMat.convertTo(_neuralInputMatDouble, CV_64F, 1.0/255.0);
 
     _pboPtr->unmap();
     _pboPtr->unbind(GL_PIXEL_UNPACK_BUFFER);
@@ -190,9 +191,14 @@ void SimCanvasNode::addBrushStroke(btVector3 location, float pressure)
     }
 }
 
-unsigned char* SimCanvasNode::getNeuralInputsBuffer() const
+const unsigned char* SimCanvasNode::getNeuralInputsBufferChar()
 {
     return _neuralInputMat.data;
+}
+
+const double* SimCanvasNode::getNeuralInputsBufferDouble()
+{
+    return _neuralInputMatDouble.ptr<double>(0);
 }
 
 ofFbo* SimCanvasNode::getCanvasNeuralInputRawFbo()

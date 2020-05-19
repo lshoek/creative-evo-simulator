@@ -118,9 +118,9 @@ void SimCreature::dfs(
 		btScalar parentChildDistance = parentAnchorLocal.length() + childAnchorLocal.length();
 
 		/// Verification
-		ofLog() << "VERIFY alignment: " << std::endl << "parentAnchor . childAnchor = " << alignmentDot << std::endl; // should be parallel but point in opposite directions (dot: -1.0)
-		ofLog() << "VERIFY anchors: " << std::endl << SimUtils::bulletToGlm(anchorWorld) << " | " << SimUtils::bulletToGlm(childAnchorWorld) << std::endl;
-		ofLog() << "VERIFY distance: " << std::endl << parentChildDistance << " | " << (childOriginWorld - parentWorldTrans.getOrigin()).length() << std::endl;
+		//ofLog() << "VERIFY alignment: " << std::endl << "parentAnchor . childAnchor = " << alignmentDot << std::endl; // should be parallel but point in opposite directions (dot: -1.0)
+		//ofLog() << "VERIFY anchors: " << std::endl << SimUtils::bulletToGlm(anchorWorld) << " | " << SimUtils::bulletToGlm(childAnchorWorld) << std::endl;
+		//ofLog() << "VERIFY distance: " << std::endl << parentChildDistance << " | " << (childOriginWorld - parentWorldTrans.getOrigin()).length() << std::endl;
 
 		// Build final child transform
 		btTransform childWorldTrans = btTransform(btMatrix3x3::getIdentity(), childOriginWorld) * btTransform(anchorAlignmentRot) * btTransform(parentWorldTrans.getBasis());
@@ -519,6 +519,11 @@ void SimCreature::setControlPolicyGenome(const GenomeBase& genome)
 	m_canvasSensors.resize(m_controlPolicyGenome->getNN().NumInputs());
 }
 
+GenomeBase* SimCreature::getControlPolicyGenome()
+{
+	return m_controlPolicyGenome;
+}
+
 void SimCreature::setSensorMode(SensorMode mode)
 {
 	_sensorMode = mode;
@@ -541,11 +546,11 @@ void SimCreature::clearTouchSensors()
 	}
 }
 
-void SimCreature::setCanvasSensors(const unsigned char* canvasSensors, double t)
+void SimCreature::setCanvasSensors(const double* canvasSensors, double t)
 {
 	if (m_controlPolicyGenome) {
 		for (uint32_t i = 0; i < m_controlPolicyGenome->getNN().NumInputs()-2; i++) {
-			m_canvasSensors[i] = static_cast<double>(canvasSensors[i]);
+			m_canvasSensors[i] = canvasSensors[i];
 		}
 		m_canvasSensors[m_controlPolicyGenome->getNN().NumInputs()-1] = t;
 	}

@@ -58,6 +58,7 @@ void ofApp::initSimulation()
 		simulationManager.bUseBodyGenomes = settings.get("genome.body_genomes", true);
 		simulationManager.bFeasibilityChecks = settings.get("genome.feasibility_checks", true);
 		simulationManager.bCanvasInputNeurons = settings.get("genome.canvas_neural_input", false);
+		simulationManager.bSaveArtifactsToDisk = settings.get("canvas.save", true);
 
 		simulationManager.setMaxParallelSims(settings.get("evolution.max_parallel_evals", 4));
 		simulationManager.setCanvasNeuronInputResolution(canvasNeuralInputSize, canvasNeuralInputSize);
@@ -69,9 +70,11 @@ void ofApp::initSimulation()
 // which can cause problems on certain user-input.
 void ofApp::startEvolution()
 {
+	std::string uniqueSimId = ofGetTimestampString("%Y%m%d_%H%M%S_%i");
+
 	// Start simulator first so it can await evaluation requests
 	if (!simulationManager.isSimulationActive()) {
-		simulationManager.startSimulation();
+		simulationManager.startSimulation(uniqueSimId, SimulationManager::EvaluationType::CircleCoverage);
 	}
 	// Then call the evolution loop
 	if (!evoManager.isEvolutionActive()) {
@@ -129,7 +132,7 @@ void ofApp::draw()
 		}
 		if (bSimulate)
 		{
-			simulationManager.drawShadowPass();
+			simulationManager.shadowPass();
 
 			frameFbo.begin();
 			ofClear(0, 0);
@@ -226,6 +229,9 @@ void ofApp::imGui()
 				}
 				if (ImGui::MenuItem("View Lightspace Depth", NULL, simulationManager.bViewLightSpaceDepth)) {
 					simulationManager.bViewLightSpaceDepth = !simulationManager.bViewLightSpaceDepth;
+				}
+				if (ImGui::MenuItem("View Canvas Evaluation Mask", NULL, simulationManager.bViewCanvasEvaluationMask)) {
+					simulationManager.bViewCanvasEvaluationMask = !simulationManager.bViewCanvasEvaluationMask;
 				}
 				if (ImGui::MenuItem("Reload Shaders", "r", false)) {
 					simulationManager.loadShaders();

@@ -62,14 +62,14 @@ void SimulationManager::init(uint32_t canvasWidth, uint32_t canvasHeight)
     _light->lookAt(glm::vec3(0));
 
     //  shadows
-    _shadowMap.setup(1024, ofxShadowMap::Resolution::_32);
+    _shadowMap.setup(1024);
 
     // physics -- init
     initPhysics();
     initTerrain();
 
     // pixel buffer object for writing image data to disk fast
-    _imageSaverThread.setup(NTRS_ARTIFACTS_PATH);
+    _imageSaverThread.setup(NTRS_SIMS_DIR);
     writePixels.allocate(_canvasResolution.x, _canvasResolution.y, GL_RGBA);
     for (int i = 0; i < 2; i++) {
         pixelWriteBuffers[i].allocate(_canvasResolution.x* _canvasResolution.y*4, GL_DYNAMIC_READ);
@@ -85,6 +85,7 @@ void SimulationManager::init(uint32_t canvasWidth, uint32_t canvasHeight)
     }
     simulationSpeed = 0;
 
+    // creature
     _selectedBodyGenome = std::make_shared<DirectedGraph>(true, bAxisAlignedAttachments);
     _selectedBodyGenome->unfold();
     _selectedBodyGenome->print();
@@ -96,10 +97,14 @@ void SimulationManager::init(uint32_t canvasWidth, uint32_t canvasHeight)
     bInitialized = true;
 }
 
-void SimulationManager::startSimulation()
+void SimulationManager::startSimulation(std::string id, EvaluationType evalType)
 {
     if (bInitialized && !bSimulationActive) {
         bSimulationActive = true;
+        
+        _uniqueSimId = id;
+        _simDir = NTRS_SIMS_DIR + '/' + id + '/';
+
         if (_testCreature) {
             _testCreature->removeFromWorld();
         }
@@ -110,6 +115,32 @@ void SimulationManager::startSimulation()
         _frameTimeAccumulator = 0.0;
         _simulationTime = 0.0;
         _clock.reset();
+
+        // canvas
+        evaluationType = evalType;
+
+        _maskMat = cv::Mat(_canvasResolution.x, _canvasResolution.y, CV_8UC1);
+        _maskMat = cv::Scalar(0);
+        cv::circle(_maskMat, cv::Point(_maskMat.rows / 2, _maskMat.cols / 2), _maskMat.cols / 4, cv::Scalar(255), cv::FILLED);
+        cv::bitwise_not(_maskMat, _invMaskMat);
+
+        _rewardMaskPtr = &_maskMat;
+        _penaltyMaskPtr = &_invMaskMat;
+        if (evaluationType == EvaluationType::InverseCircleCoverage) {
+            _rewardMaskPtr = &_invMaskMat;
+            _penaltyMaskPtr = &_maskMat;
+        }
+
+        // Calculate maximum reward/fitness
+        for (uint32_t i = 0; i < _rewardMaskPtr->total(); i++) {
+            _maxReward += _rewardMaskPtr->at<uchar>(i);
+        }
+
+        // Debug Canvas Evaluation Mask
+        _cvDebugImage.allocate(_maskMat.rows, _maskMat.cols);
+        _cvDebugImage.setFromPixels(_maskMat.ptr<uchar>(), _maskMat.rows, _maskMat.cols);
+
+        ofLog() << ">> Simulation ID: " << _uniqueSimId;
     }
 }
 
@@ -306,7 +337,7 @@ void SimulationManager::lateUpdate()
         _light->orbitRad(longitude, latitude, _lightDistanceFromFocus);
     }
     else {
-        _light->setPosition(lightPosition);
+        _light->setGlobalPosition(lightPosition);
         _light->lookAt(glm::vec3(0));
     }
     if (bCameraSnapFocus) {
@@ -385,7 +416,7 @@ void SimulationManager::updateSimInstances(double timeStep)
         if (bCanvasInputNeurons) {
             double t = (_simulationTime - s->getStartTime()) / double(s->getDuration());
             s->getCanvas()->updateNeuralInputBuffer();
-            s->getCreature()->setCanvasSensors(s->getCanvas()->getNeuralInputsBuffer(), t);
+            s->getCreature()->setCanvasSensors(s->getCanvas()->getNeuralInputsBufferDouble(), t);
         }
         s->getCreature()->update(timeStep);
         s->getCanvas()->update();
@@ -406,29 +437,26 @@ void SimulationManager::updateSimInstances(double timeStep)
         if (_simulationInstances[i]->IsAborted() ||
             _simulationTime - _simulationInstances[i]->getStartTime() > _simulationInstances[i]->getDuration()) {
 
-            ofLog() << "ended : " << _simulationInstances[i]->getID();
+            uint32_t creatureId = _simulationInstances[i]->getCreature()->getControlPolicyGenome()->getGenome().GetID();
+            double fitness = evaluateArtifact(_simulationInstances[i]);
 
-            ofPixels pix;
-            writeToPixels(_simulationInstances[i]->getCanvas()->getCanvasFbo()->getTexture(), pix);
+            ofLog() << "ended (" << _simulationInstances[i]->getID() << ") id: " << creatureId << " fitness: " << fitness;
 
-            double total = 0.0;
-            for (ofPixels::ConstPixel p : pix.getConstPixelsIter()) {
-                // black paint so calculate inverse color
-                total += 1.0 - (p[0] + p[1] + p[2]) / (3.0 * 255.0);
+            if (bSaveArtifactsToDisk) {
+                std::string prefix = _simDir + '/' + NTRS_ARTIFACTS_PREFIX + ofToString(creatureId) + '_' + ofToString(fitness, 2);
+                ofPixels pix;
+
+                writeToPixels(_simulationInstances[i]->getCanvas()->getCanvasFbo()->getTexture(), pix);
+                writeToDisk(pix, prefix);
             }
-            total /= double(_canvasResolution.x * _canvasResolution.y);
 
             SimResult result;
             result.instanceId = _simulationInstances[i]->getID();
-            result.fitness = total;
+            result.fitness = fitness;
             onSimulationInstanceFinished.notify(result);
 
             delete _simulationInstances[i];
             _simulationInstances.erase(_simulationInstances.begin() + i);
-
-            if (bSaveArtifactsToDisk) {
-                saveToDisk(pix);
-            }
         }
     }
     if (bStopSimulationQueued && !isSimulationInstanceActive()) {
@@ -441,7 +469,46 @@ void SimulationManager::updateSimInstances(double timeStep)
     }
 }
 
-void SimulationManager::drawShadowPass()
+double SimulationManager::evaluateArtifact(SimInstance* instance)
+{
+    instance->getCanvas()->getCanvasRawFbo()->getTexture().copyTo(*pboPtr);
+
+    pboPtr->bind(GL_PIXEL_UNPACK_BUFFER);
+    uchar* p = pboPtr->map<uchar>(GL_READ_ONLY);
+
+    _artifactMat = cv::Mat(_canvasResolution.x, _canvasResolution.y, CV_8UC1, p);
+
+    pboPtr->unmap();
+    pboPtr->unbind(GL_PIXEL_UNPACK_BUFFER);
+    swapPbo();
+
+    double total = 0.0;
+    double fitness = 0.0;
+
+    if (evaluationType == EvaluationType::Coverage) {
+        for (uint32_t i = 0; i < _artifactMat.total(); i++) {
+            total += _artifactMat.at<uchar>(i);
+        }
+        fitness = total / double(_artifactMat.total() * 255);
+    }
+    else {
+        cv::bitwise_and(_artifactMat, *_rewardMaskPtr, _rewardMat);
+        cv::bitwise_and(_artifactMat, *_penaltyMaskPtr, _penaltyMat);
+
+        for (uint32_t i = 0; i < _artifactMat.total(); i++) {
+            total += _rewardMat.at<uchar>(i);
+            total -= _penaltyMat.at<uchar>(i);
+        }
+        fitness = total / _maxReward;
+
+        if (bViewCanvasEvaluationMask) {
+            _cvDebugImage.setFromPixels(_rewardMat.ptr<uchar>(), _artifactMat.cols, _artifactMat.rows);
+        }
+    }
+    return fitness;
+}
+
+void SimulationManager::shadowPass()
 {
     if (!bDebugDraw && bShadows) {
         _shadowMap.begin(*_light, 64.0f, -32.0f, 64.0f);
@@ -511,12 +578,20 @@ void SimulationManager::draw()
             _shadowMap.getDepthTexture().draw(ofGetWidth() - 256, 0, 256, 256);
             glEnable(GL_DEPTH_TEST);
         }
+        if (bViewCanvasEvaluationMask) {
+            _cvDebugImage.draw(ofGetWidth() - 256, ofGetHeight() - 256, 256, 256);
+        }
     }
     else {
         cam.begin();
         _world->debugDrawWorld();
         cam.end();
     }
+}
+
+std::string SimulationManager::getUniqueSimId()
+{
+    return _uniqueSimId;
 }
 
 ofxGrabCam* SimulationManager::getCamera()
@@ -647,7 +722,7 @@ void SimulationManager::generateRandomBodyGenome()
 
 void SimulationManager::writeToPixels(const ofTexture& tex, ofPixels& pix)
 {
-    tex.copyTo(pixelWriteBuffers[iPBO]);
+    tex.copyTo(*pboPtr);
 
     pboPtr->bind(GL_PIXEL_UNPACK_BUFFER);
     unsigned char* p = pboPtr->map<unsigned char>(GL_READ_ONLY);
@@ -656,14 +731,19 @@ void SimulationManager::writeToPixels(const ofTexture& tex, ofPixels& pix)
     pboPtr->unmap();
     pboPtr->unbind(GL_PIXEL_UNPACK_BUFFER);
 
-    iPBO = SWAP(iPBO);
-    pboPtr = &pixelWriteBuffers[iPBO];
+    swapPbo();
 }
 
-void SimulationManager::saveToDisk(const ofPixels& pix)
+void SimulationManager::writeToDisk(const ofPixels& pix, std::string info)
 {
     ofSaveImage(pix, writeBuffer, OF_IMAGE_FORMAT_JPEG, OF_IMAGE_QUALITY_BEST);
-    _imageSaverThread.send(&writeBuffer);
+    _imageSaverThread.send(&writeBuffer, info);
+}
+
+void SimulationManager::swapPbo()
+{
+    iPBO = SWAP(iPBO);
+    pboPtr = &pixelWriteBuffers[iPBO];
 }
 
 void SimulationManager::loadShaders()

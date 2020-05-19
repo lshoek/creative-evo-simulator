@@ -42,6 +42,8 @@ private:
     bool tick();
     bool evaluatePopulation();
 
+    SimulationManager* _simManagerPtr;
+
     PaintFitnessFunc paintFitnessFunc;
     SimFitnessFunc* fitnessFuncPtr;
 

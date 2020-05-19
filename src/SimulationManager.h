@@ -21,17 +21,26 @@ typedef std::function<void(uint32_t)> simRunCallback_t;
 class SimulationManager
 {
 public:
+    enum EvaluationType
+    {
+        Coverage,
+        CircleCoverage,
+        InverseCircleCoverage
+    };
+
     void init(uint32_t canvasWidth, uint32_t canvasHeight);
-    void startSimulation();
+    void startSimulation(std::string id, EvaluationType evalType = EvaluationType::Coverage);
     void stopSimulation();
 
     void updateTime();
     void lateUpdate();
     void updateSimInstances(double timeStep);
 
-    void drawShadowPass();
+    void shadowPass();
     void draw();
     void dealloc();
+
+    std::string getUniqueSimId();
 
     // Returns ticket that listener can use to check when sim is finished and genome fitness is updated
     int queueSimulationInstance(const GenomeBase& genome, float duration, bool bMultiEval);
@@ -42,7 +51,6 @@ public:
     bool isInitialized();
     bool isSimulationActive();
     bool isSimulationInstanceActive();
-
 
     ofxGrabCam* getCamera();
     float getSimulationTime();
@@ -66,11 +74,14 @@ public:
     void setMaxParallelSims(int max);
     void setCanvasNeuronInputResolution(uint32_t width, uint32_t height);
 
+    EvaluationType evaluationType;
+
     bool bDebugDraw = false;
     bool bShadows = true;
     bool bTestMode = false;
     bool bMouseLight = false;
     bool bViewLightSpaceDepth = false;
+    bool bViewCanvasEvaluationMask = false;
     bool bCameraSnapFocus = true;
     bool bFeasibilityChecks = false;
     bool bCanvasInputNeurons = false;
@@ -89,13 +100,19 @@ private:
     void performTrueSteps(btScalar timeStep);
     void handleCollisions(btDynamicsWorld* _worldPtr);
 
+    double evaluateArtifact(SimInstance* instance);
+
     void writeToPixels(const ofTexture& tex, ofPixels& pix);
-    void saveToDisk(const ofPixels& pix);
+    void writeToDisk(const ofPixels& pix, std::string info);
+    void swapPbo();
 
     int runSimulationInstance(GenomeBase& genome, int ticket, float duration);
     std::vector<simRunCallback_t> _simulationInstanceCallbackQueue;
     std::vector<SimInstance*> _simulationInstances;
     std::mutex _cbQueueMutex;
+
+    std::string _uniqueSimId = "_NA";
+    std::string _simDir = NTRS_SIMS_DIR;
 
     ofxGrabCam cam;
     SimNode* _terrainNode;
@@ -163,6 +180,15 @@ private:
     // canvas
     glm::ivec2 _canvasResolution;
     glm::ivec2 _canvasNeuralInputResolution;
+
+    cv::Mat _artifactMat;
+    cv::Mat _maskMat, _invMaskMat;
+    cv::Mat _rewardMat, _penaltyMat;
+    cv::Mat* _rewardMaskPtr;
+    cv::Mat* _penaltyMaskPtr;
+    double _maxReward = 255;
+
+    ofxCvGrayscaleImage _cvDebugImage;
 
     // for fixed walker creature
     uint32_t _numWalkerLegs = 8;

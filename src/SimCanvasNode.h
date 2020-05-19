@@ -27,7 +27,9 @@ public:
 	ofFbo* getCanvasFbo();
 
 	ofFbo* getCanvasNeuralInputRawFbo();
-	unsigned char* getNeuralInputsBuffer() const;
+
+	const unsigned char* getNeuralInputsBufferChar();
+	const double* getNeuralInputsBufferDouble();
 
 	void setCanvasUpdateShader(std::shared_ptr<ofShader> shader);
 	void setCanvasColorizeShader(std::shared_ptr<ofShader> shader);
@@ -69,6 +71,8 @@ private:
 
 	// neural input
 	cv::Mat _neuralInputMat;
+	cv::Mat _neuralInputMatDouble;
+
 	ofBufferObject _pixelWriteBuffers[2];
 	ofBufferObject* _pboPtr;
 	uint32_t iPbo;

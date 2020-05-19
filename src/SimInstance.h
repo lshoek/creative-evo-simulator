@@ -4,22 +4,22 @@
 class SimInstance 
 {
 public:
-    SimInstance(int id, SimCreature* crtr, SimCanvasNode* canv, float startTime, float duration);
+    SimInstance(int id, SimCreature* crtr, SimCanvasNode* canv, btScalar startTime, btScalar duration);
     ~SimInstance();
 
     void abort();
     bool IsAborted();
 
     int getID();
-    int getStartTime();
-    int getDuration();
+    btScalar getStartTime();
+    btScalar getDuration();
 
     SimCreature* getCreature();
     SimCanvasNode* getCanvas();
 
 private:
     int _instanceId;
-    float _startTime, _duration;
+    btScalar _startTime, _duration;
 
     btDynamicsWorld* _world;
     SimCreature* _creature;

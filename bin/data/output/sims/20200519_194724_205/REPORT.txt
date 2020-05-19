@@ -1,0 +1,8 @@
+*** Report ***
+Evaluation Type: CircleCoverageFitness: 0.00429011/1
+Generations: 1/100
+Total Evaluations: 1
+Total genomes per population: 17
+Total species: 1
+
+Highest Fitness at GEN0 : 0.00429011
