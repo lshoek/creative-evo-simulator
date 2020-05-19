@@ -13,7 +13,7 @@ tools/libraries:
 - Boost 1.72*
 - MultiNEAT (https://github.com/lshoek/MultiNEAT)
 
-* Uses a modified version of openFrameworks 0.11 using boost 1.72 (instead of 1.65). Copy the libs to the appropriate OF locations to compile successfully.
+*Uses a modified version of openFrameworks 0.11 using boost 1.72 (instead of 1.65). Copy the libs to the appropriate OF locations to compile successfully.
 
 ofx dependencies:
 - ofxOpenCv
