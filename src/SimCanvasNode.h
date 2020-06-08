@@ -11,7 +11,7 @@ public:
 	~SimCanvasNode();
 
 	void update();
-	void updateNeuralInputBuffer();
+	void updateNeuralInputBuffer(bool bUpdateBufferDouble);
 
 	virtual void draw() override;
 	virtual void drawImmediate() override;
@@ -28,7 +28,7 @@ public:
 
 	ofFbo* getCanvasNeuralInputRawFbo();
 
-	const unsigned char* getNeuralInputsBufferChar();
+	const ofPixels& getNeuralInputPixelBuffer();
 	const double* getNeuralInputsBufferDouble();
 
 	void setCanvasUpdateShader(std::shared_ptr<ofShader> shader);
@@ -47,6 +47,7 @@ private:
 	};
 
 	void initPlane(btVector3 position, float size);
+	void swapPbo();
 
 	// canvas
 	glm::ivec2 _canvasRes;
@@ -73,6 +74,7 @@ private:
 	cv::Mat _neuralInputMat;
 	cv::Mat _neuralInputMatDouble;
 
+	ofPixels _neuralInputPixelBuffer;
 	ofBufferObject _pixelWriteBuffers[2];
 	ofBufferObject* _pboPtr;
 	uint32_t iPbo;

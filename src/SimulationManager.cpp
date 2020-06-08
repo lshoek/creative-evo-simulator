@@ -9,9 +9,9 @@
 
 void worldUpdateCallback(btDynamicsWorld* world, btScalar timeStep);
 
-void SimulationManager::init(uint32_t canvasWidth, uint32_t canvasHeight)
+void SimulationManager::init(SimSettings settings)
 {
-    _canvasResolution = glm::ivec2(canvasWidth, canvasHeight);
+    _canvasResolution = glm::ivec2(settings.canvasWidth, settings.canvasHeight);
     _simulationInstances.reserve(simInstanceLimit);
     _simulationInstanceCallbackQueue.reserve(simInstanceLimit);
 
@@ -27,7 +27,7 @@ void SimulationManager::init(uint32_t canvasWidth, uint32_t canvasHeight)
 
     _nodeTexture = std::make_shared<ofTexture>();
     _terrainTexture = std::make_shared<ofTexture>();
-    ofLoadImage(*_nodeTexture, "textures/box_256.png");
+    ofLoadImage(*_nodeTexture, "textures/white.png");
     ofLoadImage(*_terrainTexture, "textures/checkers_64.png");
 
     // rendering -- configure appearance
@@ -47,6 +47,7 @@ void SimulationManager::init(uint32_t canvasWidth, uint32_t canvasHeight)
     _nodeMaterial = std::make_shared<ofMaterial>();
     _nodeMaterial->setup(mtlSettings);
 
+    mtlSettings.shininess = 64;
     _terrainMaterial = std::make_shared<ofMaterial>();
     _terrainMaterial->setup(mtlSettings);
 
@@ -68,14 +69,10 @@ void SimulationManager::init(uint32_t canvasWidth, uint32_t canvasHeight)
     initPhysics();
     initTerrain();
 
-    // pixel buffer object for writing image data to disk fast
-    _imageSaverThread.setup(NTRS_SIMS_DIR);
-    writePixels.allocate(_canvasResolution.x, _canvasResolution.y, GL_RGBA);
-    for (int i = 0; i < 2; i++) {
-        pixelWriteBuffers[i].allocate(_canvasResolution.x* _canvasResolution.y*4, GL_DYNAMIC_READ);
-    }
-    int iPBO = 0;
-    pboPtr = &pixelWriteBuffers[iPBO];
+    // io 
+    _bufferSender.setup(settings.host, settings.outPort);
+    _bufferReceiver.setup(settings.inPort);
+    _imageSaver.setup(_canvasResolution.x, _canvasResolution.y);
 
     if (ofGetTargetFrameRate()) {
         _targetFrameTimeMillis = 1000.0f/ofGetTargetFrameRate();
@@ -86,13 +83,18 @@ void SimulationManager::init(uint32_t canvasWidth, uint32_t canvasHeight)
     simulationSpeed = 0;
 
     // creature
-    _selectedBodyGenome = std::make_shared<DirectedGraph>(true, bAxisAlignedAttachments);
-    _selectedBodyGenome->unfold();
-    _selectedBodyGenome->print();
+    if (bAutoLoadGenome) {
+        loadBodyGenomeFromDisk(settings.genomeFile);
+    }
+    else {
+        _selectedBodyGenome = std::make_shared<DirectedGraph>(true, bAxisAlignedAttachments);
+        _selectedBodyGenome->unfold();
+        _selectedBodyGenome->print();
 
-    _testCreature = std::make_shared<SimCreature>(btVector3(.0, 2.0, .0), _selectedBodyGenome, _world);
-    _testCreature->setAppearance(_nodeShader, _nodeMaterial, _nodeTexture);
-    _testCreature->addToWorld();
+        _testCreature = std::make_shared<SimCreature>(btVector3(.0, 2.0, .0), _selectedBodyGenome, _world);
+        _testCreature->setAppearance(_nodeShader, _nodeMaterial, _nodeTexture);
+        _testCreature->addToWorld();
+    }
 
     bInitialized = true;
 }
@@ -108,7 +110,7 @@ void SimulationManager::startSimulation(std::string id, EvaluationType evalType)
         if (_testCreature) {
             _testCreature->removeFromWorld();
         }
-        simulationSpeed = 1.0; 
+        simulationSpeed = 1.0;
 
         // Reset timing
         _startTime = _clock.getTimeMilliseconds();
@@ -343,23 +345,20 @@ void SimulationManager::lateUpdate()
     if (bCameraSnapFocus) {
         cam.lookAt(getFocusOrigin());
     }
-    _terrainShader->begin();
-    _terrainShader->setUniform3f("light.position", _light->getPosition());
-    _terrainShader->setUniform3f("light.direction", _light->getLookAtDir());
-    _terrainShader->setUniform4f("light.ambient", _light->getAmbientColor());
-    _terrainShader->setUniform4f("light.diffuse", _light->getDiffuseColor());
-    _terrainShader->setUniform4f("light.specular", _light->getSpecularColor());
-    _terrainShader->setUniform3f("eyePos", cam.getPosition());
-    _terrainShader->end();
+    setLightUniforms(_nodeShader);
+    setLightUniforms(_terrainShader);
+}
 
-    _nodeShader->begin();
-    _nodeShader->setUniform3f("light.position", _light->getPosition());
-    _nodeShader->setUniform3f("light.direction", _light->getLookAtDir());
-    _nodeShader->setUniform4f("light.ambient", _light->getAmbientColor());
-    _nodeShader->setUniform4f("light.diffuse", _light->getDiffuseColor());
-    _nodeShader->setUniform4f("light.specular", _light->getSpecularColor());
-    _nodeShader->setUniform3f("eyePos", cam.getPosition());
-    _nodeShader->end();
+void SimulationManager::setLightUniforms(const std::shared_ptr<ofShader>& shader)
+{
+    shader->begin();
+    shader->setUniform3f("light.position", _light->getPosition());
+    shader->setUniform3f("light.direction", _light->getLookAtDir());
+    shader->setUniform4f("light.ambient", _light->getAmbientColor());
+    shader->setUniform4f("light.diffuse", _light->getDiffuseColor());
+    shader->setUniform4f("light.specular", _light->getSpecularColor());
+    shader->setUniform3f("eyePos", cam.getPosition());
+    shader->end();
 }
 
 void SimulationManager::updateTime()
@@ -413,13 +412,37 @@ void SimulationManager::updateSimInstances(double timeStep)
     handleCollisions(_world);
 
     for (auto& s : _simulationInstances) {
-        if (bCanvasInputNeurons) {
-            double t = (_simulationTime - s->getStartTime()) / double(s->getDuration());
-            s->getCanvas()->updateNeuralInputBuffer();
-            s->getCreature()->setCanvasSensors(s->getCanvas()->getNeuralInputsBufferDouble(), t);
+
+        bool bUpdate = s->getCreature()->updateTimeStep(timeStep);
+
+        if (bUpdate) {
+            if (bCanvasInputNeurons) {
+
+                s->getCanvas()->updateNeuralInputBuffer(true);
+
+                if (learningMode == LearningMode::External) {
+                    uint64_t start = ofGetElapsedTimeMillis();
+
+                    _bufferSender.send(s->getCanvas()->getNeuralInputPixelBuffer());
+                    const std::vector<float> outputs = _bufferReceiver.receive();
+
+                    uint64_t total = ofGetElapsedTimeMillis() - start;
+                    ofLog() << "total latency: " << total << "ms";
+
+                    s->getCreature()->setOutputs(outputs);
+                }
+                else {
+                    double t = (_simulationTime - s->getStartTime()) / double(s->getDuration());
+                    s->getCreature()->setCanvasSensors(s->getCanvas()->getNeuralInputsBufferDouble(), t);
+                    s->getCreature()->activate();
+                }
+            } 
+            else {
+                s->getCreature()->activate();
+            }
+            s->getCreature()->update();
+            s->getCanvas()->update();
         }
-        s->getCreature()->update(timeStep);
-        s->getCanvas()->update();
     }
 
     // scope for lock_guard
@@ -443,11 +466,8 @@ void SimulationManager::updateSimInstances(double timeStep)
             ofLog() << "ended (" << _simulationInstances[i]->getID() << ") id: " << creatureId << " fitness: " << fitness;
 
             if (bSaveArtifactsToDisk) {
-                std::string prefix = _simDir + '/' + NTRS_ARTIFACTS_PREFIX + ofToString(creatureId) + '_' + ofToString(fitness, 2);
-                ofPixels pix;
-
-                writeToPixels(_simulationInstances[i]->getCanvas()->getCanvasFbo()->getTexture(), pix);
-                writeToDisk(pix, prefix);
+                std::string path = _simDir + '/' + NTRS_ARTIFACTS_PREFIX + ofToString(creatureId) + '_' + ofToString(fitness, 2);
+                _imageSaver.save(_simulationInstances[i]->getCanvas()->getCanvasFbo()->getTexture(), path);
             }
 
             SimResult result;
@@ -471,16 +491,9 @@ void SimulationManager::updateSimInstances(double timeStep)
 
 double SimulationManager::evaluateArtifact(SimInstance* instance)
 {
-    instance->getCanvas()->getCanvasRawFbo()->getTexture().copyTo(*pboPtr);
-
-    pboPtr->bind(GL_PIXEL_UNPACK_BUFFER);
-    uchar* p = pboPtr->map<uchar>(GL_READ_ONLY);
-
-    _artifactMat = cv::Mat(_canvasResolution.x, _canvasResolution.y, CV_8UC1, p);
-
-    pboPtr->unmap();
-    pboPtr->unbind(GL_PIXEL_UNPACK_BUFFER);
-    swapPbo();
+    _imageSaver.copyToBuffer(instance->getCanvas()->getCanvasRawFbo()->getTexture(), [&](uint8_t* p) {
+        _artifactMat = cv::Mat(_canvasResolution.x, _canvasResolution.y, CV_8UC1, p);
+    });
 
     double total = 0.0;
     double fitness = 0.0;
@@ -594,6 +607,11 @@ std::string SimulationManager::getUniqueSimId()
     return _uniqueSimId;
 }
 
+const std::string& SimulationManager::getStatus()
+{
+    return _status;
+}
+
 ofxGrabCam* SimulationManager::getCamera()
 {
     return &cam;
@@ -676,6 +694,15 @@ void SimulationManager::loadBodyGenomeFromDisk(std::string filename)
     _testCreature = std::make_shared<SimCreature>(btVector3(.0, 2.0, .0), _selectedBodyGenome, _world);
     _testCreature->setAppearance(_nodeShader, _nodeMaterial, _nodeTexture);
     _testCreature->addToWorld();
+
+    char label[256];
+    sprintf_s(label, "Loaded genome '%s' with a total of %d nodes, %d joints, %d brushes, %d outputs", filename.c_str(),
+        _selectedBodyGenome->getNumNodesUnfolded(),
+        _selectedBodyGenome->getNumJointsUnfolded(),
+        _selectedBodyGenome->getNumEndNodesUnfolded(),
+        _selectedBodyGenome->getNumJointsUnfolded() + _selectedBodyGenome->getNumEndNodesUnfolded()
+    );
+    _status = label;
 }
 
 // Try to build a feasible creature genome
@@ -720,31 +747,19 @@ void SimulationManager::generateRandomBodyGenome()
     }
 }
 
-void SimulationManager::writeToPixels(const ofTexture& tex, ofPixels& pix)
-{
-    tex.copyTo(*pboPtr);
-
-    pboPtr->bind(GL_PIXEL_UNPACK_BUFFER);
-    unsigned char* p = pboPtr->map<unsigned char>(GL_READ_ONLY);
-    pix.setFromExternalPixels(p, _canvasResolution.x, _canvasResolution.y, OF_PIXELS_RGBA);
-    
-    pboPtr->unmap();
-    pboPtr->unbind(GL_PIXEL_UNPACK_BUFFER);
-
-    swapPbo();
-}
-
-void SimulationManager::writeToDisk(const ofPixels& pix, std::string info)
-{
-    ofSaveImage(pix, writeBuffer, OF_IMAGE_FORMAT_JPEG, OF_IMAGE_QUALITY_BEST);
-    _imageSaverThread.send(&writeBuffer, info);
-}
-
-void SimulationManager::swapPbo()
-{
-    iPBO = SWAP(iPBO);
-    pboPtr = &pixelWriteBuffers[iPBO];
-}
+//void SimulationManager::writeToPixels(const ofTexture& tex, ofPixels& pix)
+//{
+//    tex.copyTo(*pboPtr);
+//
+//    pboPtr->bind(GL_PIXEL_UNPACK_BUFFER);
+//    unsigned char* p = pboPtr->map<unsigned char>(GL_READ_ONLY);
+//    pix.setFromExternalPixels(p, _canvasResolution.x, _canvasResolution.y, OF_PIXELS_RGBA);
+//    
+//    pboPtr->unmap();
+//    pboPtr->unbind(GL_PIXEL_UNPACK_BUFFER);
+//
+//    swapPbo();
+//}
 
 void SimulationManager::loadShaders()
 {
@@ -763,6 +778,10 @@ void SimulationManager::loadShaders()
     }
     _canvasColorShader->load("shaders/lum2col");
     _canvasUpdateShader->load("shaders/canvas");
+
+    //_terrainShader->begin();
+    //_terrainShader->setUniform4f("checkers_pos", ofColor::fromHsb(ofRandom(255), 0.75f * 255, 0.75f*255, 255));
+    //_terrainShader->end();
 }
 
 bool SimulationManager::isInitialized()
@@ -789,6 +808,8 @@ void SimulationManager::setMaxParallelSims(int max)
 void SimulationManager::setCanvasNeuronInputResolution(uint32_t width, uint32_t height)
 {
     _canvasNeuralInputResolution = glm::ivec2(width, height);
+    _bufferSender.allocate(width, height, OF_PIXELS_GRAY);
+    _bufferReceiver.allocate(16);
 }
 
 void SimulationManager::dealloc()

@@ -24,8 +24,8 @@ bld/
 [Oo]bj/
 [Ll]og/
 
-bin/data/output/reports
-bin/data/output/artworks
+bin/data/output/sims/
+bin/data/output/genomes/
 
 # Exclude binaries and etc
 *.exe

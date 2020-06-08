@@ -15,7 +15,8 @@ layout(std430, binding=0) buffer brushCoordBuffer {
 uniform float alpha = 1.0;
 uniform int brush_coords_bufsize = 0;
 
-const float fade = 0.0125;
+const float fademin = 1/25.0;
+const float fademax = 1/20.0;
 
 in vec2 texcoord_varying;
 out float fragColor;
@@ -31,10 +32,8 @@ void main(void)
 
 		if (i < brush_coords_bufsize)
 		{
-			float dist = min(distance(b.coord, st), 1.0);
-			float dist_inv = inv(dist);
-
-			float result = dist_inv * smoothstep(fade, 0.0, dist);
+			float dist = distance(b.coord, st);
+			float result = smoothstep(fademax, fademin, dist);
 			pct = max(result, pct);
 		}
 	}

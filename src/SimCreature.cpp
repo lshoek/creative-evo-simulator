@@ -12,7 +12,7 @@
 btRigidBody* localCreateRigidBody(btScalar mass, const btTransform& startTransform, btCollisionShape* shape);
 
 SimCreature::SimCreature(btVector3 position, std::shared_ptr<DirectedGraph> graph, btDynamicsWorld* ownerWorld)
-	: m_ownerWorld(ownerWorld), m_inEvaluation(false), m_evaluationTime(0), m_reaped(false)
+	: m_ownerWorld(ownerWorld)
 {
 	m_spawnPosition = position;
 	m_morphologyGenome = new DirectedGraph(*graph);
@@ -26,7 +26,7 @@ SimCreature::SimCreature(btVector3 position, std::shared_ptr<DirectedGraph> grap
 }
 
 SimCreature::SimCreature(btVector3 position, uint32_t numLegs, btDynamicsWorld* ownerWorld, bool bInit)
-	: m_ownerWorld(ownerWorld), m_inEvaluation(false), m_evaluationTime(0), m_reaped(false)
+	: m_ownerWorld(ownerWorld)
 {
 	m_motorStrength = 0.025f * m_ownerWorld->getSolverInfo().m_numIterations;
 	m_targetFrequency = 3.0f;
@@ -49,6 +49,7 @@ void SimCreature::buildPhenome(DirectedGraph* graph)
 	m_bodies.resize(m_numBodies);
 	m_joints.reserve(m_numJoints);
 	m_touchSensors.resize(m_numBodies);
+	m_outputs.resize(m_numJoints + m_numBrushes + 1);
 
 	std::vector<int> recursionLimits(graph->getNodes().size());
 	for (int i = 0; i < recursionLimits.size(); i++) {
@@ -385,58 +386,76 @@ void SimCreature::initWalker(btVector3 position, uint32_t numLegs, btDynamicsWor
 }
 #pragma endregion
 
-void SimCreature::update(double timeStep)
+bool SimCreature::updateTimeStep(double timeStep)
 {
-	if (!bIsDebugCreature)
-	{
-		m_targetAccumulator += timeStep;
-
-		// motor update rate
-		if (m_targetAccumulator >= 1.0f / ((double)m_targetFrequency))
-		{
+	if (!bIsDebugCreature) {
+		m_timeStep = timeStep;
+		m_targetAccumulator += m_timeStep;
+		if (m_targetAccumulator >= 1.0f / ((double)m_targetFrequency)) {
 			m_targetAccumulator = 0;
+			m_updateQueued = true;
+		}
+	}
+	return m_updateQueued;
+}
 
-			// activate network (bottleneck hazard)
-			uint64_t start = ofGetElapsedTimeMillis();
+void SimCreature::activate()
+{
+	uint64_t start = ofGetElapsedTimeMillis();
 
-			const std::vector<double> outputs = (_sensorMode == SensorMode::Touch) ?
-				m_controlPolicyGenome->activate(m_touchSensors) :
-				m_controlPolicyGenome->activate(m_canvasSensors);
+	// activate network (bottleneck hazard)
+	if (_sensorMode == SensorMode::Touch) {
+		m_outputs = m_controlPolicyGenome->activate(m_touchSensors);
+	}
+	else if (_sensorMode == SensorMode::Canvas) {
+		m_outputs = m_controlPolicyGenome->activate(m_canvasSensors);
+	}
+	m_activationMillis = ofGetElapsedTimeMillis() - start;
+}
 
-			m_activationMillis = ofGetElapsedTimeMillis() - start;
+void SimCreature::setOutputs(const std::vector<float>& outputs)
+{
+	m_outputs = std::vector<double>(outputs.begin(), outputs.end());
+}
 
-			// update joints
-			for (int i = 0; i < m_numJoints; i++)
-			{
-				btScalar targetAngle = 0;
-				btHingeConstraint* joint = static_cast<btHingeConstraint*>(getJoints()[i]);
+void SimCreature::update()
+{
+	if (!bIsDebugCreature && m_updateQueued)
+	{
+		// update joints
+		for (int i = 0; i < m_numJoints; i++)
+		{
+			btScalar targetAngle = 0;
+			btHingeConstraint* joint = static_cast<btHingeConstraint*>(getJoints()[i]);
 
-				targetAngle = outputs[i];
+			targetAngle = m_outputs[i];
 
-				btScalar targetLimitAngle = joint->getLowerLimit() + targetAngle * (joint->getUpperLimit() - joint->getLowerLimit());
-				btScalar currentAngle = joint->getHingeAngle();
-				btScalar angleError = targetLimitAngle - currentAngle;
-				btScalar desiredAngularVel = 0;
+			btScalar targetLimitAngle = joint->getLowerLimit() + targetAngle * (joint->getUpperLimit() - joint->getLowerLimit());
+			btScalar currentAngle = joint->getHingeAngle();
+			btScalar angleError = targetLimitAngle - currentAngle;
+			btScalar desiredAngularVel = 0;
 
-				if (timeStep) {
-					desiredAngularVel = angleError / timeStep;
-				}
-				else {
-					desiredAngularVel = angleError / 0.0001f;
-				}
-				joint->enableAngularMotor(true, desiredAngularVel, m_motorStrength);
+			if (m_timeStep) {
+				desiredAngularVel = angleError / m_timeStep;
 			}
-
-			// update brushes
-			for (int i = 0; i < m_numBrushes; i++) {
-				float pressure = outputs[m_numJoints + i] * 0.5f + 0.5f;
-				m_brushNodes[i]->setBrushPressure(pressure);
+			else {
+				desiredAngularVel = angleError / 0.0001f;
 			}
+			joint->enableAngularMotor(true, desiredAngularVel, m_motorStrength);
 		}
 
-		// clear sensor signals after usage
-		clearTouchSensors();
+		// update brushes
+		for (int i = 0; i < m_numBrushes; i++) {
+			float pressure = m_outputs[m_numJoints + i] * 0.5f + 0.5f;
+			m_brushNodes[i]->setBrushPressure(pressure);
+		}
+
+		// set update queue flag to false
+		m_updateQueued = false;
 	}
+
+	// clear sensor signals after usage
+	clearTouchSensors();
 }
 
 btRigidBody* localCreateRigidBody(btScalar mass, const btTransform& startTransform, btCollisionShape* shape)
@@ -650,45 +669,11 @@ void SimCreature::setTexture(std::shared_ptr<ofTexture> tex)
 	}
 }
 
-btScalar SimCreature::getEvaluationTime() const
-{
-	return m_evaluationTime;
-}
-
 uint64_t SimCreature::getActivationMillis() const
 {
 	return m_activationMillis;
 }
 
-void SimCreature::setEvaluationTime(btScalar evaluationTime)
-{
-	m_evaluationTime = evaluationTime;
-}
-
-bool SimCreature::isInEvaluation() const
-{
-	return m_inEvaluation;
-}
-
-void SimCreature::setInEvaluation(bool inEvaluation)
-{
-	m_inEvaluation = inEvaluation;
-}
-
-bool SimCreature::isReaped() const
-{
-	return m_reaped;
-}
-
-void SimCreature::setReaped(bool reaped)
-{
-	m_reaped = reaped;
-}
-
-int SimCreature::getIndex() const
-{
-	return m_index;
-}
 
 SimCreature::~SimCreature()
 {

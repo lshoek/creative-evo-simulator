@@ -11,6 +11,9 @@
 #include "SimSharedData.h"
 #include "Scheduler.h"
 #include "ImageSaverThread.h"
+#include "BufferSender.h"
+#include "BufferReceiver.h"
+#include "ImageSaver.h"
 #include "GenomeBase.h"
 #include "ofMain.h"
 #include "ofxGrabCam.h"
@@ -27,8 +30,26 @@ public:
         CircleCoverage,
         InverseCircleCoverage
     };
+    enum LearningMode
+    {
+        NEAT,
+        External
+    };
+    struct SimSettings
+    {
+        SimSettings(LearningMode learningMode, EvaluationType evalType, uint32_t w, uint32_t h, std::string genomeFile, std::string host, int inPort, int outPort) :
+            learningMode(learningMode), evalType(evalType), canvasWidth(w), canvasHeight(h), genomeFile(genomeFile), host(host), inPort(inPort), outPort(outPort) {}
+        LearningMode learningMode = LearningMode::NEAT;
+        EvaluationType evalType = EvaluationType::Coverage;
+        uint32_t canvasWidth = 256;
+        uint32_t canvasHeight = 256;
+        std::string genomeFile = "";
+        std::string host = "localhost";
+        int inPort = 1024;
+        int outPort = 1025;
+    };
 
-    void init(uint32_t canvasWidth, uint32_t canvasHeight);
+    void init(SimSettings settings);
     void startSimulation(std::string id, EvaluationType evalType = EvaluationType::Coverage);
     void stopSimulation();
 
@@ -41,6 +62,7 @@ public:
     void dealloc();
 
     std::string getUniqueSimId();
+    const std::string& getStatus();
 
     // Returns ticket that listener can use to check when sim is finished and genome fitness is updated
     int queueSimulationInstance(const GenomeBase& genome, float duration, bool bMultiEval);
@@ -74,8 +96,7 @@ public:
     void setMaxParallelSims(int max);
     void setCanvasNeuronInputResolution(uint32_t width, uint32_t height);
 
-    EvaluationType evaluationType;
-
+    bool bAutoLoadGenome = true;
     bool bDebugDraw = false;
     bool bShadows = true;
     bool bTestMode = false;
@@ -90,27 +111,28 @@ public:
     bool bSaveArtifactsToDisk = false;
 
     glm::vec3 lightPosition;
-
     uint32_t simulationSpeed = 1;
+
+    EvaluationType evaluationType;
+    LearningMode learningMode;
 
 private:
     void initPhysics();
     void initTerrain();
+
+    void setLightUniforms(const std::shared_ptr<ofShader>& shader);
 
     void performTrueSteps(btScalar timeStep);
     void handleCollisions(btDynamicsWorld* _worldPtr);
 
     double evaluateArtifact(SimInstance* instance);
 
-    void writeToPixels(const ofTexture& tex, ofPixels& pix);
-    void writeToDisk(const ofPixels& pix, std::string info);
-    void swapPbo();
-
     int runSimulationInstance(GenomeBase& genome, int ticket, float duration);
     std::vector<simRunCallback_t> _simulationInstanceCallbackQueue;
     std::vector<SimInstance*> _simulationInstances;
     std::mutex _cbQueueMutex;
 
+    std::string _status = "";
     std::string _uniqueSimId = "_NA";
     std::string _simDir = NTRS_SIMS_DIR;
 
@@ -186,20 +208,17 @@ private:
     cv::Mat _rewardMat, _penaltyMat;
     cv::Mat* _rewardMaskPtr;
     cv::Mat* _penaltyMaskPtr;
-    double _maxReward = 255;
+    double _maxReward = 255.0;
 
     ofxCvGrayscaleImage _cvDebugImage;
 
     // for fixed walker creature
     uint32_t _numWalkerLegs = 8;
 
-    // pbo
-    ImageSaverThread _imageSaverThread;
-    ofBufferObject pixelWriteBuffers[2];
-    ofBufferObject* pboPtr;
-    ofPixels writePixels;
-    ofBuffer writeBuffer;
-    uint32_t iPBO;
+    // io
+    BufferSender _bufferSender;
+    BufferReceiver _bufferReceiver;
+    ImageSaver _imageSaver;
 
     const glm::vec3 right = glm::vec3(1, 0, 0);
     const glm::vec3 up =    glm::vec3(0, 1, 0);

@@ -4,7 +4,7 @@
 #include "toolbox.h"
 #include "MathUtils.h"
 
-#define APP_ID "neatures v0.01"
+#define APP_ID "neatures v0.2"
 #define CONSOLE_SIZE 600
 #define CONSOLE_MARGIN 24
 
@@ -53,6 +53,7 @@ void ofApp::initSimulation()
 		uint32_t canvasNeuralInputSize = settings.get("genome.canvas_neural_input_size", 32);
 
 		simulationManager.bDebugDraw = settings.get("mode.debugdraw", true);
+		simulationManager.bAutoLoadGenome = settings.get("genome.autoload", true);
 		simulationManager.bCameraSnapFocus = settings.get("mode.snapfocus", true);
 		simulationManager.bAxisAlignedAttachments = settings.get("genome.axis_aligned_attachments", false);
 		simulationManager.bUseBodyGenomes = settings.get("genome.body_genomes", true);
@@ -62,7 +63,16 @@ void ofApp::initSimulation()
 
 		simulationManager.setMaxParallelSims(settings.get("evolution.max_parallel_evals", 4));
 		simulationManager.setCanvasNeuronInputResolution(canvasNeuralInputSize, canvasNeuralInputSize);
-		simulationManager.init(canvasSize, canvasSize);
+
+		SimulationManager::SimSettings simSettings {
+			SimulationManager::External, SimulationManager::Coverage,
+			canvasSize, canvasSize,
+			settings.get("genome.id", "0"),
+			settings.get("io.host", "localhost"),
+			settings.get("io.port_in", 1025),
+			settings.get("io.port_out", 1024)
+		};
+		simulationManager.init(simSettings);
 	}
 }
 
@@ -108,14 +118,18 @@ void ofApp::stopEvolution()
 void ofApp::update() 
 {
 	if (simulationManager.isInitialized()) {
+		uint64_t start = ofGetElapsedTimeMillis();
 		simulationManager.updateTime();
 		simulationManager.lateUpdate();
+		perf_update = ofGetElapsedTimeMillis() - start;
 	}
 }
 
 void ofApp::draw()
 {
 	if (bDraw) {
+		uint64_t start = ofGetElapsedTimeMillis();
+
 		ofBackground(0x222222);
 		ofSetHexColor(0xffffff);
 
@@ -143,6 +157,8 @@ void ofApp::draw()
 		}
 		glDisable(GL_BLEND);
 		glDisable(GL_DEPTH_TEST);
+
+		perf_draw = ofGetElapsedTimeMillis() - start;
 	}
 	if (bGui) {
 		imGui();
@@ -153,6 +169,18 @@ void ofApp::imGui()
 {
 	gui.begin();
 	{
+		ImVec2 windowSize(240, 540);
+		ImVec2 overlaySize(240, 140);
+		ImVec2 margin(0, 4);
+		uint32_t offset = 24;
+
+		ImGuiWindowFlags flags =
+			ImGuiWindowFlags_NoTitleBar |
+			ImGuiWindowFlags_AlwaysAutoResize |
+			ImGuiWindowFlags_NoSavedSettings |
+			ImGuiWindowFlags_NoFocusOnAppearing |
+			ImGuiWindowFlags_NoNav;
+
 		if (ImGui::BeginMainMenuBar())
 		{
 			if (ImGui::BeginMenu("Main"))
@@ -241,12 +269,41 @@ void ofApp::imGui()
 			ImGui::EndMainMenuBar();
 		}
 
-		if (bWindow)
-		{
-			ImVec2 size(240, 540);
-			ImGui::SetNextWindowSize(size);
+		// Overlay
+		if (bMetaOverlay) {
+			ImGui::SetNextWindowPos(ImVec2(ofGetWindowWidth() - overlaySize.x - offset, offset));
+			ImGui::SetNextWindowSize(overlaySize);
+			ImGui::SetNextWindowBgAlpha(0.5f);
+
+			if (ImGui::Begin("Meta", NULL, flags | ImGuiWindowFlags_NoScrollbar)) {
+				ImGui::Text("meta");
+				ImGui::Separator();
+				ImGui::Dummy(margin);
+
+				glm::vec3 cpos = simulationManager.getCamera()->getPosition();
+				ImGui::Text("cam: (%.02f, %.02f, %.02f)", cpos.x, cpos.y, cpos.z);
+				ImGui::Text("update: %dms", perf_update);
+				ImGui::Text("draw: %dms", perf_draw);
+				ImGui::Text("fps: %.02f", ofGetFrameRate());
+				ImGui::Text("dbg draw: %s", simulationManager.bDebugDraw ? "on" : "off");
+				//ImGui::InputFloat3("light:", &simulationManager.lightPosition[0], 2);
+			}	
+			ImGui::End();
+
+			ImGui::SetNextWindowPos(ImVec2(0, ofGetWindowHeight() - offset));
+			ImGui::SetNextWindowSize(ImVec2(ofGetWindowWidth(), offset));
+			ImGui::SetNextWindowBgAlpha(0.5f);
+
+			if (ImGui::Begin("Footer", NULL, flags | ImGuiWindowFlags_NoScrollbar)) {
+				ImGui::Text("%s", simulationManager.getStatus().c_str());
+			}
+			ImGui::End();
+		}
+
+		if (bWindow) {
+			ImGui::SetNextWindowSize(windowSize);
 			ImGui::SetNextWindowBgAlpha(0.75f);
-			ImGui::Begin("Monitor");
+			ImGui::Begin("Monitor", NULL, flags);
 
 			if (bSimulate) {
 				if (simulationManager.isInitialized()) {
@@ -259,9 +316,9 @@ void ofApp::imGui()
 					if (simulationManager.isSimulationInstanceActive()) {
 						if (simulationManager.getFocusCanvas() != nullptr) {
 							ImGui::Text("Creature Artifact:");
-							ImGui::Image((void*)(intptr_t)simulationManager.getFocusCanvas()->getCanvasFbo()->getTexture().getTextureData().textureID, ImVec2(size.x, size.x));
+							ImGui::Image((void*)(intptr_t)simulationManager.getFocusCanvas()->getCanvasFbo()->getTexture().getTextureData().textureID, ImVec2(windowSize.x, windowSize.x));
 							ImGui::Text("Neural Input:");
-							ImGui::Image((void*)(intptr_t)simulationManager.getFocusCanvas()->getCanvasNeuralInputRawFbo()->getTexture().getTextureData().textureID, ImVec2(size.x, size.x));
+							ImGui::Image((void*)(intptr_t)simulationManager.getFocusCanvas()->getCanvasNeuralInputRawFbo()->getTexture().getTextureData().textureID, ImVec2(windowSize.x, windowSize.x));
 							ImGui::Separator();
 						}
 						if (simulationManager.getFocusCreature() != nullptr) {
@@ -272,14 +329,6 @@ void ofApp::imGui()
 							ImGui::Separator();
 						}
 					}
-					glm::vec3 cpos = simulationManager.getCamera()->getPosition();
-					ImGui::Text("Camera Position:");
-					ImGui::Text("(%.02f, %.02f, %.02f)", cpos.x, cpos.y, cpos.z);
-					ImGui::Separator();
-					ImGui::Text("Light Position:");
-					ImGui::InputFloat3("<<<", &simulationManager.lightPosition[0], 2);
-					ImGui::Separator();
-					ImGui::Text("Debug Draw: %s", simulationManager.bDebugDraw ? "ON" : "OFF");
 					ImGui::Separator();
 				}
 			}
@@ -292,7 +341,7 @@ void ofApp::imGui()
 					ImGui::Text("Best Fitness per Generation:");
 					ImGui::PlotLines(
 						"Fitness", &fitnessFloats[0], fitnessFloats.size(), 0, 0,
-						0, evoManager.getTargetFitness(), ImVec2(size.x, 96)
+						0, evoManager.getTargetFitness(), ImVec2(windowSize.x, 96)
 					);
 					ImGui::Separator();
 				}
@@ -301,7 +350,6 @@ void ofApp::imGui()
 				ImGui::Text("Best Fitness: %.03f/%.03f", evoManager.getBestFitness(), evoManager.getTargetFitness());
 				ImGui::Separator();
 			}
-			ImGui::Text("FPS: %.02f", ofGetFrameRate());
 			ImGui::End();
 		}
 	}

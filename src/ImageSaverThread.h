@@ -6,8 +6,6 @@ public:
 	ImageSaverThread();
 	~ImageSaverThread();
 
-	void setup(std::string path);
-
 	void send(ofBuffer* img, std::string info);
 	void waitReady();
 	void threadedFunction();
@@ -19,6 +17,8 @@ private:
 	ofThreadChannel<std::string> _infoChannel;
 	ofThreadChannel<bool> _channelReady;
 
+	uint32_t _width = 0;
+	uint32_t _height = 0;
+
 	std::string _path;
-	int _width, _height;
 };

@@ -37,7 +37,7 @@ SimCanvasNode::SimCanvasNode(btVector3 position, float size, float extraBounds, 
     _canvasColorFbo.allocate(_canvasRes.x, _canvasRes.y, GL_RGBA);
 
     _canvasColorFbo.begin();
-    ofClear(_color);
+    ofClear(_color.r, _color.b, _color.g, 0.0f);
     _canvasColorFbo.end();
 
     _brushCoordQueue.resize(BRUSH_COORD_BUF_MAXSIZE);
@@ -53,6 +53,10 @@ SimCanvasNode::SimCanvasNode(btVector3 position, float size, float extraBounds, 
     for (int i = 0; i < 2; i++) {
         _pixelWriteBuffers[i].allocate(_canvasRes.x * _canvasRes.y, GL_DYNAMIC_READ);
     }
+    _neuralInputMat = cv::Mat(_canvasNeuralInputRes.x, _canvasNeuralInputRes.y, CV_8UC1, cv::Scalar::all(0));
+    _neuralInputMatDouble = cv::Mat(_canvasNeuralInputRes.x, _canvasNeuralInputRes.y, CV_64F, cv::Scalar::all(0));
+    _neuralInputPixelBuffer.allocate(_canvasNeuralInputRes.x, _canvasNeuralInputRes.y, 1);
+
     iPbo = 0;
     _pboPtr = &_pixelWriteBuffers[iPbo];
 }
@@ -96,19 +100,18 @@ void SimCanvasNode::update()
         _brushCoordBuffer.unbindBase(GL_SHADER_STORAGE_BUFFER, 0);
     }
 
-    // This can be skipped in headless mode
+    // This is just for visualization so completely optional and can be skipped in headless mode
     if (_canvasColorizeShader) {
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         _canvasColorFbo.begin();
+
         _canvasColorizeShader->begin();
         _canvasColorizeShader->setUniformTexture("tex", _canvasFbo[iFbo].getTexture(), 0);
         _canvasColorizeShader->setUniform4f("brush_color", _brushColor);
+        _canvasColorizeShader->setUniform4f("canvas_color", _color);
         _canvasDrawQuad.draw();
         _canvasColorizeShader->end();
 
         _canvasColorFbo.end();
-        glDisable(GL_BLEND);
     }
 
     // invalidate values
@@ -119,24 +122,29 @@ void SimCanvasNode::update()
     _brushQueueSize = 0;
 }
 
-void SimCanvasNode::updateNeuralInputBuffer()
+void SimCanvasNode::updateNeuralInputBuffer(bool bUpdateBufferDouble)
 {
     // Reduce height map resolution for neural inputs
     _canvasNeuralInputFbo.begin();
     _canvasFbo[iFbo].draw(0, 0, _canvasNeuralInputRes.x, _canvasNeuralInputRes.y);
     _canvasNeuralInputFbo.end();
 
-    _canvasFbo[iFbo].copyTo(_pixelWriteBuffers[iPbo]);
+    _canvasNeuralInputFbo.copyTo(*_pboPtr);
     _pboPtr->bind(GL_PIXEL_UNPACK_BUFFER);
 
-    unsigned char* bytesPtr = _pboPtr->map<unsigned char>(GL_READ_ONLY);
-    _neuralInputMat = cv::Mat(_canvasNeuralInputRes.x, _canvasNeuralInputRes.y, CV_8UC1, bytesPtr);
-    _neuralInputMat.convertTo(_neuralInputMatDouble, CV_64F, 1.0/255.0);
+    ofBufferObject* backBufPtr = &_pixelWriteBuffers[(iPbo + 1) % 2];
+    unsigned char* bytesPtr = backBufPtr->map<unsigned char>(GL_READ_ONLY);
 
-    _pboPtr->unmap();
-    _pboPtr->unbind(GL_PIXEL_UNPACK_BUFFER);
+    _neuralInputPixelBuffer.setFromExternalPixels(bytesPtr, _canvasNeuralInputRes.x, _canvasNeuralInputRes.y, 1);
 
-    iPbo = SWAP(iPbo);
+    backBufPtr->unmap();
+    backBufPtr->unbind(GL_PIXEL_UNPACK_BUFFER);
+
+    _neuralInputMat = cv::Mat(_canvasNeuralInputRes.x, _canvasNeuralInputRes.y, CV_8UC1, _neuralInputPixelBuffer.getData());
+    if (bUpdateBufferDouble) {
+        _neuralInputMat.convertTo(_neuralInputMatDouble, CV_64F, 1.0 / 255.0);
+    }
+    swapPbo();
 }
 
 void SimCanvasNode::draw()
@@ -183,7 +191,6 @@ void SimCanvasNode::addBrushStroke(btVector3 location, float pressure)
         if (px.x > 1.0f || px.x < 0 || px.y > 1.0f || px.y < 0) {
             return;
         }
-
         // add brushstroke
         _brushCoordQueue[_brushQueueSize].coord = px;
         _brushCoordQueue[_brushQueueSize].pressure = pressure;
@@ -191,9 +198,15 @@ void SimCanvasNode::addBrushStroke(btVector3 location, float pressure)
     }
 }
 
-const unsigned char* SimCanvasNode::getNeuralInputsBufferChar()
+void SimCanvasNode::swapPbo()
 {
-    return _neuralInputMat.data;
+    iPbo = (iPbo + 1) % 2;
+    _pboPtr = &_pixelWriteBuffers[iPbo];
+}
+
+const ofPixels& SimCanvasNode::getNeuralInputPixelBuffer()
+{
+    return _neuralInputPixelBuffer;
 }
 
 const double* SimCanvasNode::getNeuralInputsBufferDouble()

@@ -12,11 +12,6 @@ ImageSaverThread::~ImageSaverThread()
 	waitForThread(true);
 }
 
-void ImageSaverThread::setup(std::string path)
-{
-	_path = path;
-}
-
 void ImageSaverThread::send(ofBuffer* pixels, std::string info)
 {
 	_infoChannel.send(info);
@@ -38,7 +33,7 @@ void ImageSaverThread::threadedFunction()
 		_infoChannel.receive(info);
 
 		ofFile file;
-		std::string fname = _path + info + ".jpg";
+		std::string fname = info + ".jpg";
 
 		file.open(fname, ofFile::WriteOnly, true);
 		file.writeFromBuffer(*buf);

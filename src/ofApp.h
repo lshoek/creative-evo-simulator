@@ -46,8 +46,12 @@ private:
 	ofxImGui::Gui gui;
 	ofxIniSettings settings;
 
+	uint64_t perf_update = 0;
+	uint64_t perf_draw = 0;
+
 	// Gui toggles
 	bool bWindow = true;
+	bool bMetaOverlay = true;
 
 	// App toggles
 	bool bRenderEventQueued = false;

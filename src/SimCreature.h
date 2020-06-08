@@ -19,7 +19,11 @@ public:
 	SimCreature(btVector3 position, uint32_t numLegs, btDynamicsWorld* ownerWorld, bool bInit);
 	~SimCreature();
 
-	void update(double timeStep);
+	bool updateTimeStep(double timeStep);
+	void activate();
+	void update();
+	void setOutputs(const std::vector<float>& outputs);
+
 	void draw();
 	void drawImmediate();
 
@@ -49,18 +53,9 @@ public:
 
 	btVector3 getSpawnPosition() const;
 	btVector3 getCenterOfMassPosition() const;
-
-	void clearForces();
-
-	btScalar getEvaluationTime() const;
 	uint64_t getActivationMillis() const;
 
-	void setEvaluationTime(btScalar evaluationTime);
-	bool isInEvaluation() const;
-	void setInEvaluation(bool inEvaluation);
-	bool isReaped() const;
-	void setReaped(bool reaped);
-	int getIndex() const;
+	void clearForces();
 
 	void setShader(std::shared_ptr<ofShader> shader);
 	void setMaterial(std::shared_ptr<ofMaterial> mtl);
@@ -81,6 +76,7 @@ private:
 
 	bool bInitialized = false;
 	bool bHasBallPointers = false;
+	bool bIsDebugCreature = false;
 
 	btDynamicsWorld* m_ownerWorld;
 
@@ -121,13 +117,12 @@ private:
 	std::vector<double> m_touchSensors;
 	std::vector<double> m_canvasSensors;
 
-	int m_index = 0;
-
-	bool m_inEvaluation;	
-	bool m_reaped;	
+	// output neuron activations
+	std::vector<double> m_outputs;
 
 	btScalar m_targetAccumulator;
-	btScalar m_evaluationTime;
+	btScalar m_timeStep;
+	bool m_updateQueued = false;
 
 	btScalar gRootBodyRadius = 0.25f;
 	btScalar gRootBodyHeight = 0.1f;
@@ -137,11 +132,8 @@ private:
 	btScalar gForeLegRadius = 0.08f;
 
 	const ofColor INK = ofColor::fromHex(0x333333);
-
 	const btVector3 FORWARD = btVector3(1, 0, 0);
 	const btVector3 UP = btVector3(0, 1, 0);
 	const btVector3 RIGHT = btVector3(0, 0, 1);
 	const btVector3 AXES[3] = { FORWARD, UP, RIGHT };
-
-	bool bIsDebugCreature = false;
 };
