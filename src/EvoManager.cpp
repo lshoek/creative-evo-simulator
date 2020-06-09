@@ -12,7 +12,9 @@ void EvoManager::setup(SimulationManager* sim)
 	fitnessFuncPtr = &paintFitnessFunc;
 
 	// load neat params from config file
-	std::ifstream paramFile("data/config/params_paint.conf", std::ifstream::in);
+	std::string path = "bin/data/config/params_paint.conf";
+
+	std::ifstream paramFile(path.c_str(), std::ifstream::in);
 	params.Load(paramFile);
 	paramFile.close();
 

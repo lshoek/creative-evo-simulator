@@ -1,11 +1,11 @@
 {
     "axis_x": 0,
-    "axis_y": 1,
+    "axis_y": -1,
     "axis_z": 0,
-    "childAnchorDir_x": 0.0,
-    "childAnchorDir_y": 1.0,
-    "childAnchorDir_z": 0.0,
-    "fromIndex": 0,
-    "scalingFactor": 0.7530868053436279,
-    "toIndex": 0
+    "childAnchorDir_x": 0.8387153744697571,
+    "childAnchorDir_y": -0.5299045443534851,
+    "childAnchorDir_z": 0.12552933394908905,
+    "fromIndex": 1,
+    "scalingFactor": 0.8470413684844971,
+    "toIndex": 1
 }

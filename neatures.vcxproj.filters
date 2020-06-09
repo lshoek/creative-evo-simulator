@@ -144,9 +144,6 @@
     <ClCompile Include="..\..\..\addons\ofxIniSettings\src\ofxIniSettings.cpp">
       <Filter>addons\ofxIniSettings</Filter>
     </ClCompile>
-    <ClCompile Include="src\SimCam.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\addons\ofxGrabCam\src\ofxGrabCam.cpp">
       <Filter>addons\ofxGrabCam</Filter>
     </ClCompile>
@@ -379,9 +376,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\addons\ofxIniSettings\src\ofxIniSettings.h">
       <Filter>addons\ofxIniSettings</Filter>
-    </ClInclude>
-    <ClInclude Include="src\SimCam.h">
-      <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\addons\ofxGrabCam\src\ofxGrabCam.h">
       <Filter>addons\ofxGrabCam</Filter>

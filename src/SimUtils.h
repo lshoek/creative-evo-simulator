@@ -1,7 +1,7 @@
 #pragma once
-#include "bullet/btBulletDynamicsCommon.h"
-#include "bullet/LinearMath/btTransform.h"
-#include "bullet/LinearMath/btVector3.h"
+#include "btBulletDynamicsCommon.h"
+#include "LinearMath/btTransform.h"
+#include "LinearMath/btVector3.h"
 #include "ofVectorMath.h"
 
 #define SIMD_PI_2 ((SIMD_PI)*0.5)

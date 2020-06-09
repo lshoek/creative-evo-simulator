@@ -3,7 +3,7 @@
 #include "SimDefines.h"
 #include "ofFileUtils.h"
 
-#include "bullet/btBulletCollisionCommon.h"
+#include "btBulletCollisionCommon.h"
 #include <vector>
 
 class GraphNode

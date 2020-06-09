@@ -1,13 +1,13 @@
 {
-    "bodyEnd": 0,
-    "dimensions_x": 1.1441656351089478,
-    "dimensions_y": 0.550428032875061,
-    "dimensions_z": 1.4236315488815308,
+    "bodyEnd": 1,
+    "dimensions_x": 1.1121160984039307,
+    "dimensions_y": 0.42217379808425903,
+    "dimensions_z": 1.2585679292678833,
     "index": 2,
     "jointType": 1,
-    "parentAttachmentPlane_x": 0.0,
-    "parentAttachmentPlane_y": 0.0,
-    "parentAttachmentPlane_z": 1.0,
+    "parentAttachmentPlane_x": -0.7586173415184021,
+    "parentAttachmentPlane_y": -0.2739277780056,
+    "parentAttachmentPlane_z": -0.5911542177200317,
     "primitiveType": 0,
     "recursionLimit": 1
 }

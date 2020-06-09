@@ -317,7 +317,7 @@ void DirectedGraph::save()
     const ofDirectory genomeDir = ofDirectory(ofToDataPath(NTRS_BODY_GENOME_DIR, true));
     const std::vector<ofFile> files = genomeDir.getFiles();
 
-    std::string id = ofToString(genomeDir.getFiles().size());
+    std::string id = ofToString(genomeDir.getFiles().size() + 1);
     ofDirectory::createDirectory(genomeDir.getAbsolutePath() + '\\' + id);
 
     int nodeCount = 0;

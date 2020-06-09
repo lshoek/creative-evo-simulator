@@ -65,7 +65,7 @@ void ofApp::initSimulation()
 		simulationManager.setCanvasNeuronInputResolution(canvasNeuralInputSize, canvasNeuralInputSize);
 
 		SimulationManager::SimSettings simSettings {
-			SimulationManager::External, SimulationManager::Coverage,
+			SimulationManager::NEAT, SimulationManager::Coverage,
 			canvasSize, canvasSize,
 			settings.get("genome.id", "0"),
 			settings.get("io.host", "localhost"),
@@ -84,7 +84,7 @@ void ofApp::startEvolution()
 
 	// Start simulator first so it can await evaluation requests
 	if (!simulationManager.isSimulationActive()) {
-		simulationManager.startSimulation(uniqueSimId, SimulationManager::EvaluationType::CircleCoverage);
+		simulationManager.startSimulation(uniqueSimId, SimulationManager::EvaluationType::InverseCircleCoverage);
 	}
 	// Then call the evolution loop
 	if (!evoManager.isEvolutionActive()) {
