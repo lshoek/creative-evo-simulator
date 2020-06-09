@@ -1,9 +1,9 @@
 #pragma once
 
-#include "bullet/btBulletDynamicsCommon.h"
-#include "bullet/BulletDynamics/Dynamics/btDiscreteDynamicsWorldMt.h"
-#include "bullet/BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h"
-#include "bullet/BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolverMt.h"
+#include "btBulletDynamicsCommon.h"
+#include "BulletDynamics/Dynamics/btDiscreteDynamicsWorldMt.h"
+#include "BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h"
+#include "BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolverMt.h"
 
 #include "SimNode.h"
 #include "SimInstance.h"

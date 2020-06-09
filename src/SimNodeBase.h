@@ -1,5 +1,5 @@
 #pragma once
-#include "bullet/btBulletDynamicsCommon.h"
+#include "btBulletDynamicsCommon.h"
 #include "ofGraphics.h"
 #include "ofShader.h"
 #include "ofMesh.h"

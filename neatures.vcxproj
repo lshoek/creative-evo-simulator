@@ -20,7 +20,7 @@
   </ItemGroup>
   <PropertyGroup Condition="'$(WindowsTargetPlatformVersion)'==''">
     <LatestTargetPlatformVersion>$([Microsoft.Build.Utilities.ToolLocationHelper]::GetLatestSDKTargetPlatformVersion('Windows', '10.0'))</LatestTargetPlatformVersion>
-    <WindowsTargetPlatformVersion Condition="'$(WindowsTargetPlatformVersion)' == ''">10.0.18362.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion Condition="'$(WindowsTargetPlatformVersion)' == ''">$(LatestTargetPlatformVersion)</WindowsTargetPlatformVersion>
     <TargetPlatformVersion>$(WindowsTargetPlatformVersion)</TargetPlatformVersion>
   </PropertyGroup>
   <PropertyGroup Label="Globals">
@@ -58,7 +58,6 @@
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="BoostOFRelease.props" />
     <Import Project="..\..\..\libs\openFrameworksCompiled\project\vs\openFrameworksRelease.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
@@ -67,7 +66,6 @@
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="BoostOFDebug.props" />
     <Import Project="..\..\..\libs\openFrameworksCompiled\project\vs\openFrameworksDebug.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
@@ -132,8 +130,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
-      <AdditionalDependencies>MultiNEAT.lib;ippicvmt.lib;ade.lib;ippiwd.lib;ittnotifyd.lib;libprotobufd.lib;libwebpd.lib;opencv_calib3d401d.lib;opencv_core401d.lib;opencv_dnn401d.lib;opencv_features2d401d.lib;opencv_flann401d.lib;opencv_gapi401d.lib;opencv_highgui401d.lib;opencv_imgcodecs401d.lib;opencv_imgproc401d.lib;opencv_ml401d.lib;opencv_objdetect401d.lib;opencv_photo401d.lib;opencv_stitching401d.lib;opencv_video401d.lib;opencv_videoio401d.lib;quircd.lib;zlibd.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>D:\tools\MultiNEAT\build\Debug;..\..\..\addons\ofxOpenCv\libs\ippicv\lib\vs\x64;..\..\..\addons\ofxOpenCv\libs\opencv\lib\vs\x64\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>ippicvmt.lib;ade.lib;ippiwd.lib;ittnotifyd.lib;libprotobufd.lib;libwebpd.lib;opencv_calib3d401d.lib;opencv_core401d.lib;opencv_dnn401d.lib;opencv_features2d401d.lib;opencv_flann401d.lib;opencv_gapi401d.lib;opencv_highgui401d.lib;opencv_imgcodecs401d.lib;opencv_imgproc401d.lib;opencv_ml401d.lib;opencv_objdetect401d.lib;opencv_photo401d.lib;opencv_stitching401d.lib;opencv_video401d.lib;opencv_videoio401d.lib;quircd.lib;zlibd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\..\addons\ofxOpenCv\libs\ippicv\lib\vs\x64;..\..\..\addons\ofxOpenCv\libs\opencv\lib\vs\x64\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <StackReserveSize>8388608</StackReserveSize>
     </Link>
     <PostBuildEvent />
@@ -185,9 +183,6 @@
     <PostBuildEvent />
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\tools\MultiNEAT\build\MultiNEAT.vcxproj">
-      <Project>{d1c1afba-0c2a-374a-a5c9-ff99cc7747c6}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\..\..\libs\openFrameworksCompiled\project\vs\openframeworksLib.vcxproj">
       <Project>{5837595d-aca9-485c-8e76-729040ce4b0b}</Project>
     </ProjectReference>
@@ -261,7 +256,6 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\EvoManager.cpp" />
     <ClCompile Include="src\ofApp.cpp" />
-    <ClCompile Include="src\SimCam.cpp" />
     <ClCompile Include="src\SimCreature.cpp" />
     <ClCompile Include="src\SimInstance.cpp" />
     <ClCompile Include="src\SimNode.cpp" />
@@ -358,7 +352,6 @@
     <ClInclude Include="src\EvoManager.h" />
     <ClInclude Include="src\EvoUtils.h" />
     <ClInclude Include="src\ofApp.h" />
-    <ClInclude Include="src\SimCam.h" />
     <ClInclude Include="src\SimCreature.h" />
     <ClInclude Include="src\SimFitnessFunc.h" />
     <ClInclude Include="src\SimNode.h" />

@@ -412,10 +412,12 @@ void SimulationManager::updateSimInstances(double timeStep)
     handleCollisions(_world);
 
     for (auto& s : _simulationInstances) {
+        
+        // Update canvas every timestep
+        s->getCanvas()->update();
 
-        bool bUpdate = s->getCreature()->updateTimeStep(timeStep);
-
-        if (bUpdate) {
+        bool bUpdateActuators = s->getCreature()->updateTimeStep(timeStep);
+        if (bUpdateActuators) {
             if (bCanvasInputNeurons) {
 
                 s->getCanvas()->updateNeuralInputBuffer(true);
