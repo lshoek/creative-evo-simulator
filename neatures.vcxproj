@@ -178,8 +178,8 @@
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
-      <AdditionalDependencies>MultiNEAT.lib;ippicvmt.lib;ade.lib;ippiw.lib;ittnotify.lib;libprotobuf.lib;libwebp.lib;opencv_calib3d401.lib;opencv_core401.lib;opencv_dnn401.lib;opencv_features2d401.lib;opencv_flann401.lib;opencv_gapi401.lib;opencv_highgui401.lib;opencv_imgcodecs401.lib;opencv_imgproc401.lib;opencv_ml401.lib;opencv_objdetect401.lib;opencv_photo401.lib;opencv_stitching401.lib;opencv_video401.lib;opencv_videoio401.lib;quirc.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>D:\tools\MultiNEAT\build\Release;..\..\..\addons\ofxOpenCv\libs\ippicv\lib\vs\x64;..\..\..\addons\ofxOpenCv\libs\opencv\lib\vs\x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>ippicvmt.lib;ade.lib;ippiw.lib;ittnotify.lib;libprotobuf.lib;libwebp.lib;opencv_calib3d401.lib;opencv_core401.lib;opencv_dnn401.lib;opencv_features2d401.lib;opencv_flann401.lib;opencv_gapi401.lib;opencv_highgui401.lib;opencv_imgcodecs401.lib;opencv_imgproc401.lib;opencv_ml401.lib;opencv_objdetect401.lib;opencv_photo401.lib;opencv_stitching401.lib;opencv_video401.lib;opencv_videoio401.lib;quirc.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\..\addons\ofxOpenCv\libs\ippicv\lib\vs\x64;..\..\..\addons\ofxOpenCv\libs\opencv\lib\vs\x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <StackReserveSize>8388608</StackReserveSize>
     </Link>
     <PostBuildEvent />
