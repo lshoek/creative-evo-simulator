@@ -30,14 +30,6 @@ const uint32_t JointType_Fixed = 0;
 const uint32_t JointType_Hinge = 1;
 const uint32_t JointType_Twist = 2;
 
-/// OSC Message Protocol
-const std::string OSC_FRAME_START = "/frame/start/";
-const std::string OSC_FRAME_PART = "/frame/part/";
-const std::string OSC_FRAME_END = "/frame/end/";
-const std::string OSC_FRAME_INFO = "/frame/info/";
-
-const std::string OSC_FRAME = "frame";
-const std::string OSC_START = "start";
-const std::string OSC_PART = "part";
-const std::string OSC_END = "end";
-const std::string OSC_INFO = "info";
+/// Simulation
+const double FixedTimeStep = 1.0 / 60.0;
+const double FixedTimeStepMillis = (1.0 / 60.0) * 1000.0;

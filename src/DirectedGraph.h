@@ -24,13 +24,14 @@ public:
 	uint32_t getNumNodesUnfolded();
 	uint32_t getNumEndNodesUnfolded();
 	uint32_t getNumJointsUnfolded();
+	std::string getName();
 
 	GraphNode* getRootNode();
 	const std::vector<GraphNode*>& getNodes();
 
 	void print();
 	void save();
-	void load(std::string id);
+	bool load(std::string id);
 
 private:
 	int getNodeIndex(GraphNode* node);
@@ -44,6 +45,8 @@ private:
 
 	std::vector<GraphNode*> _nodes;
 	GraphNode* _rootNode;
+
+	std::string _name = "";
 
 	std::mt19937 _rng;
 	std::random_device _rd;

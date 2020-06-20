@@ -10,11 +10,10 @@ class BufferSender
 public:
 	void setup(std::string host, int outport);
 	void allocate(uint32_t w, uint32_t h, ofPixelFormat type);
-	void setSave(bool b);
 
-	void send(const uint8_t* bytes);
-	void send(const ofPixels& pixels);
-	void send(const ofTexture& texture);
+	void send(const uint8_t* bytes, uint32_t id);
+	void send(const ofPixels& pixels, uint32_t id);
+	void send(const ofTexture& texture, uint32_t id);
 
 private:
 	void writeToPixels(const ofTexture& tex);
@@ -38,6 +37,4 @@ private:
 	uint32_t _height = 0;
 	size_t _bufSize = 0;
 	size_t _compressBound = 0;
-
-	bool _bSaveToDisk = false;
 };

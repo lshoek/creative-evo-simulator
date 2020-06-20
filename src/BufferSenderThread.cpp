@@ -1,5 +1,5 @@
 #include "BufferSenderThread.h"
-#include "SimDefines.h"
+#include "OscProtocol.h"
 
 #define OSC_BUFFER_SIZE 2048
 
@@ -31,9 +31,9 @@ void BufferSenderThread::setProcSize(size_t procSize)
 	_procSize = procSize;
 }
 
-void BufferSenderThread::setInfoFlag(uint32_t infoFlag)
+void BufferSenderThread::setId(uint32_t id)
 {
-	_infoFlag = infoFlag;
+	_id = id;
 }
 
 void BufferSenderThread::send(ofBuffer* pixels)
@@ -61,7 +61,7 @@ void BufferSenderThread::threadedFunction()
 		long processed = 0;
 		long procsize = (_procSize > 0) ? _procSize : buf->size();
 
-		msg_start.setAddress(OSC_FRAME_START);
+		msg_start.setAddress(OSC_ARTIFACT_START);
 		msg_start.addInt32Arg(ceil(procsize / max));
 		sender.sendMessage(msg_start);
 
@@ -72,7 +72,7 @@ void BufferSenderThread::threadedFunction()
 			processed += available;
 
 			std::ostringstream ss;
-			ss << OSC_FRAME_PART << id;
+			ss << OSC_ARTIFACT_PART << id;
 
 			ofBuffer tmpbuf;
 			tmpbuf.set(cbuf, available);
@@ -84,13 +84,14 @@ void BufferSenderThread::threadedFunction()
 			id++;
 		}
 		ofxOscMessage msg_end;
-		msg_end.setAddress(OSC_FRAME_END);
-		msg_end.addInt32Arg(_infoFlag);
+		msg_end.setAddress(OSC_ARTIFACT_END);
+		msg_end.addInt32Arg(_id);
 		sender.sendMessage(msg_end);
 
-		std::ostringstream ss;
-		ss << "sending " << procsize << " bytes over " << id << " messages.";
-		ofLog() << ss.str();
+		//std::ostringstream ss;
+		//ss << "sending " << procsize << " bytes over " << id << " messages.";
+		//ofLog() << ss.str();
+
 		channelReady.send(true);
 	}
 }

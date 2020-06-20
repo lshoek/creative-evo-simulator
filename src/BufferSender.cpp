@@ -1,5 +1,5 @@
 #include "BufferSender.h"
-#include "SimDefines.h"
+#include "OscProtocol.h"
 
 void BufferSender::setup(std::string host, int outport)
 {
@@ -43,12 +43,7 @@ void BufferSender::writeToPixels(const ofTexture& tex)
     _pixBufObjectPtr->unbind(GL_PIXEL_UNPACK_BUFFER);
 }
 
-void BufferSender::setSave(bool b)
-{
-	_bSaveToDisk = b;
-}
-
-void BufferSender::send(const uint8_t* bytes)
+void BufferSender::send(const uint8_t* bytes, uint32_t id)
 {
     uint64_t start = ofGetElapsedTimeMicros();
     size_t compSize = LZ4F_compressFrame(_writeBufPtr->getData(), _compressBound, bytes, _bufSize, &_prefs);
@@ -59,29 +54,28 @@ void BufferSender::send(const uint8_t* bytes)
 
     // compression successful
     if (!bError || compSize < _bufSize) {
-        _senderThread.setInfoFlag(1);
         _senderThread.setProcSize(compSize);
     }
-    else {
-        // compression failed. send full size buffer instead (not recommended)
-        memcpy(_writeBufPtr->getData(), bytes, _bufSize);
-        _senderThread.setInfoFlag(0);
-        _senderThread.setProcSize(_bufSize);
-    }
+    //else {
+    //    // compression failed. send full size buffer instead (not recommended)
+    //    memcpy(_writeBufPtr->getData(), bytes, _bufSize);
+    //    _senderThread.setProcSize(_bufSize);
+    //}
+    _senderThread.setId(id);
     _senderThread.send(_writeBufPtr);
 
     swapBuffers();
 }
 
-void BufferSender::send(const ofPixels& pixels)
+void BufferSender::send(const ofPixels& pixels, uint32_t id)
 {
-    send(pixels.getData());
+    send(pixels.getData(), id);
 }
 
-void BufferSender::send(const ofTexture& texture)
+void BufferSender::send(const ofTexture& texture, uint32_t id)
 {
     writeToPixels(texture);
-    send(*_pixBufPtr);
+    send(*_pixBufPtr, id);
 }
 
 void BufferSender::swapBuffers()

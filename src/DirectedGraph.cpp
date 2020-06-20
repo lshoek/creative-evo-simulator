@@ -265,6 +265,11 @@ uint32_t DirectedGraph::getNumJointsUnfolded()
     return _numJointsUnfolded;
 }
 
+std::string DirectedGraph::getName()
+{
+    return _name;
+}
+
 void DirectedGraph::dfs(GraphNode* node, bool bPrint)
 {
     std::vector<int> recursionLimits(_nodes.size());
@@ -319,6 +324,7 @@ void DirectedGraph::save()
 
     std::string id = ofToString(genomeDir.getFiles().size() + 1);
     ofDirectory::createDirectory(genomeDir.getAbsolutePath() + '\\' + id);
+    _name = id;
 
     int nodeCount = 0;
     int connCount = 0;
@@ -335,12 +341,17 @@ void DirectedGraph::save()
     }
 }
 
-void DirectedGraph::load(std::string id)
+bool DirectedGraph::load(std::string id)
 {
     const ofDirectory genomeDir = ofDirectory(ofToDataPath(NTRS_BODY_GENOME_DIR, true));
     std::string path = genomeDir.getAbsolutePath() + '\\' + id;
 
-    std::vector<ofFile> files = ofDirectory(path).getFiles();
+    ofDirectory dir{path};
+    if (!dir.exists()) {
+        return false;
+    }
+
+    std::vector<ofFile> files = dir.getFiles();
 
     _nodes.clear();
     for (ofFile& f : files) {
@@ -371,6 +382,8 @@ void DirectedGraph::load(std::string id)
             delete c;
         }
     }
+    _name = id;
+    return true;
 }
 
 DirectedGraph::~DirectedGraph()

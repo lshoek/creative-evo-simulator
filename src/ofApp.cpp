@@ -11,7 +11,6 @@
 void ofApp::setup()
 {
 	ofSetWindowTitle(APP_ID);
-	ofSetFrameRate(60);
 	ofSetVerticalSync(false);
 	ofDisableArbTex();
 	ofSetWindowPosition(32, 128);
@@ -22,6 +21,9 @@ void ofApp::setup()
 	ofEnableGLDebugLog();
 	ofLogToConsole();
 	//ofLog() << "Num threads: " << std::thread::hardware_concurrency();
+
+	uint32_t frameRate = (bLockFrameRate) ? 60 : 0;
+	ofSetFrameRate(frameRate);
 
 	uint64_t seed = GetTickCount();
 	ofLog() << "seed: " << seed;
@@ -38,47 +40,41 @@ void ofApp::setup()
 	);
 	viewRect = ofRectangle(0, 0, ofGetWindowWidth(), ofGetWindowHeight());
 	frameFbo.allocate(ofGetWindowWidth(), ofGetWindowHeight(), GL_RGBA);
-	cppnFbo.allocate(512, 512, GL_RGB);
 
 	gui.setup();
 
-	initSimulation();
+	initSim();
 }
 
-void ofApp::initSimulation() 
+void ofApp::initSim() 
 {
 	if (!simulationManager.isInitialized()) {
-
-		uint32_t canvasSize = settings.get("canvas.size", 128);
-		uint32_t canvasNeuralInputSize = settings.get("genome.canvas_neural_input_size", 32);
-
 		simulationManager.bDebugDraw = settings.get("mode.debugdraw", true);
 		simulationManager.bAutoLoadGenome = settings.get("genome.autoload", true);
 		simulationManager.bCameraSnapFocus = settings.get("mode.snapfocus", true);
 		simulationManager.bAxisAlignedAttachments = settings.get("genome.axis_aligned_attachments", false);
 		simulationManager.bUseBodyGenomes = settings.get("genome.body_genomes", true);
 		simulationManager.bFeasibilityChecks = settings.get("genome.feasibility_checks", true);
-		simulationManager.bCanvasInputNeurons = settings.get("genome.canvas_neural_input", false);
+		simulationManager.bCanvasSensors = settings.get("sensors.type", "canvas").compare("canvas") == 0;
 		simulationManager.bSaveArtifactsToDisk = settings.get("canvas.save", true);
 
-		simulationManager.setMaxParallelSims(settings.get("evolution.max_parallel_evals", 4));
-		simulationManager.setCanvasNeuronInputResolution(canvasNeuralInputSize, canvasNeuralInputSize);
+		SimulationManager::SimSettings simSettings;
+		simSettings.evalType = SimulationManager::Coverage;
+		simSettings.canvasSize = settings.get("canvas.size", 256);
+		simSettings.canvasSizeConv = settings.get("canvas.size_conv", 128);
+		simSettings.maxParallelSims = settings.get("evolution.max_parallel_sims", 1);
+		simSettings.genomeFile = settings.get("genome.id", "0");
+		simSettings.host = settings.get("io.host", "localhost");
+		simSettings.inPort = settings.get("io.port_in", 1025);
+		simSettings.outPort = settings.get("io.port_out", 1024);
 
-		SimulationManager::SimSettings simSettings {
-			SimulationManager::NEAT, SimulationManager::Coverage,
-			canvasSize, canvasSize,
-			settings.get("genome.id", "0"),
-			settings.get("io.host", "localhost"),
-			settings.get("io.port_in", 1025),
-			settings.get("io.port_out", 1024)
-		};
 		simulationManager.init(simSettings);
 	}
 }
 
 // Note: the simulator and evolution module don't wait for each other to finish, 
 // which can cause problems on certain user-input.
-void ofApp::startEvolution()
+void ofApp::start()
 {
 	std::string uniqueSimId = ofGetTimestampString("%Y%m%d_%H%M%S_%i");
 
@@ -86,28 +82,10 @@ void ofApp::startEvolution()
 	if (!simulationManager.isSimulationActive()) {
 		simulationManager.startSimulation(uniqueSimId, SimulationManager::EvaluationType::InverseCircleCoverage);
 	}
-	// Then call the evolution loop
-	if (!evoManager.isEvolutionActive()) {
-		evoManager.setup(&simulationManager);
-		evoManager.setMaxParallelEvals(settings.get("evolution.max_parallel_evals", 4));
-		evoManager.startEvolution();
-		renderEventQueuedListener = evoManager.onNewBestFound.newListener([this] {
-			bRenderEventQueued = true;
-			renderEventQueuedListener.unsubscribe();
-		});
-		evolutionStoppedListener = evoManager.onEvolutionStopped.newListener([this] {
-			evoManager.report();
-			evolutionStoppedListener.unsubscribe();
-		});
-	}
 }
 
-void ofApp::stopEvolution()
+void ofApp::stop()
 {
-	// First queue a simulation stop
-	if (evoManager.isEvolutionActive()) {
-		evoManager.stopEvolution();
-	}
 	// Then abort the sim instances that are currently active
 	if (simulationManager.isSimulationActive()) {
 		simulationManager.abortSimInstances();
@@ -119,7 +97,7 @@ void ofApp::update()
 {
 	if (simulationManager.isInitialized()) {
 		uint64_t start = ofGetElapsedTimeMillis();
-		simulationManager.updateTime();
+		simulationManager.update();
 		simulationManager.lateUpdate();
 		perf_update = ofGetElapsedTimeMillis() - start;
 	}
@@ -137,13 +115,6 @@ void ofApp::draw()
 		glEnable(GL_DEPTH_TEST);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-		if (bRenderEventQueued) {
-			cppnFbo.begin();
-			ofClear(0, 1.0f);
-			evoManager.draw();
-			cppnFbo.end();
-			bRenderEventQueued = false;
-		}
 		if (bSimulate)
 		{
 			simulationManager.shadowPass();
@@ -172,6 +143,7 @@ void ofApp::imGui()
 		ImVec2 windowSize(240, 540);
 		ImVec2 overlaySize(240, 140);
 		ImVec2 margin(0, 4);
+		ImVec2 menuBarSize = ImVec2(0, 0);
 		uint32_t offset = 24;
 
 		ImGuiWindowFlags flags =
@@ -183,20 +155,26 @@ void ofApp::imGui()
 
 		if (ImGui::BeginMainMenuBar())
 		{
+			menuBarSize = ImGui::GetWindowSize();
 			if (ImGui::BeginMenu("Main"))
 			{
 				if (ImGui::MenuItem("Monitor Window", "w", bWindow)) {
 					bWindow = !bWindow;
+				}
+				if (ImGui::MenuItem("Lock Frame Rate", NULL, bLockFrameRate)) {
+					bLockFrameRate = !bLockFrameRate;
+					uint32_t frameRate = (bLockFrameRate) ? 60 : 0;
+					ofSetFrameRate(frameRate);
 				}
 				ImGui::EndMenu();
 			}
 			if (ImGui::BeginMenu("Evolution"))
 			{
 				if (ImGui::MenuItem("Start", "e", simulationManager.isSimulationActive())) {
-					startEvolution();
+					start();
 				}
 				if (ImGui::MenuItem("Stop", NULL, false)) {
-					stopEvolution();
+					stop();
 				}
 				ImGui::Separator();
 				if (ImGui::MenuItem("Generate Genome", NULL, false)) {
@@ -208,8 +186,8 @@ void ofApp::imGui()
 				if (ImGui::MenuItem("Axis Aligned Attachments", NULL, simulationManager.bAxisAlignedAttachments)) {
 					simulationManager.bAxisAlignedAttachments = !simulationManager.bAxisAlignedAttachments;
 				}
-				if (ImGui::MenuItem("Input Canvas Neurons", NULL, simulationManager.bCanvasInputNeurons)) {
-					simulationManager.bCanvasInputNeurons = !simulationManager.bCanvasInputNeurons;
+				if (ImGui::MenuItem("Canvas Sensors", NULL, simulationManager.bCanvasSensors)) {
+					simulationManager.bCanvasSensors = !simulationManager.bCanvasSensors;
 				}
 				ImGui::Separator();
 				if (ImGui::MenuItem("Save Genome", NULL, false)) {
@@ -249,9 +227,6 @@ void ofApp::imGui()
 				if (ImGui::MenuItem("Debug Renderer", "d", simulationManager.bDebugDraw)) {
 					simulationManager.bDebugDraw = !simulationManager.bDebugDraw;
 				}
-				if (ImGui::MenuItem("Shadows", NULL, simulationManager.bShadows)) {
-					simulationManager.bShadows = !simulationManager.bShadows;
-				}
 				if (ImGui::MenuItem("Debug Light", NULL, simulationManager.bMouseLight)) {
 					simulationManager.bMouseLight = !simulationManager.bMouseLight;
 				}
@@ -271,7 +246,7 @@ void ofApp::imGui()
 
 		// Overlay
 		if (bMetaOverlay) {
-			ImGui::SetNextWindowPos(ImVec2(ofGetWindowWidth() - overlaySize.x - offset, offset));
+			ImGui::SetNextWindowPos(ImVec2(ofGetWindowWidth() - overlaySize.x - offset, menuBarSize.y + offset));
 			ImGui::SetNextWindowSize(overlaySize);
 			ImGui::SetNextWindowBgAlpha(0.5f);
 
@@ -301,64 +276,46 @@ void ofApp::imGui()
 		}
 
 		if (bWindow) {
-			ImGui::SetNextWindowSize(windowSize);
-			ImGui::SetNextWindowBgAlpha(0.75f);
+			ImGui::SetNextWindowPos(ImVec2(0, menuBarSize.y));
+			ImGui::SetNextWindowSize(ImVec2(240, ofGetWindowHeight()-(menuBarSize.y+offset)));
+			ImGui::SetNextWindowBgAlpha(0.5f);
 			ImGui::Begin("Monitor", NULL, flags);
 
 			if (bSimulate) {
 				if (simulationManager.isInitialized()) {
-					ImGui::Text("Simulation Time:");
-					ImGui::Text("%.02f", simulationManager.getSimulationTime());
-					ImGui::Separator();
 					ImGui::Text("Simulation Speed:");
 					ImGui::SliderInt("<", (int*)&simulationManager.simulationSpeed, 0, 16);
 					ImGui::Separator();
 					if (simulationManager.isSimulationInstanceActive()) {
+						ImGui::Text("Elapsed time:");
+						ImGui::Text(simulationManager.getFocusInfo().c_str());
+						ImGui::Separator();
+						ImGui::Text("Activation time:");
+						ImGui::Text("%dms", simulationManager.getFocusCreature()->getActivationMillis());
+						ImGui::Separator();
 						if (simulationManager.getFocusCanvas() != nullptr) {
 							ImGui::Text("Creature Artifact:");
 							ImGui::Image((void*)(intptr_t)simulationManager.getFocusCanvas()->getCanvasFbo()->getTexture().getTextureData().textureID, ImVec2(windowSize.x, windowSize.x));
 							ImGui::Text("Neural Input:");
-							ImGui::Image((void*)(intptr_t)simulationManager.getFocusCanvas()->getCanvasNeuralInputRawFbo()->getTexture().getTextureData().textureID, ImVec2(windowSize.x, windowSize.x));
+							ImGui::Image((void*)(intptr_t)simulationManager.getFocusCanvas()->getConvFbo()->getTexture().getTextureData().textureID, ImVec2(windowSize.x, windowSize.x));
 							ImGui::Separator();
+							ImGui::Text("Actuators:");
+							ImGui::TextWrapped(ofToString(simulationManager.getFocusCreature()->getOutputs()).c_str());
 						}
-						if (simulationManager.getFocusCreature() != nullptr) {
-							ImGui::Text("Activation time:");
-							ImGui::Text("%dms", simulationManager.getFocusCreature()->getActivationMillis());
-							ImGui::Text("Global Motor Strength:");
-							ImGui::SliderFloat("<<", &simulationManager.getFocusCreature()->m_motorStrength, 0, 1);
-							ImGui::Separator();
+						if (simulationManager.bDebugDraw) {
+							if (simulationManager.getFocusCreature() != nullptr) {
+								ImGui::Text("Global Motor Strength:");
+								ImGui::SliderFloat("<<", &simulationManager.getFocusCreature()->m_motorStrength, 0, 1);
+								ImGui::Separator();
+							}
 						}
 					}
-					ImGui::Separator();
 				}
-			}
-			if (evoManager.isEvolutionActive()) {
-				std::vector<float> fitnessFloats(
-					evoManager.getFitnessResults().begin(),
-					evoManager.getFitnessResults().end()
-				);
-				if (!fitnessFloats.empty()) {
-					ImGui::Text("Best Fitness per Generation:");
-					ImGui::PlotLines(
-						"Fitness", &fitnessFloats[0], fitnessFloats.size(), 0, 0,
-						0, evoManager.getTargetFitness(), ImVec2(windowSize.x, 96)
-					);
-					ImGui::Separator();
-				}
-				ImGui::Text("Current Generation: %d", evoManager.getNumGeneration());
-				ImGui::Text("Evaluated: %.02f%%", evoManager.getPctGenEvaluated() * 100.0f);
-				ImGui::Text("Best Fitness: %.03f/%.03f", evoManager.getBestFitness(), evoManager.getTargetFitness());
-				ImGui::Separator();
 			}
 			ImGui::End();
 		}
 	}
 	gui.end();
-}
-
-void ofApp::queueRenderEvent()
-{
-	bRenderEventQueued = true;
 }
 
 void ofApp::windowResized(int w, int h)
@@ -372,7 +329,7 @@ void ofApp::keyPressed(int key)
 {
 	if (bSimulate) {
 		if (key == 'e') {
-			startEvolution();
+			start();
 		}
 		if (key == 'g') {
 			bGui = !bGui;
@@ -402,6 +359,5 @@ void ofApp::keyPressed(int key)
 
 void ofApp::exit()
 {
-	stopEvolution();
-	evoManager.exit();
+	stop();
 }

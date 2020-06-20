@@ -1,44 +1,46 @@
 #include "SimCanvasNode.h"
 #include "SimDefines.h"
 #include "SimUtils.h"
+#include "MeshUtils.h"
 #include "toolbox.h"
 
 // Maximum number of contactpoints registered and applied to canvas per frame.
 // This number should be synced with BRUSH_COORD_BUF_MAXSIZE in canvas.frag.
 #define BRUSH_COORD_BUF_MAXSIZE 8
 
-SimCanvasNode::SimCanvasNode(btVector3 position, float size, float extraBounds, int xRes, int yRes, int xNeuralInput, int yNeuralInput, btDynamicsWorld* ownerWorld) :
+SimCanvasNode::SimCanvasNode(btVector3 position, float size, float extraBounds, int xRes, int yRes, int xConvRes, int yConvRes, bool bDownSample, btDynamicsWorld* ownerWorld) :
     SimNodeBase(CanvasTag, ownerWorld), _canvasSize(size), _margin(extraBounds)
 {
     _color = ofColor::white;
     _brushColor = ofColor::black;
 
+    _bDownSample = bDownSample;
     _canvasRes = glm::ivec2(xRes, yRes);
-    _canvasNeuralInputRes = glm::vec2(xNeuralInput, yNeuralInput);
-    _canvasDrawQuad = tb::rectMesh(0, 0, _canvasRes.x, _canvasRes.y, true);
-    _canvasLowResDrawQuad = tb::rectMesh(0, 0, _canvasNeuralInputRes.x, _canvasNeuralInputRes.y, true);
+    _canvasConvRes = _bDownSample ? glm::vec2(xConvRes, yConvRes) : _canvasRes;
+    _drawQuad = MeshUtils::rectMesh(0, 0, _canvasRes.x, _canvasRes.y, true);
+    _drawQuadConv = MeshUtils::rectMesh(0, 0, _canvasConvRes.x, _canvasConvRes.y, true);
 
     initPlane(position, _canvasSize);
     
     // Single-channel canvas 'height map'
     for (int i = 0; i < 2; i++) {
-        _canvasFbo[i].allocate(_canvasRes.x, _canvasRes.y, GL_R8);
+        _fbo[i].allocate(_canvasRes.x, _canvasRes.y, GL_R8);
     }
     // Reduced resolution neural input buffer
     ofFboSettings fboSettings;
-    fboSettings.width = _canvasNeuralInputRes.x;
-    fboSettings.height = _canvasNeuralInputRes.y;
+    fboSettings.width = _canvasConvRes.x;
+    fboSettings.height = _canvasConvRes.y;
     fboSettings.internalformat = GL_R8;
     fboSettings.minFilter = GL_NEAREST;
     fboSettings.maxFilter = GL_NEAREST;
-    _canvasNeuralInputFbo.allocate(fboSettings);
+    _convFbo.allocate(fboSettings);
 
     // Canvas color and alpha separated
-    _canvasColorFbo.allocate(_canvasRes.x, _canvasRes.y, GL_RGBA);
+    _colorFbo.allocate(_canvasRes.x, _canvasRes.y, GL_RGBA);
 
-    _canvasColorFbo.begin();
+    _colorFbo.begin();
     ofClear(_color.r, _color.b, _color.g, 0.0f);
-    _canvasColorFbo.end();
+    _colorFbo.end();
 
     _brushCoordQueue.resize(BRUSH_COORD_BUF_MAXSIZE);
     for (int i = 0; i < BRUSH_COORD_BUF_MAXSIZE; i++) {
@@ -53,9 +55,7 @@ SimCanvasNode::SimCanvasNode(btVector3 position, float size, float extraBounds, 
     for (int i = 0; i < 2; i++) {
         _pixelWriteBuffers[i].allocate(_canvasRes.x * _canvasRes.y, GL_DYNAMIC_READ);
     }
-    _neuralInputMat = cv::Mat(_canvasNeuralInputRes.x, _canvasNeuralInputRes.y, CV_8UC1, cv::Scalar::all(0));
-    _neuralInputMatDouble = cv::Mat(_canvasNeuralInputRes.x, _canvasNeuralInputRes.y, CV_64F, cv::Scalar::all(0));
-    _neuralInputPixelBuffer.allocate(_canvasNeuralInputRes.x, _canvasNeuralInputRes.y, 1);
+    _convPixelBuffer.allocate(_canvasConvRes.x, _canvasConvRes.y, 1);
 
     iPbo = 0;
     _pboPtr = &_pixelWriteBuffers[iPbo];
@@ -63,7 +63,7 @@ SimCanvasNode::SimCanvasNode(btVector3 position, float size, float extraBounds, 
 
 void SimCanvasNode::initPlane(btVector3 position, float size)
 {
-    _mesh = std::make_shared<ofMesh>(tb::gridMesh(2, 2, size * 2, true));
+    _mesh = std::make_shared<ofMesh>(MeshUtils::gridMesh(2, 2, size*2, true));
 
     btCollisionShape* shape = new btStaticPlaneShape(btVector3(0, 1, 0), 0);
     createBody(position, shape, 0, this);
@@ -71,28 +71,28 @@ void SimCanvasNode::initPlane(btVector3 position, float size)
 
 void SimCanvasNode::update()
 {
-    if (_canvasUpdateShader && _brushQueueSize > 0)
+    if (_updateShader && _brushQueueSize > 0)
     {
         // bind coord buffers
         _brushCoordBuffer.bindBase(GL_SHADER_STORAGE_BUFFER, 0);
         _brushCoordBuffer.updateData(0, _brushCoordQueue);
 
         // update shader
-        iFbo = SWAP(iFbo);
+        iFbo = tb::swap(iFbo);
 
         glEnable(GL_BLEND);
         glBlendEquation(GL_MAX);
         glBlendFunc(GL_ONE, GL_ONE);
-        _canvasFbo[iFbo].begin();
+        _fbo[iFbo].begin();
 
-        _canvasFbo[SWAP(iFbo)].draw(0, 0);
+        _fbo[tb::swap(iFbo)].draw(0, 0);
 
-        _canvasUpdateShader->begin();
-        _canvasUpdateShader->setUniform1i("brush_coords_bufsize", _brushQueueSize);
+        _updateShader->begin();
+        _updateShader->setUniform1i("brush_coords_bufsize", _brushQueueSize);
 
-        _canvasDrawQuad.draw();
-        _canvasUpdateShader->end();
-        _canvasFbo[iFbo].end();
+        _drawQuad.draw();
+        _updateShader->end();
+        _fbo[iFbo].end();
 
         glBlendEquation(GL_FUNC_ADD);
         glDisable(GL_BLEND);
@@ -101,17 +101,17 @@ void SimCanvasNode::update()
     }
 
     // This is just for visualization so completely optional and can be skipped in headless mode
-    if (_canvasColorizeShader) {
-        _canvasColorFbo.begin();
+    if (_colorizeShader) {
+        _colorFbo.begin();
 
-        _canvasColorizeShader->begin();
-        _canvasColorizeShader->setUniformTexture("tex", _canvasFbo[iFbo].getTexture(), 0);
-        _canvasColorizeShader->setUniform4f("brush_color", _brushColor);
-        _canvasColorizeShader->setUniform4f("canvas_color", _color);
-        _canvasDrawQuad.draw();
-        _canvasColorizeShader->end();
+        _colorizeShader->begin();
+        _colorizeShader->setUniformTexture("tex", _fbo[iFbo].getTexture(), 0);
+        _colorizeShader->setUniform4f("brush_color", _brushColor);
+        _colorizeShader->setUniform4f("canvas_color", _color);
+        _drawQuad.draw();
+        _colorizeShader->end();
 
-        _canvasColorFbo.end();
+        _colorFbo.end();
     }
 
     // invalidate values
@@ -122,28 +122,27 @@ void SimCanvasNode::update()
     _brushQueueSize = 0;
 }
 
-void SimCanvasNode::updateNeuralInputBuffer(bool bUpdateBufferDouble)
+void SimCanvasNode::updateConvPixelBuffer()
 {
     // Reduce height map resolution for neural inputs
-    _canvasNeuralInputFbo.begin();
-    _canvasFbo[iFbo].draw(0, 0, _canvasNeuralInputRes.x, _canvasNeuralInputRes.y);
-    _canvasNeuralInputFbo.end();
+    if (_bDownSample) {
+        _convFbo.begin();
+        _fbo[iFbo].draw(0, 0, _canvasConvRes.x, _canvasConvRes.y);
+        _convFbo.end();
+    }
+    ofFbo* fboPtr = _bDownSample ? &_convFbo : &_fbo[iFbo];
 
-    _canvasNeuralInputFbo.copyTo(*_pboPtr);
+    fboPtr->copyTo(*_pboPtr);
     _pboPtr->bind(GL_PIXEL_UNPACK_BUFFER);
 
     ofBufferObject* backBufPtr = &_pixelWriteBuffers[(iPbo + 1) % 2];
     unsigned char* bytesPtr = backBufPtr->map<unsigned char>(GL_READ_ONLY);
 
-    _neuralInputPixelBuffer.setFromExternalPixels(bytesPtr, _canvasNeuralInputRes.x, _canvasNeuralInputRes.y, 1);
+    _convPixelBuffer.setFromExternalPixels(bytesPtr, _canvasConvRes.x, _canvasConvRes.y, 1);
 
     backBufPtr->unmap();
     backBufPtr->unbind(GL_PIXEL_UNPACK_BUFFER);
 
-    _neuralInputMat = cv::Mat(_canvasNeuralInputRes.x, _canvasNeuralInputRes.y, CV_8UC1, _neuralInputPixelBuffer.getData());
-    if (bUpdateBufferDouble) {
-        _neuralInputMat.convertTo(_neuralInputMatDouble, CV_64F, 1.0 / 255.0);
-    }
     swapPbo();
 }
 
@@ -154,10 +153,7 @@ void SimCanvasNode::draw()
         ofMultMatrix(SimUtils::bulletToGlm(getTransform()));
 
         _shader->begin();
-        if (bUseTexture) {
-            //_shader->setUniformTexture("tex", _canvasFbo[iFbo].getTexture(), 0);
-            _shader->setUniformTexture("tex", _canvasColorFbo.getTexture(), 0);
-        }
+        _shader->setUniformTexture("tex", _colorFbo.getTexture(), 0);
         _shader->setUniform4f("color", ofColor::white);
         _shader->setUniform4f("mtl.ambient", _material->getAmbientColor());
         _shader->setUniform4f("mtl.diffuse", _material->getDiffuseColor());
@@ -204,29 +200,24 @@ void SimCanvasNode::swapPbo()
     _pboPtr = &_pixelWriteBuffers[iPbo];
 }
 
-const ofPixels& SimCanvasNode::getNeuralInputPixelBuffer()
+const ofPixels& SimCanvasNode::getConvPixelBuffer()
 {
-    return _neuralInputPixelBuffer;
+    return _convPixelBuffer;
 }
 
-const double* SimCanvasNode::getNeuralInputsBufferDouble()
+ofFbo* SimCanvasNode::getConvFbo()
 {
-    return _neuralInputMatDouble.ptr<double>(0);
-}
-
-ofFbo* SimCanvasNode::getCanvasNeuralInputRawFbo()
-{
-    return &_canvasNeuralInputFbo;
+    return &_convFbo;
 }
 
 ofFbo* SimCanvasNode::getCanvasRawFbo()
 {
-    return &_canvasFbo[iFbo];
+    return &_fbo[iFbo];
 }
 
 ofFbo* SimCanvasNode::getCanvasFbo()
 {
-    return &_canvasColorFbo;
+    return &_colorFbo;
 }
 
 glm::ivec2 SimCanvasNode::getCanvasResolution()
@@ -235,11 +226,11 @@ glm::ivec2 SimCanvasNode::getCanvasResolution()
 }
 
 void SimCanvasNode::setCanvasUpdateShader(std::shared_ptr<ofShader> shader) {
-    _canvasUpdateShader = shader; 
+    _updateShader = shader; 
 }
 
 void SimCanvasNode::setCanvasColorizeShader(std::shared_ptr<ofShader> shader) {
-    _canvasColorizeShader = shader;
+    _colorizeShader = shader;
 }
 
 void SimCanvasNode::enableBounds()

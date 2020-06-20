@@ -61,6 +61,7 @@ protected:
 	uint32_t _tag;
 
 	ofColor _color;
+
 	std::shared_ptr<ofShader> _shader;
 	std::shared_ptr<ofTexture> _texture;
 	std::shared_ptr<ofMaterial> _material;

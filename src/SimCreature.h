@@ -5,37 +5,37 @@
 #include "ofGraphics.h"
 #include "ofMaterial.h"
 #include "ofMesh.h"
-#include "GenomeBase.h"
 #include "DirectedGraph.h"
-
-#define DRAW_INTERPENETRATIONS false
 
 class SimCreature
 {
 public:
 	// Initialization from a graph genome
 	SimCreature(btVector3 position, std::shared_ptr<DirectedGraph> graph, btDynamicsWorld* ownerWorld);
-	// Spawns a walker with a specified number of legs
-	SimCreature(btVector3 position, uint32_t numLegs, btDynamicsWorld* ownerWorld, bool bInit);
+
 	~SimCreature();
 
+	bool isAwaitingOutputUpdate();
 	bool updateTimeStep(double timeStep);
-	void activate();
 	void update();
 	void setOutputs(const std::vector<float>& outputs);
+	const std::vector<double>& getOutputs();
 
 	void draw();
 	void drawImmediate();
 
 	bool feasibilityCheck();
 
+	uint32_t getID();
+	uint32_t getNumOutputs();
+	uint32_t getNumJoints();
+	const DirectedGraph& getBodyGenome();
+
 	btTypedConstraint** getJoints();
+	std::vector<float> getJointState();
+
 	btRigidBody** getRigidBodies();
 	SimNode** getSimNodes();
-
-	// Makes a deep copy of the genome and stores/uses it until the simulation instance is finished.
-	void setControlPolicyGenome(const GenomeBase& genome);
-	GenomeBase* getControlPolicyGenome();
 
 	enum SensorMode { Touch, Canvas };
 	SensorMode _sensorMode;
@@ -79,11 +79,8 @@ private:
 	bool bIsDebugCreature = false;
 
 	btDynamicsWorld* m_ownerWorld;
-
-	GenomeBase* m_controlPolicyGenome = NULL;
-	DirectedGraph* m_morphologyGenome = NULL;
-
-	btVector3 m_spawnPosition;
+	DirectedGraph* m_bodyGenome = NULL;
+	uint32_t m_id = 0;
 
 	// standard rigid bodies and shapes for creature
 	std::vector<btRigidBody*> m_bodies;
@@ -109,6 +106,7 @@ private:
 	uint32_t m_numJoints;
 	uint32_t m_numLegs;
 	uint32_t m_numBrushes;
+	uint32_t m_numOutputs;
 
 	uint64_t m_activationMillis = 0;
 
@@ -120,9 +118,10 @@ private:
 	// output neuron activations
 	std::vector<double> m_outputs;
 
+	btVector3 m_spawnPosition;
 	btScalar m_targetAccumulator;
 	btScalar m_timeStep;
-	bool m_updateQueued = false;
+	bool m_bAwaitingOutputUpdate = false;
 
 	btScalar gRootBodyRadius = 0.25f;
 	btScalar gRootBodyHeight = 0.1f;

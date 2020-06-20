@@ -4,7 +4,7 @@
 #pragma include "phong.glslinc"
 #pragma include "noise.glslinc"
 
-#define inv(x) 1.0-x
+#define inv(x) (1.0-x)
 
 uniform float alpha = 1.0;
 
@@ -15,9 +15,13 @@ uniform sampler2D tex;
 uniform sampler2DShadow shadowMap;
 
 uniform vec4 color = vec4(1.0);
+uniform vec4 brush_color = vec4(1.0);
+uniform float brush = 0.0;
+uniform float brush_active = 0.0;
+
 uniform vec3 eyePos;
 
-float off = 0.05;
+float off = 0.1;
 float eps = 0.01;
 
 in vec4 eye;
@@ -78,7 +82,7 @@ float shadow_calc(vec4 fragPosLightSpace, vec3 lightDir)
 void main() 
 {
 	vec2 st = texcoord_varying;
-	vec4 texcol = texture(tex, st) * color;
+	vec4 texcol = texture(tex, texcoord_varying);
 
 	vec4 ambient = light.ambient * mtl.ambient;
 
@@ -92,7 +96,7 @@ void main()
 	vec4 specular = light.specular * (spec * mtl.specular);
 
 	float shadow = shadow_calc(fragPosLightSpace, light_dir);
-    vec3 lighting = (ambient.rgb + (1.0 - shadow) * (diffuse.rgb + specular.rgb)) * texcol.rgb;  
+    vec3 lighting = (ambient.rgb + inv(shadow) * (diffuse.rgb + specular.rgb)) * texcol.rgb;  
 
     vec4 outcol = vec4(lighting, 1.0);
 	outcol.a = alpha;

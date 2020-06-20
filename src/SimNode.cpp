@@ -2,6 +2,7 @@
 #include "SimCreature.h"
 #include "SimDefines.h"
 #include "SimUtils.h"
+#include "MeshUtils.h"
 #include "toolbox.h"
 
 SimNode::SimNode(int tag, btDynamicsWorld* owner) : SimNodeBase(tag, owner)
@@ -28,7 +29,7 @@ void SimNode::initCapsule(btVector3 position, float radius, float height, float 
 
 void SimNode::initPlane(btVector3 position, float size, float mass)
 {
-    _mesh = std::make_shared<ofMesh>(tb::gridMesh(2, 2, size*2, true));
+    _mesh = std::make_shared<ofMesh>(MeshUtils::gridMesh(2, 2, size*2, true));
 
     btCollisionShape* shape = new btStaticPlaneShape(btVector3(0, 1, 0), 0);
     createBody(position, shape, mass, this);
@@ -46,6 +47,9 @@ void SimNode::draw()
                 _shader->setUniformTexture("tex", *_texture, 0);
             }
             _shader->setUniform4f("color", _color);
+            _shader->setUniform4f("brush_color", _inkColor);
+            _shader->setUniform1f("brush", isBrush());
+            _shader->setUniform1f("brush_active", isBrushActivated());
             _shader->setUniform4f("mtl.ambient", _material->getAmbientColor());
             _shader->setUniform4f("mtl.diffuse", _material->getDiffuseColor());
             _shader->setUniform4f("mtl.specular", _material->getSpecularColor());

@@ -11,7 +11,6 @@ uniform float alpha = 1.0;
 uniform Material mtl;
 uniform Light light;
 
-uniform sampler2D tex;
 uniform sampler2DShadow shadowMap;
 
 uniform vec4 color = vec4(1.0);
@@ -78,7 +77,13 @@ float shadow_calc(vec4 fragPosLightSpace, vec3 lightDir)
 void main() 
 {
 	vec2 st = texcoord_varying;
-	vec4 texcol = texture(tex, st) * color;
+
+	float frame = max(
+		smoothstep(off, off-eps, st.y) + smoothstep(off, off-eps, inv(st.y)),
+		smoothstep(off, off-eps, st.x) + smoothstep(off, off-eps, inv(st.x))
+	);
+
+	vec4 texcol = color * inv(frame);
 
 	vec4 ambient = light.ambient * mtl.ambient;
 

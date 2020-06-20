@@ -14,7 +14,7 @@ public:
 	void setSaveSize(int w, int h);
 
 	void setProcSize(size_t procSize);
-	void setInfoFlag(uint32_t infoFlag);
+	void setId(uint32_t id);
 
 	void send(ofBuffer* img);
 	void waitReady();
@@ -29,6 +29,6 @@ private:
 	ofxOscSender sender;
 	int width, height;
 
-	uint8_t _infoFlag = 0;
+	uint32_t _id = 0;
 	size_t _procSize = 0;
 };

@@ -2,16 +2,16 @@
 #include "SimNode.h"
 #include "ofBufferObject.h"
 #include "ofFbo.h"
-#include "ofxOpenCv.h"
+#include "ofPixels.h"
 
 class SimCanvasNode : public SimNodeBase
 {
 public:
-	SimCanvasNode(btVector3 position, float size, float extraBounds, int xRes, int yRes, int xNeuralInput, int yNeuralInput, btDynamicsWorld* ownerWorld);
+	SimCanvasNode(btVector3 position, float size, float extraBounds, int xRes, int yRes, int xNeuralInput, int yNeuralInput, bool bDownSample, btDynamicsWorld* ownerWorld);
 	~SimCanvasNode();
 
 	void update();
-	void updateNeuralInputBuffer(bool bUpdateBufferDouble);
+	void updateConvPixelBuffer();
 
 	virtual void draw() override;
 	virtual void drawImmediate() override;
@@ -26,10 +26,8 @@ public:
 	ofFbo* getCanvasRawFbo();
 	ofFbo* getCanvasFbo();
 
-	ofFbo* getCanvasNeuralInputRawFbo();
-
-	const ofPixels& getNeuralInputPixelBuffer();
-	const double* getNeuralInputsBufferDouble();
+	ofFbo* getConvFbo();
+	const ofPixels& getConvPixelBuffer();
 
 	void setCanvasUpdateShader(std::shared_ptr<ofShader> shader);
 	void setCanvasColorizeShader(std::shared_ptr<ofShader> shader);
@@ -51,13 +49,13 @@ private:
 
 	// canvas
 	glm::ivec2 _canvasRes;
-	glm::ivec2 _canvasNeuralInputRes;
+	glm::ivec2 _canvasConvRes;
 
 	float _canvasSize;
 	float _margin;
 
-	ofMesh _canvasDrawQuad;
-	ofMesh _canvasLowResDrawQuad;
+	ofMesh _drawQuad;
+	ofMesh _drawQuadConv;
 
 	// brush coords
 	ofBufferObject _brushCoordBuffer;
@@ -65,16 +63,13 @@ private:
 	unsigned int _brushQueueSize = 0;
 
 	// render buffers
-	ofFbo _canvasNeuralInputFbo;
-	ofFbo _canvasColorFbo;
-	ofFbo _canvasFbo[2];
+	ofFbo _convFbo;
+	ofFbo _colorFbo;
+	ofFbo _fbo[2];
 	int iFbo = 0;
+	bool _bDownSample = false;
 
-	// neural input
-	cv::Mat _neuralInputMat;
-	cv::Mat _neuralInputMatDouble;
-
-	ofPixels _neuralInputPixelBuffer;
+	ofPixels _convPixelBuffer;
 	ofBufferObject _pixelWriteBuffers[2];
 	ofBufferObject* _pboPtr;
 	uint32_t iPbo;
@@ -87,6 +82,6 @@ private:
 	bool _bBounds = false;
 
 	// special shaders
-	std::shared_ptr<ofShader> _canvasUpdateShader;
-	std::shared_ptr<ofShader> _canvasColorizeShader;
+	std::shared_ptr<ofShader> _updateShader;
+	std::shared_ptr<ofShader> _colorizeShader;
 };

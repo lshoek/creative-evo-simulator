@@ -1,15 +1,10 @@
 #pragma once
 
 #include "ofMain.h"
-#include "EvoManager.h"
 #include "SimulationManager.h"
 #include "ofxGrabCam.h"
 #include "ofxImGui.h"
 #include "ofxIniSettings.h"
-
-#include "MultiNEAT.h"
-#include "GenomeBase.h"
-#include "XORFitnessFunc.h"
 
 class ofApp : public ofBaseApp
 {
@@ -21,17 +16,14 @@ public:
 
 	void imGui();
 
-	void initSimulation();
-	void startEvolution();
-	void stopEvolution();
+	void initSim();
+	void start();
+	void stop();
 
 	void windowResized(int w, int h);
 	void keyPressed(int key);
 
-	void queueRenderEvent();
-
 private:
-    EvoManager evoManager;
 	SimulationManager simulationManager;
 
 	ofEventListener renderEventQueuedListener;
@@ -41,7 +33,6 @@ private:
 	ofRectangle viewRect;
 
 	ofFbo frameFbo;
-	ofFbo cppnFbo;
 
 	ofxImGui::Gui gui;
 	ofxIniSettings settings;
@@ -54,12 +45,12 @@ private:
 	bool bMetaOverlay = true;
 
 	// App toggles
-	bool bRenderEventQueued = false;
 	bool bEvolve = true;
 	bool bSimulate = true;
 	bool bDraw = true;
 	bool bShadows = true;
 	bool bGui = true;
+	bool bLockFrameRate = true;
 
 	struct GuiFileItem
 	{

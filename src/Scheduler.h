@@ -8,17 +8,16 @@ public:
 	ofEvent<void> tick;
 	long waitTimeMs = 10000;
 
-	void Scheduler::setup(float f) {
-		waitTimeMs = long(1000 * f);
+	void Scheduler::setup(float waitSeconds) {
+		waitTimeMs = long(1000 * waitSeconds);
 	};
 
 private:
 	void Scheduler::threadedFunction() 
 	{
-		while (true) {
+		while (isThreadRunning()) {
 			sleep(waitTimeMs);
-			ofNotifyEvent(tick);
-			waitForThread();
+			tick.notify();
 		}
 	}
 };

@@ -2,10 +2,10 @@
     "axis_x": 0,
     "axis_y": 0,
     "axis_z": -1,
-    "childAnchorDir_x": 0.9155082106590271,
-    "childAnchorDir_y": -0.28331947326660156,
-    "childAnchorDir_z": -0.28561294078826904,
+    "childAnchorDir_x": 0.5911883115768433,
+    "childAnchorDir_y": -0.4990914463996887,
+    "childAnchorDir_z": -0.6335646510124207,
     "fromIndex": 0,
-    "scalingFactor": 0.7867927551269531,
+    "scalingFactor": 0.9349727630615234,
     "toIndex": 1
 }

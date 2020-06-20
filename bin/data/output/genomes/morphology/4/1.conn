@@ -1,11 +1,11 @@
 {
-    "axis_x": -1,
+    "axis_x": 0,
     "axis_y": 0,
-    "axis_z": 0,
-    "childAnchorDir_x": -0.5454141497612,
-    "childAnchorDir_y": 0.3585236072540283,
-    "childAnchorDir_z": -0.7576174736022949,
+    "axis_z": 1,
+    "childAnchorDir_x": 0.6105748414993286,
+    "childAnchorDir_y": -0.5904994010925293,
+    "childAnchorDir_z": 0.5277393460273743,
     "fromIndex": 0,
-    "scalingFactor": 0.8282283544540405,
-    "toIndex": 2
+    "scalingFactor": 0.791530191898346,
+    "toIndex": 3
 }

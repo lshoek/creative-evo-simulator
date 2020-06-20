@@ -10,9 +10,6 @@
     <Filter Include="libs">
       <UniqueIdentifier>{75bdc8b3-22da-4b6d-9c35-2eee3913d508}</UniqueIdentifier>
     </Filter>
-    <Filter Include="libs\MultiNEAT">
-      <UniqueIdentifier>{af7aa803-ea62-4ce0-b55c-5bc0de8a1136}</UniqueIdentifier>
-    </Filter>
     <Filter Include="addons\ofxImGui">
       <UniqueIdentifier>{e5be9ff0-c2a6-47a0-b296-dd9e979fd24f}</UniqueIdentifier>
     </Filter>
@@ -49,6 +46,9 @@
     <Filter Include="libs\lz4">
       <UniqueIdentifier>{cddcb2aa-1cfe-45a3-ae92-9ee705d56c85}</UniqueIdentifier>
     </Filter>
+    <Filter Include="libs\json">
+      <UniqueIdentifier>{f56cebb7-b599-4a71-be8e-c5b1aba386f7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="icon.rc" />
@@ -59,42 +59,6 @@
     </ClCompile>
     <ClCompile Include="src\ofApp.cpp">
       <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\XORFitnessFunc.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\GenomeBase.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\tools\MultiNEAT\src\Genome.cpp">
-      <Filter>libs\MultiNEAT</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\tools\MultiNEAT\src\Innovation.cpp">
-      <Filter>libs\MultiNEAT</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\tools\MultiNEAT\src\NeuralNetwork.cpp">
-      <Filter>libs\MultiNEAT</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\tools\MultiNEAT\src\Parameters.cpp">
-      <Filter>libs\MultiNEAT</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\tools\MultiNEAT\src\Population.cpp">
-      <Filter>libs\MultiNEAT</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\tools\MultiNEAT\src\Random.cpp">
-      <Filter>libs\MultiNEAT</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\tools\MultiNEAT\src\Species.cpp">
-      <Filter>libs\MultiNEAT</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\tools\MultiNEAT\src\Substrate.cpp">
-      <Filter>libs\MultiNEAT</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\tools\MultiNEAT\src\Traits.cpp">
-      <Filter>libs\MultiNEAT</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\tools\MultiNEAT\src\Utils.cpp">
-      <Filter>libs\MultiNEAT</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\addons\ofxImGui\libs\imgui\src\imgui.cpp">
       <Filter>addons\ofxImGui\libs\imgui\src</Filter>
@@ -156,9 +120,6 @@
     <ClCompile Include="src\ImageSaverThread.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\PaintFitnessFunc.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="src\SimNodeBase.cpp">
       <Filter>src</Filter>
     </ClCompile>
@@ -172,9 +133,6 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\DirectedGraphConnection.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\EvoManager.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\addons\ofxShadowMap\src\ofxShadowMap.cpp">
@@ -255,67 +213,19 @@
     <ClCompile Include="libs\lz4\xxhash.c">
       <Filter>libs\lz4</Filter>
     </ClCompile>
-    <ClCompile Include="src\BufferReceiver.cpp">
+    <ClCompile Include="src\ImageSaver.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\ImageSaver.cpp">
+    <ClCompile Include="src\NetworkManager.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SimWorld.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ofApp.h">
       <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\XORFitnessFunc.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\FitnessFunc.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\GenomeBase.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\Genes.h">
-      <Filter>libs\MultiNEAT</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\Genome.h">
-      <Filter>libs\MultiNEAT</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\Innovation.h">
-      <Filter>libs\MultiNEAT</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\MultiNEAT.h">
-      <Filter>libs\MultiNEAT</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\MultiNEATAssert.h">
-      <Filter>libs\MultiNEAT</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\NeuralNetwork.h">
-      <Filter>libs\MultiNEAT</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\Parameters.h">
-      <Filter>libs\MultiNEAT</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\PhenotypeBehavior.h">
-      <Filter>libs\MultiNEAT</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\Population.h">
-      <Filter>libs\MultiNEAT</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\Random.h">
-      <Filter>libs\MultiNEAT</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\Species.h">
-      <Filter>libs\MultiNEAT</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\Substrate.h">
-      <Filter>libs\MultiNEAT</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\Traits.h">
-      <Filter>libs\MultiNEAT</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\tools\MultiNEAT\src\Utils.h">
-      <Filter>libs\MultiNEAT</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\addons\ofxImGui\libs\imgui\src\imgui.h">
       <Filter>addons\ofxImGui\libs\imgui\src</Filter>
@@ -398,9 +308,6 @@
     <ClInclude Include="src\ImageSaverThread.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="src\PaintFitnessFunc.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="src\SimFitnessFunc.h">
       <Filter>src</Filter>
     </ClInclude>
@@ -426,9 +333,6 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="src\SimDefines.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\EvoManager.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="src\EvoUtils.h">
@@ -545,10 +449,22 @@
     <ClInclude Include="libs\lz4\xxhash.h">
       <Filter>libs\lz4</Filter>
     </ClInclude>
-    <ClInclude Include="src\BufferReceiver.h">
+    <ClInclude Include="src\ImageSaver.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="src\ImageSaver.h">
+    <ClInclude Include="libs\json\single_include\nlohmann\json.hpp">
+      <Filter>libs\json</Filter>
+    </ClInclude>
+    <ClInclude Include="src\NetworkManager.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\OscProtocol.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MeshUtils.h">
+      <Filter>src\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SimWorld.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
