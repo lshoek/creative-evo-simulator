@@ -11,8 +11,6 @@ tools/libraries:
 - openFrameworks 0.11
 - Bullet Physics 2.89-1 (w/ multithreading)
 
-*Uses a modified version of openFrameworks 0.11 using boost 1.72 (instead of 1.65). Copy the libs to the appropriate OF locations to compile successfully.
-
 ofx dependencies:
 - ofxOpenCv
 - ofxImGui (https://github.com/jvcleave/ofxImGui)
