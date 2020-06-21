@@ -224,13 +224,14 @@ bool SimCreature::updateTimeStep(double timeStep)
 	return m_bAwaitingOutputUpdate;
 }
 
-void SimCreature::setOutputs(const std::vector<float>& outputs)
+void SimCreature::updateOutputs(const std::vector<float>& outputs)
 {
-	m_outputs = std::vector<double>(outputs.begin(), outputs.end());
+	//m_outputs = std::vector<double>(outputs.begin(), outputs.end());
+	m_outputs = outputs;
 	m_bAwaitingOutputUpdate = false;
 }
 
-const std::vector<double>& SimCreature::getOutputs()
+const std::vector<float>& SimCreature::getOutputs()
 {
 	return m_outputs;
 }

@@ -1,8 +1,6 @@
 #include "BufferSenderThread.h"
 #include "OscProtocol.h"
 
-#define OSC_BUFFER_SIZE 2048
-
 BufferSenderThread::BufferSenderThread()
 {
 	startThread();

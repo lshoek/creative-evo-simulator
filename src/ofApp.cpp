@@ -299,7 +299,7 @@ void ofApp::imGui()
 							ImGui::Text("Neural Input:");
 							ImGui::Image((void*)(intptr_t)simulationManager.getFocusCanvas()->getConvFbo()->getTexture().getTextureData().textureID, ImVec2(windowSize.x, windowSize.x));
 							ImGui::Separator();
-							ImGui::Text("Actuators:");
+							ImGui::Text("Effectors:");
 							ImGui::TextWrapped(ofToString(simulationManager.getFocusCreature()->getOutputs()).c_str());
 						}
 						if (simulationManager.bDebugDraw) {

@@ -24,7 +24,15 @@ void NetworkManager::allocate(size_t numJoints, size_t numOutputs, uint32_t w, u
 
 void NetworkManager::sendState(SimInstance* instance)
 {
-	// todo: append joint states... (instance->getCreature()->getJointState())
+	ofBuffer buf;
+	const std::vector<float>& jointState = instance->getCreature()->getJointState();
+	buf.set((char*)&jointState[0], instance->getCreature()->getNumJoints()*sizeof(float));
+	
+	ofxOscMessage joints;
+	joints.setAddress(OSC_JOINTS);
+	joints.addBlobArg(buf);
+
+	_sender.sendMessage(joints);
 	_bufferSender.send(instance->getCanvas()->getConvPixelBuffer(), instance->getID());
 }
 

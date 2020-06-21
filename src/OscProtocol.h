@@ -1,12 +1,14 @@
 #pragma once
 
 /// OSC Message Protocol
+const int OSC_BUFFER_SIZE = 2048;
 
 // send
 const std::string OSC_HELLO = "/hi";
 const std::string OSC_INFO = "/info";
 const std::string OSC_BYE = "/bye";
 const std::string OSC_FITNESS = "/fit";
+const std::string OSC_JOINTS = "/jnts";
 
 const std::string OSC_ARTIFACT_START = "/art/start/";
 const std::string OSC_ARTIFACT_PART = "/art/part/";

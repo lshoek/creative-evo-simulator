@@ -18,8 +18,9 @@ public:
 	bool isAwaitingOutputUpdate();
 	bool updateTimeStep(double timeStep);
 	void update();
-	void setOutputs(const std::vector<float>& outputs);
-	const std::vector<double>& getOutputs();
+
+	void updateOutputs(const std::vector<float>& outputs);
+	const std::vector<float>& getOutputs();
 
 	void draw();
 	void drawImmediate();
@@ -67,7 +68,6 @@ public:
 	float m_targetFrequency;
 
 private:
-	void initWalker(btVector3 position, uint32_t numLegs, btDynamicsWorld* ownerWorld);
 	void buildPhenome(DirectedGraph* graph);
 	void dfs(
 		GraphNode* graphNode, GraphConnection* incoming, SimNode* parentSimNode, DirectedGraph* graph, 
@@ -116,7 +116,7 @@ private:
 	std::vector<double> m_canvasSensors;
 
 	// output neuron activations
-	std::vector<double> m_outputs;
+	std::vector<float> m_outputs;
 
 	btVector3 m_spawnPosition;
 	btScalar m_targetAccumulator;

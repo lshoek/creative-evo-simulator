@@ -384,7 +384,7 @@ void SimulationManager::updateSimInstance(SimInstance* instance, double timeStep
             if (_networkManager.getQueuedAgentId() == instance->getID()) {
 
                 // update effectors
-                instance->getCreature()->setOutputs(_networkManager.popOutputBuffer());
+                instance->getCreature()->updateOutputs(_networkManager.popOutputBuffer());
 
                 // send new observation
                 instance->getCanvas()->updateConvPixelBuffer();
