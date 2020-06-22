@@ -10,10 +10,10 @@ public:
 
     void updateTimeStep(double timeStep);
     void update();
-    void abort();
+    void terminate();
 
     bool isEffectorUpdateRequired();
-    bool isAborted();
+    bool isTerminated();
     bool isFinished();
 
     int getID();
@@ -34,6 +34,6 @@ private:
     btScalar _elapsed, _duration;
 
     bool _bIsAwaitingOutputUpdate = false;
-    bool _bIsAborted = false;
+    bool _bIsTerminated = false;
     bool _bIsFinished = false;
 };

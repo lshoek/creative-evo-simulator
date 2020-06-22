@@ -1,6 +1,6 @@
 #pragma once
-#include "SimDebugDrawer.h"
-#include "SimUtils.h"
+#include "Simulator/SimDebugDrawer.h"
+#include "Utils/SimUtils.h"
 #include "of3dGraphics.h"
 
 void SimDebugDrawer::drawLine(const btVector3& from, const btVector3& to, const btVector3& color)

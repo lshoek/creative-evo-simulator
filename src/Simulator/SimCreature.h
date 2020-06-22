@@ -1,11 +1,11 @@
 #pragma once
 #include "btBulletCollisionCommon.h"
-#include "SimNode.h"
-#include "SimCanvasNode.h"
+#include "Simulator/SimNode.h"
+#include "Simulator/SimCanvasNode.h"
 #include "ofGraphics.h"
 #include "ofMaterial.h"
 #include "ofMesh.h"
-#include "DirectedGraph.h"
+#include "Genome/DirectedGraph.h"
 
 class SimCreature
 {

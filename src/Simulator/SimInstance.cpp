@@ -27,14 +27,14 @@ void SimInstance::update()
 	_canvas->update();
 }
 
-void SimInstance::abort()
+void SimInstance::terminate()
 {
-	_bIsAborted = true;
+	_bIsTerminated = true;
 }
 
-bool SimInstance::isAborted() 
+bool SimInstance::isTerminated() 
 {
-	return _bIsAborted;
+	return _bIsTerminated;
 }
 
 bool SimInstance::isFinished()

@@ -1,12 +1,12 @@
-#include "SimulationManager.h"
-#include "SimUtils.h"
-#include "MathUtils.h"
+#include "Simulator/SimulationManager.h"
+#include "Utils/SimUtils.h"
+#include "Utils/MathUtils.h"
+#include "Utils/toolbox.h"
+#include "Genome/DirectedGraph.h"
+#include "Simulator/SimDefines.h"
+#include "Networking/OscProtocol.h"
 #include "ofLog.h"
 #include "ofMath.h"
-#include "toolbox.h"
-#include "DirectedGraph.h"
-#include "SimDefines.h"
-#include "OscProtocol.h"
 
 void SimulationManager::init(SimSettings settings)
 {
@@ -167,8 +167,8 @@ void SimulationManager::startSimulation(std::string id, EvaluationType evalType)
                 ofToString(_canvasConvResolution.x)
             );
         });
-        _infoReceivedListener = _networkManager.onInfoReceived.newListener([this] (NetworkManager::SimInfo info) {
-            queueSimInstance(info.id, info.generation, info.duration);
+        _infoReceivedListener = _networkManager.onInfoReceived.newListener([this] (SimInfo info) {
+            queueSimInstance(info);
         });
         _connectionClosedListener = _networkManager.onConnectionClosed.newListener([this] {
             stopSimulation();
@@ -186,7 +186,7 @@ void SimulationManager::stopSimulation()
 {
     if (bInitialized && bSimulationActive) {
         bStopSimulationQueued = true;
-        abortSimInstances();
+        terminateSimInstances();
 
         _networkManager.close();
         _connectionEstablishedListener.unsubscribe();
@@ -195,12 +195,12 @@ void SimulationManager::stopSimulation()
     }
 }
 
-int SimulationManager::queueSimInstance(int localId, int generation, float duration)
+int SimulationManager::queueSimInstance(SimInfo info)
 {
     {
         std::lock_guard<std::mutex> guard(_cbQueueMutex);
         _simulationInstanceCallbackQueue.push_back(
-            std::bind(&SimulationManager::createSimInstance, this, localId, generation, duration)
+            std::bind(&SimulationManager::createSimInstance, this, info)
         );
     }
 
@@ -210,14 +210,17 @@ int SimulationManager::queueSimInstance(int localId, int generation, float durat
         _simInstanceIdCounter = (bMultiEval) ? (_simInstanceIdCounter + 1) % _simInstanceLimit : 0;
     }
 
-    setStatus("Queued simulation instance. /Global id: " + ofToString(localId) + " /Local id: " + ofToString(localId));
-    return localId;
+    setStatus("Queued simulation instance. /Global id: " + ofToString(info.generation) + 
+        " /Local id: " + ofToString(info.id) + 
+        " /Evaluation id: " + ofToString(info.evalId)
+    );
+    return info.id;
 }
 
-int SimulationManager::createSimInstance(int localId, int generation, float duration)
+int SimulationManager::createSimInstance(SimInfo info)
 {
-    int grid_x = localId % _simInstanceGridSize;
-    int grid_z = localId / _simInstanceGridSize;
+    int grid_x = info.id % _simInstanceGridSize;
+    int grid_z = info.id / _simInstanceGridSize;
 
     btScalar spaceExtent = canvasSize/2.0;
     btScalar stride = canvasSize * 2.0 + spaceExtent * 2.0;
@@ -247,12 +250,12 @@ int SimulationManager::createSimInstance(int localId, int generation, float dura
     crtr->setShader(_nodeShader);
     crtr->addToWorld();
 
-    SimInstance* instance = new SimInstance(localId, generation, world, crtr, canv, duration);
+    SimInstance* instance = new SimInstance(info.id, info.generation, world, crtr, canv, info.duration);
     _networkManager.sendState(instance);
     _simulationInstances.push_back(instance);
 
-    setStatus("Running simulation instance [GEN:" + ofToString(generation) + "] [ID:" + ofToString(localId) + "]");
-    return localId;
+    setStatus("Running simulation instance [GEN:" + ofToString(info.generation) + "] [ID:" + ofToString(info.id) + "] [EVAL:" + ofToString(info.evalId) + "]");
+    return info.id;
 }
 
 void SimulationManager::lateUpdate()
@@ -333,7 +336,7 @@ void SimulationManager::update()
     int i = 0;
     bool bInstanceDestroyed = false;
     for (auto& instance : _simulationInstances) {
-        if (instance->isFinished()) {
+        if (instance->isFinished() || instance->isTerminated()) {
 
             uint32_t id = instance->getID();
             double fitness = evaluateArtifact(instance);
@@ -573,20 +576,11 @@ void SimulationManager::shiftFocus()
     }
 }
 
-void SimulationManager::abortSimInstances()
+void SimulationManager::terminateSimInstances()
 {
     for (auto& instance : _simulationInstances) {
-        instance->abort();
+        instance->terminate();
     }
-}
-
-// As morphology is fixed this will only work for the walker creature for now
-MorphologyInfo SimulationManager::getWalkerBodyInfo()
-{
-    int numBodyParts = 2 * _numWalkerLegs + 1;
-    int numJoints = numBodyParts - 1;
-
-    return MorphologyInfo(numBodyParts, numJoints);
 }
 
 std::shared_ptr<DirectedGraph> SimulationManager::getBodyGenome()

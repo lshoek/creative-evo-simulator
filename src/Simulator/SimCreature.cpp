@@ -1,10 +1,9 @@
-#include "SimCreature.h"
-#include "SimDefines.h"
-#include "SimUtils.h"
-#include "MathUtils.h"
-#include "toolbox.h"
-
-#include "DirectedGraph.h"
+#include "Simulator/SimCreature.h"
+#include "Simulator/SimDefines.h"
+#include "Utils/SimUtils.h"
+#include "Utils/MathUtils.h"
+#include "Utils/toolbox.h"
+#include "Genome/DirectedGraph.h"
 
 #define World2Loc SimUtils::b3RefFrameHelper::getTransformWorldToLocal
 #define Loc2World SimUtils::b3RefFrameHelper::getTransformLocalToWorld

@@ -1,6 +1,6 @@
-#include "SimNodeBase.h"
-#include "SimUtils.h"
-#include "toolbox.h"
+#include "Simulator/SimNodeBase.h"
+#include "Utils/SimUtils.h"
+#include "Utils/toolbox.h"
 
 SimNodeBase::SimNodeBase(int tag, btDynamicsWorld* owner) : _tag(tag), _ownerWorld(owner) {}
 SimNodeBase::SimNodeBase(int tag, ofColor color, btDynamicsWorld* owner) : _tag(tag), _color(color), _ownerWorld(owner) {}

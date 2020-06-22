@@ -1,8 +1,8 @@
 #include "ofApp.h"
-#include "SimDefines.h"
-#include "SimNode.h"
-#include "toolbox.h"
-#include "MathUtils.h"
+#include "Simulator/SimDefines.h"
+#include "Simulator/SimNode.h"
+#include "Utils/toolbox.h"
+#include "Utils/MathUtils.h"
 
 #define APP_ID "neatures v0.2"
 #define CONSOLE_SIZE 600
@@ -88,7 +88,7 @@ void ofApp::stop()
 {
 	// Then abort the sim instances that are currently active
 	if (simulationManager.isSimulationActive()) {
-		simulationManager.abortSimInstances();
+		simulationManager.terminateSimInstances();
 		simulationManager.stopSimulation();
 	}
 }
@@ -217,8 +217,8 @@ void ofApp::imGui()
 				if (ImGui::MenuItem("Shift Camera Focus", "c", false)) {
 					simulationManager.shiftFocus();
 				}
-				if (ImGui::MenuItem("Skip Generation", "z", false)) {
-					simulationManager.abortSimInstances();
+				if (ImGui::MenuItem("Terminate Activate Simulations", "x", false)) {
+					simulationManager.terminateSimInstances();
 				}
 				ImGui::EndMenu();
 			}
@@ -350,8 +350,8 @@ void ofApp::keyPressed(int key)
 			if (key == 'c') {
 				simulationManager.shiftFocus();
 			}
-			if (key == 'z') {
-				simulationManager.abortSimInstances();
+			if (key == 'x') {
+				simulationManager.terminateSimInstances();
 			}
 		}
 	}

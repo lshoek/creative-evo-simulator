@@ -1,8 +1,7 @@
 #pragma once
 #include "DirectedGraphConnection.h"
-#include "SimDefines.h"
+#include "Simulator/SimDefines.h"
 #include "ofFileUtils.h"
-
 #include "btBulletCollisionCommon.h"
 #include <vector>
 

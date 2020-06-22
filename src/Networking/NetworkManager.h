@@ -2,20 +2,15 @@
 #include "BufferSender.h"
 #include "ofEvents.h"
 #include "ofEvent.h"
-#include "Scheduler.h"
-#include "SimInstance.h"
+#include "Utils/Scheduler.h"
+#include "Simulator/SimInstance.h"
+#include "Simulator/SimInfo.h"
 
 class NetworkManager
 {
 public:
 	ofEvent<void> onConnectionEstablished;
 	ofEvent<void> onConnectionClosed;
-
-	struct SimInfo {
-		uint32_t id;
-		uint32_t generation;
-		uint32_t duration;
-	};
 	ofEvent<SimInfo> onInfoReceived;
 
 	void setup(std::string host, int inPort, int outPort);

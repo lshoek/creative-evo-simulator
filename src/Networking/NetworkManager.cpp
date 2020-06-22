@@ -100,8 +100,9 @@ void NetworkManager::receive()
 				if (addr_id == OSC_INFO_IN) {
 					SimInfo info;
 					info.id = ofToInt(tokens[2]);
-					info.generation = ofToInt(tokens[3]);
-					info.duration = ofToInt(tokens[4]);
+					info.evalId = ofToInt(tokens[3]);
+					info.generation = ofToInt(tokens[4]);
+					info.duration = ofToInt(tokens[5]);
 					onInfoReceived.notify(info);
 					break;
 				}

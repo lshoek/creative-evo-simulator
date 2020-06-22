@@ -1,8 +1,8 @@
-#include "SimCanvasNode.h"
-#include "SimDefines.h"
-#include "SimUtils.h"
-#include "MeshUtils.h"
-#include "toolbox.h"
+#include "Simulator/SimCanvasNode.h"
+#include "Simulator/SimDefines.h"
+#include "Utils/SimUtils.h"
+#include "Utils/MeshUtils.h"
+#include "Utils/toolbox.h"
 
 // Maximum number of contactpoints registered and applied to canvas per frame.
 // This number should be synced with BRUSH_COORD_BUF_MAXSIZE in canvas.frag.

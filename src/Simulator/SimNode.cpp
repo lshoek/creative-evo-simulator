@@ -1,9 +1,9 @@
-#include "SimNode.h"
-#include "SimCreature.h"
-#include "SimDefines.h"
-#include "SimUtils.h"
-#include "MeshUtils.h"
-#include "toolbox.h"
+#include "Simulator/SimNode.h"
+#include "Simulator/SimCreature.h"
+#include "Simulator/SimDefines.h"
+#include "Utils/SimUtils.h"
+#include "Utils/MeshUtils.h"
+#include "Utils/toolbox.h"
 
 SimNode::SimNode(int tag, btDynamicsWorld* owner) : SimNodeBase(tag, owner)
 {

@@ -1,15 +1,15 @@
 #pragma once
 
-#include "SimWorld.h"
-#include "SimNode.h"
-#include "SimInstance.h"
-#include "SimDebugDrawer.h"
-#include "SimSharedData.h"
-#include "Scheduler.h"
-#include "ImageSaverThread.h"
-#include "BufferSender.h"
-#include "NetworkManager.h"
-#include "ImageSaver.h"
+#include "Simulator/SimWorld.h"
+#include "Simulator/SimNode.h"
+#include "Simulator/SimInstance.h"
+#include "Simulator/SimDebugDrawer.h"
+#include "Simulator/SimInfo.h"
+#include "Utils/Scheduler.h"
+#include "Utils/ImageSaverThread.h"
+#include "Networking/BufferSender.h"
+#include "Networking/NetworkManager.h"
+#include "Utils/ImageSaver.h"
 #include "ofMain.h"
 #include "ofxGrabCam.h"
 #include "ofxShadowMap.h"
@@ -53,8 +53,8 @@ public:
     const std::string& getStatus();
 
     // Returns ticket that listener can use to check when sim is finished and genome fitness is updated
-    int queueSimInstance(int localId, int generation, float duration);
-    ofEvent<SimResult> onSimulationInstanceFinished;
+    int queueSimInstance(SimInfo info);
+    void terminateSimInstances();
 
     void loadShaders();
 
@@ -69,9 +69,7 @@ public:
     glm::vec3 getFocusOrigin();
     std::string getFocusInfo();
     void shiftFocus();
-    void abortSimInstances();
 
-    MorphologyInfo getWalkerBodyInfo();
     std::shared_ptr<DirectedGraph> getBodyGenome();
 
     glm::ivec2 getCanvasResolution();
@@ -103,7 +101,7 @@ private:
     void setLightUniforms(const std::shared_ptr<ofShader>& shader);
     void setStatus(std::string msg);
 
-    int createSimInstance(int localId, int generation, float duration);
+    int createSimInstance(SimInfo info);
     void updateSimInstance(SimInstance* instance, double timeStep);
 
     void performTrueSteps(btScalar timeStep);

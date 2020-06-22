@@ -1,7 +1,7 @@
 #pragma once
-#include "DirectedGraph.h"
-#include "SimDefines.h"
-#include "SimUtils.h"
+#include "Genome/DirectedGraph.h"
+#include "Simulator/SimDefines.h"
+#include "Utils/SimUtils.h"
 #include "ofFileUtils.h"
 #include "ofUtils.h"
 #include <set>

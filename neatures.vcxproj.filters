@@ -49,6 +49,15 @@
     <Filter Include="libs\json">
       <UniqueIdentifier>{f56cebb7-b599-4a71-be8e-c5b1aba386f7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\Genome">
+      <UniqueIdentifier>{caf631a3-1bb9-41d4-93b7-86c6c6b71acc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\Networking">
+      <UniqueIdentifier>{34f3795d-73c5-43db-a0de-4d88a56f52ce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\Simulator">
+      <UniqueIdentifier>{5d5d5fb1-20e3-4a75-a907-3319a0776e2c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="icon.rc" />
@@ -96,44 +105,11 @@
     <ClCompile Include="..\..\..\addons\ofxImGui\src\ofxImGuiLoggerChannel.cpp">
       <Filter>addons\ofxImGui\src</Filter>
     </ClCompile>
-    <ClCompile Include="src\SimulationManager.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\SimNode.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\SimDebugDrawer.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\addons\ofxIniSettings\src\ofxIniSettings.cpp">
       <Filter>addons\ofxIniSettings</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\addons\ofxGrabCam\src\ofxGrabCam.cpp">
       <Filter>addons\ofxGrabCam</Filter>
-    </ClCompile>
-    <ClCompile Include="src\SimCreature.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\SimCanvasNode.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ImageSaverThread.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\SimNodeBase.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\SimInstance.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\DirectedGraph.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\DirectedGraphNode.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\DirectedGraphConnection.cpp">
-      <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\addons\ofxShadowMap\src\ofxShadowMap.cpp">
       <Filter>addons\ofxShadowMap</Filter>
@@ -158,12 +134,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\addons\ofxOpenCv\src\ofxCvShortImage.cpp">
       <Filter>addons\ofxOpenCv</Filter>
-    </ClCompile>
-    <ClCompile Include="src\BufferSenderThread.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\BufferSender.cpp">
-      <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\addons\ofxOsc\libs\oscpack\src\ip\IpEndpointName.cpp">
       <Filter>addons\ofxOsc</Filter>
@@ -213,14 +183,53 @@
     <ClCompile Include="libs\lz4\xxhash.c">
       <Filter>libs\lz4</Filter>
     </ClCompile>
-    <ClCompile Include="src\ImageSaver.cpp">
-      <Filter>src</Filter>
+    <ClCompile Include="src\Genome\DirectedGraph.cpp">
+      <Filter>src\Genome</Filter>
     </ClCompile>
-    <ClCompile Include="src\NetworkManager.cpp">
-      <Filter>src</Filter>
+    <ClCompile Include="src\Genome\DirectedGraphConnection.cpp">
+      <Filter>src\Genome</Filter>
     </ClCompile>
-    <ClCompile Include="src\SimWorld.cpp">
-      <Filter>src</Filter>
+    <ClCompile Include="src\Genome\DirectedGraphNode.cpp">
+      <Filter>src\Genome</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Networking\NetworkManager.cpp">
+      <Filter>src\Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Networking\BufferSender.cpp">
+      <Filter>src\Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Networking\BufferSenderThread.cpp">
+      <Filter>src\Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Utils\ImageSaverThread.cpp">
+      <Filter>src\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Utils\ImageSaver.cpp">
+      <Filter>src\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Simulator\SimNode.cpp">
+      <Filter>src\Simulator</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Simulator\SimNodeBase.cpp">
+      <Filter>src\Simulator</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Simulator\SimulationManager.cpp">
+      <Filter>src\Simulator</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Simulator\SimWorld.cpp">
+      <Filter>src\Simulator</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Simulator\SimCanvasNode.cpp">
+      <Filter>src\Simulator</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Simulator\SimCreature.cpp">
+      <Filter>src\Simulator</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Simulator\SimDebugDrawer.cpp">
+      <Filter>src\Simulator</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Simulator\SimInstance.cpp">
+      <Filter>src\Simulator</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -275,68 +284,11 @@
     <ClInclude Include="..\..\..\addons\ofxImGui\src\ofxImGuiLoggerChannel.h">
       <Filter>addons\ofxImGui\src</Filter>
     </ClInclude>
-    <ClInclude Include="src\SimulationManager.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\SimNode.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\SimDebugDrawer.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\addons\ofxIniSettings\src\ofxIniSettings.h">
       <Filter>addons\ofxIniSettings</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\addons\ofxGrabCam\src\ofxGrabCam.h">
       <Filter>addons\ofxGrabCam</Filter>
-    </ClInclude>
-    <ClInclude Include="src\SimCreature.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\MathUtils.h">
-      <Filter>src\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="src\SimUtils.h">
-      <Filter>src\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="src\toolbox.h">
-      <Filter>src\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="src\SimCanvasNode.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ImageSaverThread.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\SimFitnessFunc.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Scheduler.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\SimSharedData.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\SimNodeBase.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\SimInstance.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\DirectedGraph.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\DirectedGraphNode.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\DirectedGraphConnection.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\SimDefines.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\EvoUtils.h">
-      <Filter>src\Utils</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\addons\ofxShadowMap\src\ofxShadowMap.h">
       <Filter>addons\ofxShadowMap</Filter>
@@ -370,12 +322,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\addons\ofxOpenCv\src\ofxOpenCv.h">
       <Filter>addons\ofxOpenCv</Filter>
-    </ClInclude>
-    <ClInclude Include="src\BufferSenderThread.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\BufferSender.h">
-      <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\addons\ofxOsc\libs\oscpack\src\ip\IpEndpointName.h">
       <Filter>addons\ofxOsc</Filter>
@@ -449,23 +395,86 @@
     <ClInclude Include="libs\lz4\xxhash.h">
       <Filter>libs\lz4</Filter>
     </ClInclude>
-    <ClInclude Include="src\ImageSaver.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="libs\json\single_include\nlohmann\json.hpp">
       <Filter>libs\json</Filter>
     </ClInclude>
-    <ClInclude Include="src\NetworkManager.h">
-      <Filter>src</Filter>
+    <ClInclude Include="src\Genome\DirectedGraph.h">
+      <Filter>src\Genome</Filter>
     </ClInclude>
-    <ClInclude Include="src\OscProtocol.h">
-      <Filter>src</Filter>
+    <ClInclude Include="src\Genome\DirectedGraphConnection.h">
+      <Filter>src\Genome</Filter>
     </ClInclude>
-    <ClInclude Include="src\MeshUtils.h">
+    <ClInclude Include="src\Genome\DirectedGraphNode.h">
+      <Filter>src\Genome</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Utils\EvoUtils.h">
       <Filter>src\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="src\SimWorld.h">
-      <Filter>src</Filter>
+    <ClInclude Include="src\Utils\MathUtils.h">
+      <Filter>src\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Utils\MeshUtils.h">
+      <Filter>src\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Utils\Scheduler.h">
+      <Filter>src\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Utils\SimUtils.h">
+      <Filter>src\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Utils\toolbox.h">
+      <Filter>src\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Networking\BufferSenderThread.h">
+      <Filter>src\Networking</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Networking\NetworkManager.h">
+      <Filter>src\Networking</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Networking\OscProtocol.h">
+      <Filter>src\Networking</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Networking\BufferSender.h">
+      <Filter>src\Networking</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Utils\ImageSaver.h">
+      <Filter>src\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Utils\ImageSaverThread.h">
+      <Filter>src\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Simulator\SimNode.h">
+      <Filter>src\Simulator</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Simulator\SimNodeBase.h">
+      <Filter>src\Simulator</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Simulator\SimulationManager.h">
+      <Filter>src\Simulator</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Simulator\SimWorld.h">
+      <Filter>src\Simulator</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Simulator\SimCanvasNode.h">
+      <Filter>src\Simulator</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Simulator\SimCreature.h">
+      <Filter>src\Simulator</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Simulator\SimDebugDrawer.h">
+      <Filter>src\Simulator</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Simulator\SimDefines.h">
+      <Filter>src\Simulator</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Simulator\SimFitnessFunc.h">
+      <Filter>src\Simulator</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Simulator\SimInfo.h">
+      <Filter>src\Simulator</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Simulator\SimInstance.h">
+      <Filter>src\Simulator</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

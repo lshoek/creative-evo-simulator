@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ofMain.h"
-#include "SimulationManager.h"
+#include "Simulator/SimulationManager.h"
 #include "ofxGrabCam.h"
 #include "ofxImGui.h"
 #include "ofxIniSettings.h"
