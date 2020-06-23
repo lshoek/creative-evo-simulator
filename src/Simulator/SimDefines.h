@@ -2,7 +2,7 @@
 
 /// Global paths
 const std::string NTRS_SIMS_DIR = "output/sims/";
-const std::string NTRS_BODY_GENOME_DIR = "output/genomes/morphology/";
+const std::string NTRS_BODY_GENOME_DIR = "output/genomes/";
 const std::string NTRS_OUTPUT_DIR = "output/";
 
 /// Prefixes

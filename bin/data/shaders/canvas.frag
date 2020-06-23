@@ -15,8 +15,8 @@ layout(std430, binding=0) buffer brushCoordBuffer {
 uniform float alpha = 1.0;
 uniform int brush_coords_bufsize = 0;
 
-const float fademin = 1/50.0;
-const float fademax = 1/40.0;
+const float fademin = 1/128.0;
+const float fademax = fademin+1/128.0;
 
 in vec2 texcoord_varying;
 out float fragColor;

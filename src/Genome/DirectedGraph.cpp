@@ -23,7 +23,7 @@ DirectedGraph::DirectedGraph(bool bInitRandom, bool bAxisAlignedAttachments)
     if (bInitRandom) {
         //initCurl();
         //initPrefabStructure();
-        initRandom(bAxisAlignedAttachments);
+        initRandom(bAxisAlignedAttachments, 6, 4);
     }
 }
 
@@ -41,20 +41,17 @@ DirectedGraph::DirectedGraph(const DirectedGraph& srcGraph)
         }
     }
     for (GraphNode* n : _nodes) {
-        if (n->IsRootNode()) {
+        if (n->isRootNode()) {
             _rootNode = n;
             break;
         }
     }
 };
 
-void DirectedGraph::initRandom(bool bAAAttachments)
+void DirectedGraph::initRandom(bool bAAAttachments, uint32_t minNumNodes, uint32_t minNumConns)
 {
-    uint32_t minNumNodes = 4;
-    uint32_t minNumConnections = minNumNodes;
-
-    uint32_t numNodes = minNumNodes + int32_t(_distrib(_rng) * 4.0);
-    uint32_t numConnections = minNumConnections + uint32_t(_distrib(_rng) * 4.0);
+    uint32_t numNodes = minNumNodes; // +int32_t(_distrib(_rng) * 4.0);
+    uint32_t numConnections = minNumConns; // +uint32_t(_distrib(_rng) * 4.0);
     std::vector<GraphNode*> nodes(numNodes);
 
     nodes[0] = new GraphNode(randomPrimitive(
@@ -79,6 +76,7 @@ void DirectedGraph::initRandom(bool bAAAttachments)
         connectionCount++;
     }
 
+    // Repair unconnected nodes
     bool bFullyConnected = false;
     while (!bFullyConnected) {
 
@@ -96,6 +94,21 @@ void DirectedGraph::initRandom(bool bAAAttachments)
         }
     }
 
+    // Mark a single end-node as a brush
+    std::vector<GraphNode*> endNodes;
+    for (GraphNode* gn : _nodes) {
+        if (gn->primitiveInfo.bodyEnd) {
+            endNodes.push_back(gn);
+        }
+    }
+    if (!endNodes.empty()) {
+        uint32_t brushIndex = uint32_t(_distrib(_rng) * endNodes.size());
+        endNodes[brushIndex]->setBrush(true);
+    }
+    else {
+        uint32_t brushIndex = uint32_t(_distrib(_rng) * _nodes.size());
+        _nodes[brushIndex]->setBrush(true);
+    }
 }
 
 void DirectedGraph::initPrefabStructure()
@@ -207,8 +220,9 @@ std::vector<uint32_t> DirectedGraph::getIndices(bool bConnected)
 
 void DirectedGraph::unfold() 
 {
-    _bTraversed = false;
-    dfs(_rootNode, false);
+    if (!_bTraversed) {
+        dfs(_rootNode, false);
+    }
 }
 
 // Same node should not be registered more than once
@@ -254,7 +268,7 @@ uint32_t DirectedGraph::getNumEndNodesUnfolded()
     if (!_bTraversed) {
         dfs(_rootNode, false);
     }
-    return _numEndNodesUnfolded;
+    return _numEndNodes;
 }
 
 uint32_t DirectedGraph::getNumJointsUnfolded()
@@ -263,6 +277,11 @@ uint32_t DirectedGraph::getNumJointsUnfolded()
         dfs(_rootNode, false);
     }
     return _numJointsUnfolded;
+}
+
+uint32_t DirectedGraph::getNumBrushes()
+{
+    return _numBrushes;
 }
 
 std::string DirectedGraph::getName()
@@ -279,7 +298,7 @@ void DirectedGraph::dfs(GraphNode* node, bool bPrint)
     _connectedNodeIndices.clear();
 
     _numNodesUnfolded = 0;
-    _numEndNodesUnfolded = 0;
+    _numEndNodes = 0;
     _numJointsUnfolded = 0;
 
     // todo: check if node is registered
@@ -303,12 +322,14 @@ void DirectedGraph::dfsTraverse(GraphNode* node, std::vector<int> recursionLimit
     }
     recursionLimits[index]--;
 
-    if (node->getConnections().empty()) _numEndNodesUnfolded++;
     for (GraphConnection* c : node->getConnections()) {
         if (recursionLimits[c->child->primitiveInfo.index] > 0) {
             _numJointsUnfolded++;
             dfsTraverse(c->child, recursionLimits, bPrint);
         }
+    }
+    if (recursionLimits[index] <= 1 && node->getConnections().empty()) {
+        _numEndNodes++;
     }
 }
 
@@ -322,7 +343,7 @@ void DirectedGraph::save()
     const ofDirectory genomeDir = ofDirectory(ofToDataPath(NTRS_BODY_GENOME_DIR, true));
     const std::vector<ofFile> files = genomeDir.getFiles();
 
-    std::string id = ofToString(genomeDir.getFiles().size() + 1);
+    std::string id = ofGetTimestampString("%Y%m%d_%H%M%S_" + ofToString(_numNodesUnfolded) + "nodes");
     ofDirectory::createDirectory(genomeDir.getAbsolutePath() + '\\' + id);
     _name = id;
 

@@ -311,11 +311,13 @@ void SimulationManager::update()
         _frameTimeAccumulator += _frameTime;
         int steps = floor((_frameTimeAccumulator / FixedTimeStepMillis) + 0.5);
 
+        _timeStepsPerUpdate = 0;
         if (steps > 0) {
-            btScalar timeToProcess = steps * _frameTime * simulationSpeed;
+            btScalar timeToProcess = steps * _frameTime * _simulationSpeed;
             while (timeToProcess >= 0.01) {
                 performTrueSteps(FixedTimeStep);
                 timeToProcess -= FixedTimeStepMillis;
+                _timeStepsPerUpdate++;
             }
             // Residual value carries over to next frame
             _frameTimeAccumulator -= _frameTime * steps;
@@ -326,7 +328,7 @@ void SimulationManager::update()
     {
         // create new simulation instances on main thread
         std::lock_guard<std::mutex> guard(_cbQueueMutex);
-        for (simRunCallback_t cb : _simulationInstanceCallbackQueue) {
+        for (const auto& cb : _simulationInstanceCallbackQueue) {
             cb(0);
         }
         _simulationInstanceCallbackQueue.clear();
@@ -476,12 +478,12 @@ void SimulationManager::draw()
 
             glEnable(GL_CULL_FACE);
             glCullFace(GL_BACK);
-            for (auto& instance : _simulationInstances)
+            for (auto const& instance : _simulationInstances)
                 instance->getCanvas()->draw();
 
             glEnable(GL_DEPTH_TEST);
 
-            for (auto& instance : _simulationInstances)
+            for (auto const& instance : _simulationInstances)
                 instance->getCreature()->draw();
 
             glDisable(GL_CULL_FACE);
@@ -512,6 +514,9 @@ void SimulationManager::draw()
     else {
         cam.begin();
         _previewWorld->getBtWorld()->debugDrawWorld();
+        for (auto const& instance : _simulationInstances) {
+            instance->getWorld()->getBtWorld()->debugDrawWorld();
+        }
         cam.end();
     }
 }
@@ -578,7 +583,7 @@ void SimulationManager::shiftFocus()
 
 void SimulationManager::terminateSimInstances()
 {
-    for (auto& instance : _simulationInstances) {
+    for (auto &instance : _simulationInstances) {
         instance->terminate();
     }
 }
@@ -598,13 +603,17 @@ glm::ivec2 SimulationManager::getCanvasConvResolution()
     return _canvasConvResolution;
 }
 
+uint32_t SimulationManager::getTimeStepsPerUpdate()
+{
+    return _timeStepsPerUpdate;
+}
+
 bool SimulationManager::loadBodyGenomeFromDisk(std::string filename)
 {
-    _selectedBodyGenome = std::make_shared<DirectedGraph>(true, bAxisAlignedAttachments);
+    _selectedBodyGenome = std::make_shared<DirectedGraph>();
 
     if (_selectedBodyGenome->load(filename)) {
         _selectedBodyGenome->unfold();
-        _selectedBodyGenome->print();
 
         _previewCreature = std::make_shared<SimCreature>(btVector3(.0, 2.0, .0), _selectedBodyGenome, _previewWorld->getBtWorld());
         _previewCreature->setMaterial(_nodeMaterial);
@@ -612,11 +621,12 @@ bool SimulationManager::loadBodyGenomeFromDisk(std::string filename)
         _previewCreature->addToWorld();
 
         char label[256];
-        sprintf_s(label, "Loaded genome '%s' with a total of %d nodes, %d joints, %d brushes, %d outputs.", filename.c_str(),
+        sprintf_s(label, "Loaded genome '%s' with a total of% d node(s), % d joint(s), % d end(s), % d brush(es), % d output(s) in %d attempt(s)", filename.c_str(),
             _selectedBodyGenome->getNumNodesUnfolded(),
             _selectedBodyGenome->getNumJointsUnfolded(),
             _selectedBodyGenome->getNumEndNodesUnfolded(),
-            _selectedBodyGenome->getNumJointsUnfolded() + _selectedBodyGenome->getNumEndNodesUnfolded()
+            _selectedBodyGenome->getNumBrushes(),
+            _selectedBodyGenome->getNumJointsUnfolded() + _selectedBodyGenome->getNumBrushes()
         );
         setStatus(label);
         return true;
@@ -634,7 +644,7 @@ void SimulationManager::generateRandomBodyGenome()
         bool bNoFeasibleCreatureFound = true;
         int attempts = 0;
 
-        ofLog() << "building feasible creature genome...";
+        ofLog() << "Generating genome...";
         _selectedBodyGenome = std::make_shared<DirectedGraph>(true, bAxisAlignedAttachments);
         _selectedBodyGenome->unfold();
 
@@ -662,10 +672,20 @@ void SimulationManager::generateRandomBodyGenome()
             attempts++;
         }
         if (bFeasibilityChecks) {
-            std::string logMsg = (bNoFeasibleCreatureFound) ?
-                "failed! reach max attempts: " + ofToString(attempts) :
-                "success! attempts: " + ofToString(attempts);
-            ofLog() << logMsg;
+            char label[256];
+            if (!bNoFeasibleCreatureFound) {
+                sprintf_s(label, "Generated genome with a total of %d node(s), %d joint(s), %d end(s), %d brush(es), %d output(s) in %d attempt(s).",
+                    _selectedBodyGenome->getNumNodesUnfolded(),
+                    _selectedBodyGenome->getNumJointsUnfolded(),
+                    _selectedBodyGenome->getNumEndNodesUnfolded(),
+                    _selectedBodyGenome->getNumBrushes(),
+                    _selectedBodyGenome->getNumJointsUnfolded() + _selectedBodyGenome->getNumBrushes(), attempts
+                );
+            }
+            else {
+                sprintf_s(label, "Failed to generate a feasible genome within %d attempts.", attempts);
+            }
+            setStatus(label);
         }
     }
 }

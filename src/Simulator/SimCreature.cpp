@@ -10,7 +10,7 @@
 
 btRigidBody* localCreateRigidBody(btScalar mass, const btTransform& startTransform, btCollisionShape* shape);
 
-SimCreature::SimCreature(btVector3 position, std::shared_ptr<DirectedGraph> graph, btDynamicsWorld* ownerWorld)
+SimCreature::SimCreature(btVector3 position, const std::shared_ptr<DirectedGraph>& graph, btDynamicsWorld* ownerWorld)
 	: m_ownerWorld(ownerWorld)
 {
 	m_spawnPosition = position;
@@ -27,10 +27,9 @@ SimCreature::SimCreature(btVector3 position, std::shared_ptr<DirectedGraph> grap
 void SimCreature::buildPhenome(DirectedGraph* graph)
 {
 	m_numBodies = graph->getNumNodesUnfolded();
-	m_numBrushes = graph->getNumEndNodesUnfolded();
+	m_numBrushes = graph->getNumBrushes();
 	m_numJoints = m_numBodies - 1;
 	m_numOutputs = m_numJoints + m_numBrushes;
-	m_numLegs = 0;
 
 	m_nodes.resize(m_numBodies);
 	m_brushNodes.reserve(m_numBrushes);
@@ -159,10 +158,11 @@ void SimCreature::dfs(
 
 		simNodePtr->setRigidBody(body);
 		simNodePtr->setMesh(std::make_shared<ofMesh>(ofMesh::box(boxSize.x(), boxSize.y(), boxSize.z())));
-		if (graphNode->primitiveInfo.bodyEnd != 0) {
+		if (!m_bHasBrush && graphNode->primitiveInfo.brush != 0) {
 			simNodePtr->setTag(BrushTag | BodyTag);
 			simNodePtr->setInkColor(INK);
 			m_brushNodes.push_back(simNodePtr);
+			m_bHasBrush = true;
 		}
 
 		m_nodes[segmentIndex] = simNodePtr;
@@ -212,13 +212,11 @@ bool SimCreature::isAwaitingOutputUpdate()
 
 bool SimCreature::updateTimeStep(double timeStep)
 {
-	if (!bIsDebugCreature) {
-		m_timeStep = timeStep;
-		m_targetAccumulator += m_timeStep;
-		if (m_targetAccumulator >= 1.0f / ((double)m_targetFrequency)) {
-			m_targetAccumulator = 0;
-			m_bAwaitingOutputUpdate = true;
-		}
+	m_timeStep = timeStep;
+	m_targetAccumulator += m_timeStep;
+	if (m_targetAccumulator >= 1.0f / ((double)m_targetFrequency)) {
+		m_targetAccumulator = 0;
+		m_bAwaitingOutputUpdate = true;
 	}
 	return m_bAwaitingOutputUpdate;
 }
@@ -237,35 +235,32 @@ const std::vector<float>& SimCreature::getOutputs()
 
 void SimCreature::update()
 {
-	if (!bIsDebugCreature)
+	// update joints
+	for (int i = 0; i < m_numJoints; i++)
 	{
-		// update joints
-		for (int i = 0; i < m_numJoints; i++)
-		{
-			btScalar targetAngle = 0;
-			btHingeConstraint* joint = static_cast<btHingeConstraint*>(getJoints()[i]);
+		btScalar targetAngle = 0;
+		btHingeConstraint* joint = static_cast<btHingeConstraint*>(getJoints()[i]);
 
-			targetAngle = m_outputs[i];
+		targetAngle = m_outputs[i];
 
-			btScalar targetLimitAngle = joint->getLowerLimit() + targetAngle * (joint->getUpperLimit() - joint->getLowerLimit());
-			btScalar currentAngle = joint->getHingeAngle();
-			btScalar angleError = targetLimitAngle - currentAngle;
-			btScalar desiredAngularVel = 0;
+		btScalar targetLimitAngle = joint->getLowerLimit() + targetAngle * (joint->getUpperLimit() - joint->getLowerLimit());
+		btScalar currentAngle = joint->getHingeAngle();
+		btScalar angleError = targetLimitAngle - currentAngle;
+		btScalar desiredAngularVel = 0;
 
-			if (m_timeStep) {
-				desiredAngularVel = angleError / m_timeStep;
-			}
-			else {
-				desiredAngularVel = angleError / 0.0001f;
-			}
-			joint->enableAngularMotor(true, desiredAngularVel, m_motorStrength);
+		if (m_timeStep) {
+			desiredAngularVel = angleError / m_timeStep;
 		}
-
-		// update brushes
-		for (int i = 0; i < m_numBrushes; i++) {
-			float pressure = m_outputs[m_numJoints + i] * 0.5f + 0.5f;
-			m_brushNodes[i]->setBrushPressure(pressure);
+		else {
+			desiredAngularVel = angleError / 0.0001f;
 		}
+		joint->enableAngularMotor(true, desiredAngularVel, m_motorStrength);
+	}
+
+	// update brushes
+	for (int i = 0; i < m_numBrushes; i++) {
+		float pressure = m_outputs[m_numJoints + i] * 0.5f + 0.5f;
+		m_brushNodes[i]->setBrushPressure(pressure);
 	}
 
 	// clear sensor signals after usage
@@ -500,12 +495,6 @@ void SimCreature::setTexture(std::shared_ptr<ofTexture> tex)
 		m_nodes[i]->setTexture(m_texture);
 	}
 }
-
-uint64_t SimCreature::getActivationMillis() const
-{
-	return m_activationMillis;
-}
-
 
 SimCreature::~SimCreature()
 {

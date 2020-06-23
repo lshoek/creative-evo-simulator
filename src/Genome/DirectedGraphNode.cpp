@@ -45,9 +45,14 @@ void GraphNode::setIsRootNode(bool bIsRoot)
 	_bIsRootNode = bIsRoot;
 }
 
-bool GraphNode::IsRootNode() 
+bool GraphNode::isRootNode() 
 {
 	return _bIsRootNode;
+}
+
+void GraphNode::setBrush(bool b)
+{
+	primitiveInfo.brush = b ? 1 : 0;
 }
 
 void GraphNode::save(std::string path)
@@ -65,7 +70,7 @@ void GraphNode::load(ofFile& file)
 	file >> j;
 	GraphNode::PrimitiveInfo fromFile = j.get<GraphNode::PrimitiveInfo>();
 	primitiveInfo = fromFile;
-	bool bIsRoot = fromFile.index == 0; // todo: probably works but need to fix later
+	bool bIsRoot = fromFile.index == 0;
 }
 
 GraphNode::~GraphNode() 
@@ -81,6 +86,7 @@ void to_json(json& j, const GraphNode::PrimitiveInfo& p)
 		{"index", p.index},
 		{"primitiveType", p.primitiveType},
 		{"jointType", p.jointType},
+		{"brush", p.brush},
 		{"bodyEnd", p.bodyEnd},
 		{"recursionLimit", p.recursionLimit},
 		{"dimensions_x", double(p.dimensions.x())},
@@ -97,6 +103,7 @@ void from_json(const json& j, GraphNode::PrimitiveInfo& p)
 	j.at("index").get_to(p.index);
 	j.at("primitiveType").get_to(p.primitiveType);
 	j.at("jointType").get_to(p.jointType);
+	j.at("brush").get_to(p.brush);
 	j.at("bodyEnd").get_to(p.bodyEnd);
 	j.at("recursionLimit").get_to(p.recursionLimit);
 

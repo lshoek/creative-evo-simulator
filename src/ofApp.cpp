@@ -156,45 +156,10 @@ void ofApp::imGui()
 		if (ImGui::BeginMainMenuBar())
 		{
 			menuBarSize = ImGui::GetWindowSize();
-			if (ImGui::BeginMenu("Main"))
+			if (ImGui::BeginMenu("Genome"))
 			{
-				if (ImGui::MenuItem("Monitor Window", "w", bWindow)) {
-					bWindow = !bWindow;
-				}
-				if (ImGui::MenuItem("Lock Frame Rate", NULL, bLockFrameRate)) {
-					bLockFrameRate = !bLockFrameRate;
-					uint32_t frameRate = (bLockFrameRate) ? 60 : 0;
-					ofSetFrameRate(frameRate);
-				}
-				ImGui::EndMenu();
-			}
-			if (ImGui::BeginMenu("Evolution"))
-			{
-				if (ImGui::MenuItem("Start", "e", simulationManager.isSimulationActive())) {
-					start();
-				}
-				if (ImGui::MenuItem("Stop", NULL, false)) {
-					stop();
-				}
-				ImGui::Separator();
-				if (ImGui::MenuItem("Generate Genome", NULL, false)) {
-					simulationManager.generateRandomBodyGenome();
-				}
-				if (ImGui::MenuItem("Feasibility Checks", NULL, simulationManager.bFeasibilityChecks)) {
-					simulationManager.bFeasibilityChecks = !simulationManager.bFeasibilityChecks;
-				}
-				if (ImGui::MenuItem("Axis Aligned Attachments", NULL, simulationManager.bAxisAlignedAttachments)) {
-					simulationManager.bAxisAlignedAttachments = !simulationManager.bAxisAlignedAttachments;
-				}
-				if (ImGui::MenuItem("Canvas Sensors", NULL, simulationManager.bCanvasSensors)) {
-					simulationManager.bCanvasSensors = !simulationManager.bCanvasSensors;
-				}
-				ImGui::Separator();
-				if (ImGui::MenuItem("Save Genome", NULL, false)) {
-					simulationManager.getBodyGenome()->save();
-				}
 				/* disclaimer: I coded this really fast leave me alone*/
-				if (ImGui::BeginMenu("Load Genome")) {
+				if (ImGui::BeginMenu("Load")) {
 					const std::vector<ofFile> files = ofDirectory(ofToDataPath(NTRS_BODY_GENOME_DIR, true)).getFiles();
 					std::vector<std::shared_ptr<GuiFileItem>> items;
 					for (ofFile f : files) {
@@ -210,8 +175,28 @@ void ofApp::imGui()
 					}
 					ImGui::EndMenu();
 				}
-				if (ImGui::MenuItem("Save Artifacts", NULL, simulationManager.bSaveArtifactsToDisk)) {
-					simulationManager.bSaveArtifactsToDisk = !simulationManager.bSaveArtifactsToDisk;
+				if (ImGui::MenuItem("Save", NULL, false)) {
+					simulationManager.getBodyGenome()->save();
+				}
+				ImGui::Separator();
+				if (ImGui::MenuItem("Generate", NULL, false)) {
+					simulationManager.generateRandomBodyGenome();
+				}
+				if (ImGui::MenuItem("Feasibility Checks", NULL, simulationManager.bFeasibilityChecks)) {
+					simulationManager.bFeasibilityChecks = !simulationManager.bFeasibilityChecks;
+				}
+				if (ImGui::MenuItem("Axis Aligned Attachments", NULL, simulationManager.bAxisAlignedAttachments)) {
+					simulationManager.bAxisAlignedAttachments = !simulationManager.bAxisAlignedAttachments;
+				}
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("Simulation"))
+			{
+				if (ImGui::MenuItem("Start", "e", simulationManager.isSimulationActive())) {
+					start();
+				}
+				if (ImGui::MenuItem("Stop", NULL, false)) {
+					stop();
 				}
 				ImGui::Separator();
 				if (ImGui::MenuItem("Shift Camera Focus", "c", false)) {
@@ -219,6 +204,25 @@ void ofApp::imGui()
 				}
 				if (ImGui::MenuItem("Terminate Activate Simulations", "x", false)) {
 					simulationManager.terminateSimInstances();
+				}
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("Window"))
+			{
+				if (ImGui::MenuItem("Monitor", "w", bWindow)) {
+					bWindow = !bWindow;
+				}
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("Settings"))
+			{
+				if (ImGui::MenuItem("Save Artifacts", NULL, simulationManager.bSaveArtifactsToDisk)) {
+					simulationManager.bSaveArtifactsToDisk = !simulationManager.bSaveArtifactsToDisk;
+				}
+				if (ImGui::MenuItem("Lock Frame Rate", NULL, bLockFrameRate)) {
+					bLockFrameRate = !bLockFrameRate;
+					uint32_t frameRate = (bLockFrameRate) ? 60 : 0;
+					ofSetFrameRate(frameRate);
 				}
 				ImGui::EndMenu();
 			}
@@ -235,6 +239,9 @@ void ofApp::imGui()
 				}
 				if (ImGui::MenuItem("View Canvas Evaluation Mask", NULL, simulationManager.bViewCanvasEvaluationMask)) {
 					simulationManager.bViewCanvasEvaluationMask = !simulationManager.bViewCanvasEvaluationMask;
+				}
+				if (ImGui::MenuItem("Canvas Sensors", NULL, simulationManager.bCanvasSensors)) {
+					simulationManager.bCanvasSensors = !simulationManager.bCanvasSensors;
 				}
 				if (ImGui::MenuItem("Reload Shaders", "r", false)) {
 					simulationManager.loadShaders();
@@ -260,7 +267,16 @@ void ofApp::imGui()
 				ImGui::Text("update: %dms", perf_update);
 				ImGui::Text("draw: %dms", perf_draw);
 				ImGui::Text("fps: %.02f", ofGetFrameRate());
-				ImGui::Text("dbg draw: %s", simulationManager.bDebugDraw ? "on" : "off");
+				if (simulationManager.isInitialized()) {
+					ImGui::Text("timesteps: %d", simulationManager.getTimeStepsPerUpdate());
+				}
+				ImGui::Text("dbgdraw: %s", simulationManager.bDebugDraw ? "on" : "off");
+				ImGui::Dummy(margin);
+
+				//ImGui::Text("Creature Name");
+				//ImGui::Separator();
+				//if (simulationManager.getFocusCreature() != nullptr) {
+				//}
 				//ImGui::InputFloat3("light:", &simulationManager.lightPosition[0], 2);
 			}	
 			ImGui::End();
@@ -289,9 +305,6 @@ void ofApp::imGui()
 					if (simulationManager.isSimulationInstanceActive()) {
 						ImGui::Text("Elapsed time:");
 						ImGui::Text(simulationManager.getFocusInfo().c_str());
-						ImGui::Separator();
-						ImGui::Text("Activation time:");
-						ImGui::Text("%dms", simulationManager.getFocusCreature()->getActivationMillis());
 						ImGui::Separator();
 						if (simulationManager.getFocusCanvas() != nullptr) {
 							ImGui::Text("Creature Artifact:");

@@ -74,6 +74,7 @@ public:
 
     glm::ivec2 getCanvasResolution();
     glm::ivec2 getCanvasConvResolution();
+    uint32_t getTimeStepsPerUpdate();
 
     bool loadBodyGenomeFromDisk(std::string filename);
     void generateRandomBodyGenome();
@@ -167,6 +168,7 @@ private:
     int _simInstanceGridSize = 2;
     uint32_t _simInstanceLimit = 256;
     uint32_t _focusIndex = 0;
+    uint32_t _timeStepsPerUpdate = 0;
     uint32_t _maxGenGenomeAttempts = 5000;
 
     // canvas
@@ -181,9 +183,6 @@ private:
     double _maxReward = 255.0;
 
     ofxCvGrayscaleImage _cvDebugImage;
-
-    // for fixed walker creature
-    uint32_t _numWalkerLegs = 8;
 
     // io
     NetworkManager _networkManager;

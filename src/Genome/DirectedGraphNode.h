@@ -12,6 +12,7 @@ public:
 		uint32_t index = 0;
 		uint32_t primitiveType = PrimitiveType_Box;
 		uint32_t jointType = JointType_Hinge;
+		uint32_t brush = 0;
 		uint32_t bodyEnd = 1;
 		uint32_t recursionLimit = 1;
 		btVector3 dimensions = btVector3(1.0, 1.0, 1.0);
@@ -33,9 +34,10 @@ public:
 	uint32_t getRecursionLimit();
 	uint32_t getGraphIndex();
 	void setGraphIndex(uint32_t index);
+	void setBrush(bool b);
 
 	void setIsRootNode(bool bIsRootNode);
-	bool IsRootNode();
+	bool isRootNode();
 
 	PrimitiveInfo primitiveInfo;
 	void save(std::string path);

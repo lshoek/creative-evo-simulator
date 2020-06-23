@@ -11,7 +11,7 @@ class SimCreature
 {
 public:
 	// Initialization from a graph genome
-	SimCreature(btVector3 position, std::shared_ptr<DirectedGraph> graph, btDynamicsWorld* ownerWorld);
+	SimCreature(btVector3 position, const std::shared_ptr<DirectedGraph>& graph, btDynamicsWorld* ownerWorld);
 
 	~SimCreature();
 
@@ -54,7 +54,6 @@ public:
 
 	btVector3 getSpawnPosition() const;
 	btVector3 getCenterOfMassPosition() const;
-	uint64_t getActivationMillis() const;
 
 	void clearForces();
 
@@ -75,8 +74,6 @@ private:
 	);
 
 	bool bInitialized = false;
-	bool bHasBallPointers = false;
-	bool bIsDebugCreature = false;
 
 	btDynamicsWorld* m_ownerWorld;
 	DirectedGraph* m_bodyGenome = NULL;
@@ -89,22 +86,13 @@ private:
 	std::vector<SimNode*> m_brushNodes;
 	std::vector<btTypedConstraint*> m_joints;
 
-	std::vector<btTransform> m_bodyRelativeTransforms;
-
 	std::shared_ptr<ofShader> m_shader;
 	std::shared_ptr<ofTexture> m_texture;
 	std::shared_ptr<ofMaterial> m_material;
 	std::shared_ptr<ofLight> m_light;
 
-	std::shared_ptr<ofMesh> m_segmentMesh;
-	std::shared_ptr<ofMesh> m_legMesh;
-	std::shared_ptr<ofMesh> m_foreLegMesh;
-	std::shared_ptr<ofMesh> m_bodyMesh;
-	std::shared_ptr<ofMesh> m_ballPointMesh;
-
 	uint32_t m_numBodies;
 	uint32_t m_numJoints;
-	uint32_t m_numLegs;
 	uint32_t m_numBrushes;
 	uint32_t m_numOutputs;
 
@@ -121,7 +109,9 @@ private:
 	btVector3 m_spawnPosition;
 	btScalar m_targetAccumulator;
 	btScalar m_timeStep;
+
 	bool m_bAwaitingOutputUpdate = false;
+	bool m_bHasBrush = false;
 
 	btScalar gRootBodyRadius = 0.25f;
 	btScalar gRootBodyHeight = 0.1f;

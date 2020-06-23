@@ -13,7 +13,7 @@ public:
 	DirectedGraph(const DirectedGraph& srcGraph);
 	~DirectedGraph();
 
-	void initRandom(bool bAxisAlignedAttachments);
+	void initRandom(bool bAxisAlignedAttachments, uint32_t minNumNodes, uint32_t minNumConns);
 	void initPrefabStructure();
 	void initCurl();
 	void unfold();
@@ -22,8 +22,9 @@ public:
 	void addConnection(GraphNode* parent, GraphNode* child, const GraphConnection::JointInfo& info);
 
 	uint32_t getNumNodesUnfolded();
-	uint32_t getNumEndNodesUnfolded();
 	uint32_t getNumJointsUnfolded();
+	uint32_t getNumEndNodesUnfolded();
+	uint32_t getNumBrushes();
 	std::string getName();
 
 	GraphNode* getRootNode();
@@ -58,7 +59,8 @@ private:
 	std::set<uint32_t> _connectedNodeIndices;
 
 	uint32_t _numNodesUnfolded = 0;
-	uint32_t _numEndNodesUnfolded = 0;
 	uint32_t _numJointsUnfolded = 0;
+	uint32_t _numEndNodes = 0;
+	uint32_t _numBrushes = 1;
 	bool _bTraversed = false;
 };
