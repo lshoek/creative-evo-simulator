@@ -7,9 +7,10 @@
 #include "Simulator/SimInfo.h"
 #include "Utils/Scheduler.h"
 #include "Utils/ImageSaverThread.h"
+#include "Utils/ImageSaver.h"
+#include "Utils/FixedQueue.h"
 #include "Networking/BufferSender.h"
 #include "Networking/NetworkManager.h"
-#include "Utils/ImageSaver.h"
 #include "ofMain.h"
 #include "ofxGrabCam.h"
 #include "ofxShadowMap.h"
@@ -70,14 +71,14 @@ public:
     std::string getFocusInfo();
     void shiftFocus();
 
-    std::shared_ptr<DirectedGraph> getBodyGenome();
-
     glm::ivec2 getCanvasResolution();
     glm::ivec2 getCanvasConvResolution();
     uint32_t getTimeStepsPerUpdate();
+    const std::vector<float> getCPGBuffer();
 
-    bool loadBodyGenomeFromDisk(std::string filename);
-    void generateRandomBodyGenome();
+    bool loadGenomeFromDisk(std::string filename);
+    void generateRandomGenome();
+    const std::shared_ptr<DirectedGraph>& getSelectedGenome();
 
     bool bAutoLoadGenome = true;
     bool bDebugDraw = false;
@@ -88,7 +89,6 @@ public:
     bool bCameraSnapFocus = true;
     bool bFeasibilityChecks = false;
     bool bCanvasSensors = false;
-    bool bUseBodyGenomes = true;
     bool bAxisAlignedAttachments = false;
     bool bSaveArtifactsToDisk = false;
     bool bMultiEval = false;
@@ -108,6 +108,8 @@ private:
     void performTrueSteps(btScalar timeStep);
     double evaluateArtifact(SimInstance* instance);
 
+    SimSettings _settings;
+
     std::vector<simRunCallback_t> _simulationInstanceCallbackQueue;
     std::vector<SimInstance*> _simulationInstances;
     std::mutex _cbQueueMutex;
@@ -116,15 +118,13 @@ private:
     std::string _uniqueSimId = "_NA";
     std::string _simDir = NTRS_SIMS_DIR;
 
-    ofxGrabCam cam;
-
-    std::shared_ptr<DirectedGraph> _selectedBodyGenome;
+    std::shared_ptr<DirectedGraph> _selectedGenome;
     std::shared_ptr<SimCreature> _previewCreature;
 
     // preview world
     SimWorld* _previewWorld;
 
-    // shadows
+    ofxGrabCam cam;
     ofxShadowMap _shadowMap;
 
     // time
@@ -191,10 +191,8 @@ private:
     ofEventListener _connectionClosedListener;
     ofEventListener _onActivationReceived;
     ofEventListener _infoReceivedListener;
+    ofEventListener _pulseReceivedListener;
 
     ImageSaver _imageSaver;
-
-    const glm::vec3 right = glm::vec3(1, 0, 0);
-    const glm::vec3 up =    glm::vec3(0, 1, 0);
-    const glm::vec3 fwd =   glm::vec3(0, 0, 1);
+    FixedQueue _cpgQueue;
 };

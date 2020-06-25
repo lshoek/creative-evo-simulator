@@ -11,6 +11,7 @@ class NetworkManager
 public:
 	ofEvent<void> onConnectionEstablished;
 	ofEvent<void> onConnectionClosed;
+	ofEvent<float> onPulseReceived;
 	ofEvent<SimInfo> onInfoReceived;
 
 	void setup(std::string host, int inPort, int outPort);

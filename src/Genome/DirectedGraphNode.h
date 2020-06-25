@@ -43,7 +43,7 @@ public:
 	void save(std::string path);
 	void load(ofFile& file);
 
-	static constexpr btScalar minSize = 0.125;
+	static constexpr btScalar minSize = 0.25;
 	static constexpr btScalar maxSize = 1.5;
 	
 private:

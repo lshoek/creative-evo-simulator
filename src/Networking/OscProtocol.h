@@ -22,6 +22,7 @@ const std::string OSC_BYE_IN = "bye";
 const std::string OSC_ACTIVATION = "act";
 const std::string OSC_ACTIVATION_BUF = "actbuf";
 const std::string OSC_ID = "id";
+const std::string OSC_PULSE = "pls";
 
 const std::string OSC_START = "start";
 const std::string OSC_PART = "part";

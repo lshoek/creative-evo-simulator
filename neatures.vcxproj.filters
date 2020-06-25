@@ -476,5 +476,8 @@
     <ClInclude Include="src\Simulator\SimInstance.h">
       <Filter>src\Simulator</Filter>
     </ClInclude>
+    <ClInclude Include="src\Utils\FixedQueue.h">
+      <Filter>src\Utils</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

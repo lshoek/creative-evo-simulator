@@ -327,6 +327,7 @@
     <ClInclude Include="src\Simulator\SimulationManager.h" />
     <ClInclude Include="src\Simulator\SimWorld.h" />
     <ClInclude Include="src\Utils\EvoUtils.h" />
+    <ClInclude Include="src\Utils\FixedQueue.h" />
     <ClInclude Include="src\Utils\ImageSaver.h" />
     <ClInclude Include="src\Utils\ImageSaverThread.h" />
     <ClInclude Include="src\Utils\MathUtils.h" />

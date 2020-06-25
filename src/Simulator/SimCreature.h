@@ -47,8 +47,6 @@ public:
 	void setTouchSensor(void* bodyPointer);
 	void clearTouchSensors();
 
-	void setCanvasSensors(const double* canvasSensors, double t);
-
 	void addToWorld();
 	void removeFromWorld();
 

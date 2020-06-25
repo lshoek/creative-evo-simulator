@@ -35,4 +35,6 @@ private:
     SimInstance* _owner = NULL;
 
     btScalar _terrainSize = 64.0;
+    
+    bool _bMultiThreading = false;
 };

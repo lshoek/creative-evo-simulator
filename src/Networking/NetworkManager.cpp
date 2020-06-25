@@ -118,6 +118,10 @@ void NetworkManager::receive()
 					memcpy(&_outputBuffer[0], buf.getData(), _outputBufferSize * sizeof(float));
 					_bOutputQueued = true;
 				}
+				if (addr_id == OSC_PULSE) {
+					float pulse = m.getArgAsFloat(0);
+					onPulseReceived.notify(pulse);
+				}
 				if (addr_id == OSC_ACTIVATION_BUF) {
 					//const std::string& addr_info = tokens[2];
 

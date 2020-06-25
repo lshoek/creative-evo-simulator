@@ -152,7 +152,7 @@ void SimCreature::dfs(
 			parentWorldTrans.inverse() * parentFrameInWorld, 
 			childWorldTrans.inverse() * childFrameInWorld
 		);
-		joint->setLimit(-SIMD_HALF_PI * btScalar(0.5), SIMD_HALF_PI * btScalar(0.5));
+		joint->setLimit(-SIMD_HALF_PI, SIMD_HALF_PI);
 		joint->setDbgDrawSize(0.25f);
 		joint->setEnabled(true);
 
@@ -214,7 +214,7 @@ bool SimCreature::updateTimeStep(double timeStep)
 {
 	m_timeStep = timeStep;
 	m_targetAccumulator += m_timeStep;
-	if (m_targetAccumulator >= 1.0f / ((double)m_targetFrequency)) {
+	if (m_targetAccumulator >= 1.0 / (double)m_targetFrequency) {
 		m_targetAccumulator = 0;
 		m_bAwaitingOutputUpdate = true;
 	}
@@ -394,14 +394,6 @@ void SimCreature::clearTouchSensors()
 	}
 }
 
-void SimCreature::setCanvasSensors(const double* canvasSensors, double t)
-{
-	//for (uint32_t i = 0; i < m_controlPolicyGenome->getNN().NumInputs()-2; i++) {
-	//	m_canvasSensors[i] = canvasSensors[i];
-	//}
-	//m_canvasSensors[m_controlPolicyGenome->getNN().NumInputs()-1] = t;
-}
-
 void SimCreature::addToWorld()
 {
 	for (uint32_t i = 0; i < m_numJoints; i++) {
@@ -500,10 +492,10 @@ SimCreature::~SimCreature()
 {
 	removeFromWorld();
 
-	for (btTypedConstraint* c : m_joints) {
+	for (auto &c : m_joints) {
 		delete c;
 	}
-	for (SimNode* node : m_nodes) {
+	for (auto &node : m_nodes) {
 		delete node;
 	}
 	if (m_bodyGenome) delete m_bodyGenome;

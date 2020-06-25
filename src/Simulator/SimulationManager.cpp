@@ -93,23 +93,24 @@ void SimulationManager::init(SimSettings settings)
     // creature
     bGenomeLoaded = false;
     if (bAutoLoadGenome) {
-        bGenomeLoaded = loadBodyGenomeFromDisk(settings.genomeFile);
+        bGenomeLoaded = loadGenomeFromDisk(settings.genomeFile);
     }
     if (!bGenomeLoaded) {
-        _selectedBodyGenome = std::make_shared<DirectedGraph>(true, bAxisAlignedAttachments);
-        _selectedBodyGenome->unfold();
-        _selectedBodyGenome->print();
+        _selectedGenome = std::make_shared<DirectedGraph>(true, bAxisAlignedAttachments);
+        _selectedGenome->unfold();
+        _selectedGenome->print();
 
-        _previewCreature = std::make_shared<SimCreature>(btVector3(.0, 2.0, .0), _selectedBodyGenome, _previewWorld->getBtWorld());
+        _previewCreature = std::make_shared<SimCreature>(btVector3(.0, 2.0, .0), _selectedGenome, _previewWorld->getBtWorld());
         _previewCreature->setMaterial(_nodeMaterial);
         _previewCreature->setShader(_nodeShader);
         _previewCreature->addToWorld();
     }
 
     // io 
-    _networkManager.setup(settings.host, settings.inPort, settings.outPort);
     _imageSaver.setup(_canvasResolution.x, _canvasResolution.y);
+    _cpgQueue.allocate(32);
 
+    _settings = settings;
     bInitialized = true;
 }
 
@@ -156,24 +157,28 @@ void SimulationManager::startSimulation(std::string id, EvaluationType evalType)
         _cvDebugImage.setFromPixels(_maskMat.ptr<uchar>(), _maskMat.rows, _maskMat.cols);
 
         // Register network event listeners
+        _networkManager.setup(_settings.host, _settings.inPort, _settings.outPort);
         _connectionEstablishedListener = _networkManager.onConnectionEstablished.newListener([this] {
             setStatus("Connection with evolution module established!");
-            uint32_t numJoints = _selectedBodyGenome->getNumJointsUnfolded();
+            uint32_t numJoints = _selectedGenome->getNumJointsUnfolded();
 
             _networkManager.send(OSC_INFO + '/' +
-                _selectedBodyGenome->getName() + '/' +
+                _selectedGenome->getName() + '/' +
                 ofToString(numJoints) + '/' +
                 ofToString(numJoints+1) + '/' +
                 ofToString(_canvasConvResolution.x)
             );
         });
-        _infoReceivedListener = _networkManager.onInfoReceived.newListener([this] (SimInfo info) {
+        _infoReceivedListener = _networkManager.onInfoReceived.newListener([this](SimInfo info) {
             queueSimInstance(info);
+        });
+        _pulseReceivedListener = _networkManager.onPulseReceived.newListener([this](float pulse) {
+            _cpgQueue.push(pulse);
         });
         _connectionClosedListener = _networkManager.onConnectionClosed.newListener([this] {
             stopSimulation();
         });
-        uint32_t numJoints = _selectedBodyGenome->getNumJointsUnfolded();
+        uint32_t numJoints = _selectedGenome->getNumJointsUnfolded();
         _networkManager.allocate(numJoints, numJoints + 1, _canvasConvResolution.x, _canvasConvResolution.y, OF_PIXELS_GRAY);
         _networkManager.search();
 
@@ -188,10 +193,11 @@ void SimulationManager::stopSimulation()
         bStopSimulationQueued = true;
         terminateSimInstances();
 
-        _networkManager.close();
         _connectionEstablishedListener.unsubscribe();
         _connectionClosedListener.unsubscribe();
         _infoReceivedListener.unsubscribe();
+        _pulseReceivedListener.unsubscribe();
+        _networkManager.close();
     }
 }
 
@@ -230,8 +236,13 @@ int SimulationManager::createSimInstance(SimInfo info)
 
     SimWorld* world = new SimWorld();
 
-    SimCanvasNode* canv;
-    canv = new SimCanvasNode(position, canvasSize, spaceExtent, 
+    SimCreature* crtr = new SimCreature(position, _selectedGenome, world->getBtWorld());
+    crtr->setSensorMode(bCanvasSensors ? SimCreature::Canvas : SimCreature::Touch);
+    crtr->setMaterial(_nodeMaterial);
+    crtr->setShader(_nodeShader);
+    crtr->addToWorld();
+
+    SimCanvasNode* canv = new SimCanvasNode(position, canvasSize, spaceExtent, 
         _canvasResolution.x, _canvasResolution.y, 
         _canvasConvResolution.x, _canvasConvResolution.y, 
         bCanvasDownSampling, world->getBtWorld()
@@ -242,13 +253,6 @@ int SimulationManager::createSimInstance(SimInfo info)
     canv->setCanvasColorizeShader(_canvasColorShader);
     canv->enableBounds();
     canv->addToWorld();
-
-    SimCreature* crtr = new SimCreature(position, _selectedBodyGenome, world->getBtWorld());
-
-    crtr->setSensorMode(bCanvasSensors ? SimCreature::Canvas : SimCreature::Touch);
-    crtr->setMaterial(_nodeMaterial);
-    crtr->setShader(_nodeShader);
-    crtr->addToWorld();
 
     SimInstance* instance = new SimInstance(info.id, info.generation, world, crtr, canv, info.duration);
     _networkManager.sendState(instance);
@@ -359,7 +363,7 @@ void SimulationManager::update()
         }
     }
     // quick and dirty
-    if (bInstanceDestroyed) {
+    if (bInstanceDestroyed && !bStopSimulationQueued) {
         _networkManager.search();
     }
     if (bStopSimulationQueued && !isSimulationInstanceActive()) {
@@ -478,12 +482,12 @@ void SimulationManager::draw()
 
             glEnable(GL_CULL_FACE);
             glCullFace(GL_BACK);
-            for (auto const& instance : _simulationInstances)
+            for (const auto& instance : _simulationInstances)
                 instance->getCanvas()->draw();
 
             glEnable(GL_DEPTH_TEST);
 
-            for (auto const& instance : _simulationInstances)
+            for (const auto& instance : _simulationInstances)
                 instance->getCreature()->draw();
 
             glDisable(GL_CULL_FACE);
@@ -514,7 +518,7 @@ void SimulationManager::draw()
     else {
         cam.begin();
         _previewWorld->getBtWorld()->debugDrawWorld();
-        for (auto const& instance : _simulationInstances) {
+        for (const auto& instance : _simulationInstances) {
             instance->getWorld()->getBtWorld()->debugDrawWorld();
         }
         cam.end();
@@ -588,9 +592,9 @@ void SimulationManager::terminateSimInstances()
     }
 }
 
-std::shared_ptr<DirectedGraph> SimulationManager::getBodyGenome()
+const std::shared_ptr<DirectedGraph>& SimulationManager::getSelectedGenome()
 {
-    return _selectedBodyGenome;
+    return _selectedGenome;
 }
 
 glm::ivec2 SimulationManager::getCanvasResolution()
@@ -608,25 +612,30 @@ uint32_t SimulationManager::getTimeStepsPerUpdate()
     return _timeStepsPerUpdate;
 }
 
-bool SimulationManager::loadBodyGenomeFromDisk(std::string filename)
+const std::vector<float> SimulationManager::getCPGBuffer()
 {
-    _selectedBodyGenome = std::make_shared<DirectedGraph>();
+    return _cpgQueue.getBuffer();
+}
 
-    if (_selectedBodyGenome->load(filename)) {
-        _selectedBodyGenome->unfold();
+bool SimulationManager::loadGenomeFromDisk(std::string filename)
+{
+    _selectedGenome = std::make_shared<DirectedGraph>();
 
-        _previewCreature = std::make_shared<SimCreature>(btVector3(.0, 2.0, .0), _selectedBodyGenome, _previewWorld->getBtWorld());
+    if (_selectedGenome->load(filename)) {
+        _selectedGenome->unfold();
+
+        _previewCreature = std::make_shared<SimCreature>(btVector3(.0, 2.0, .0), _selectedGenome, _previewWorld->getBtWorld());
         _previewCreature->setMaterial(_nodeMaterial);
         _previewCreature->setShader(_nodeShader);
         _previewCreature->addToWorld();
 
         char label[256];
         sprintf_s(label, "Loaded genome '%s' with a total of% d node(s), % d joint(s), % d end(s), % d brush(es), % d output(s) in %d attempt(s)", filename.c_str(),
-            _selectedBodyGenome->getNumNodesUnfolded(),
-            _selectedBodyGenome->getNumJointsUnfolded(),
-            _selectedBodyGenome->getNumEndNodesUnfolded(),
-            _selectedBodyGenome->getNumBrushes(),
-            _selectedBodyGenome->getNumJointsUnfolded() + _selectedBodyGenome->getNumBrushes()
+            _selectedGenome->getNumNodesUnfolded(),
+            _selectedGenome->getNumJointsUnfolded(),
+            _selectedGenome->getNumEndNodesUnfolded(),
+            _selectedGenome->getNumBrushes(),
+            _selectedGenome->getNumJointsUnfolded() + _selectedGenome->getNumBrushes()
         );
         setStatus(label);
         return true;
@@ -638,55 +647,53 @@ bool SimulationManager::loadBodyGenomeFromDisk(std::string filename)
 }
 
 // Try to build a feasible creature genome
-void SimulationManager::generateRandomBodyGenome()
+void SimulationManager::generateRandomGenome()
 {
-    if (bUseBodyGenomes) {
-        bool bNoFeasibleCreatureFound = true;
-        int attempts = 0;
+    bool bNoFeasibleCreatureFound = true;
+    int attempts = 0;
 
-        ofLog() << "Generating genome...";
-        _selectedBodyGenome = std::make_shared<DirectedGraph>(true, bAxisAlignedAttachments);
-        _selectedBodyGenome->unfold();
+    ofLog() << "Generating genome...";
+    _selectedGenome = std::make_shared<DirectedGraph>(true, bAxisAlignedAttachments);
+    _selectedGenome->unfold();
 
-        std::shared_ptr<SimCreature> tempCreature;
-        while (bNoFeasibleCreatureFound && attempts < _maxGenGenomeAttempts) {
+    std::shared_ptr<SimCreature> tempCreature;
+    while (bNoFeasibleCreatureFound && attempts < _maxGenGenomeAttempts) {
 
-            tempCreature = std::make_shared<SimCreature>(
-                btVector3(0, 2.0, 0), _selectedBodyGenome, _previewWorld->getBtWorld()
+        tempCreature = std::make_shared<SimCreature>(
+            btVector3(0, 2.0, 0), _selectedGenome, _previewWorld->getBtWorld()
+        );
+        bool bSuccess = bFeasibilityChecks ? tempCreature->feasibilityCheck() : true;
+        if (bSuccess) {
+            bNoFeasibleCreatureFound = false;
+            _selectedGenome->print();
+
+            _previewCreature = tempCreature;
+            _previewCreature->setMaterial(_nodeMaterial);
+            _previewCreature->setShader(_nodeShader);
+            _previewCreature->addToWorld();
+        }
+        else {
+            // Replace the managed object
+            _selectedGenome = std::make_shared<DirectedGraph>(true, bAxisAlignedAttachments);
+            _selectedGenome->unfold();
+        }
+        attempts++;
+    }
+    if (bFeasibilityChecks) {
+        char label[256];
+        if (!bNoFeasibleCreatureFound) {
+            sprintf_s(label, "Generated genome with a total of %d node(s), %d joint(s), %d end(s), %d brush(es), %d output(s) in %d attempt(s).",
+                _selectedGenome->getNumNodesUnfolded(),
+                _selectedGenome->getNumJointsUnfolded(),
+                _selectedGenome->getNumEndNodesUnfolded(),
+                _selectedGenome->getNumBrushes(),
+                _selectedGenome->getNumJointsUnfolded() + _selectedGenome->getNumBrushes(), attempts
             );
-            bool bSuccess = bFeasibilityChecks ? tempCreature->feasibilityCheck() : true;
-            if (bSuccess) {
-                bNoFeasibleCreatureFound = false;
-                _selectedBodyGenome->print();
-
-                _previewCreature = tempCreature;
-                _previewCreature->setMaterial(_nodeMaterial);
-                _previewCreature->setShader(_nodeShader);
-                _previewCreature->addToWorld();
-            }
-            else {
-                // Replace the managed object
-                _selectedBodyGenome = std::make_shared<DirectedGraph>(true, bAxisAlignedAttachments);
-                _selectedBodyGenome->unfold();
-            }
-            attempts++;
         }
-        if (bFeasibilityChecks) {
-            char label[256];
-            if (!bNoFeasibleCreatureFound) {
-                sprintf_s(label, "Generated genome with a total of %d node(s), %d joint(s), %d end(s), %d brush(es), %d output(s) in %d attempt(s).",
-                    _selectedBodyGenome->getNumNodesUnfolded(),
-                    _selectedBodyGenome->getNumJointsUnfolded(),
-                    _selectedBodyGenome->getNumEndNodesUnfolded(),
-                    _selectedBodyGenome->getNumBrushes(),
-                    _selectedBodyGenome->getNumJointsUnfolded() + _selectedBodyGenome->getNumBrushes(), attempts
-                );
-            }
-            else {
-                sprintf_s(label, "Failed to generate a feasible genome within %d attempts.", attempts);
-            }
-            setStatus(label);
+        else {
+            sprintf_s(label, "Failed to generate a feasible genome within %d attempts.", attempts);
         }
+        setStatus(label);
     }
 }
 

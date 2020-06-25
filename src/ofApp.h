@@ -57,8 +57,7 @@ private:
 		GuiFileItem(const char* fname) : fileName(fname) {}
 		std::string fileName;
 
-		const char* getRawFileName() const
-		{
+		const char* getRawFileName() const {
 			return fileName.c_str();
 		}
 	};

@@ -23,24 +23,24 @@ void SimWorld::init()
     _broadphase = new btDbvtBroadphase();
     _collisionConfig = new btDefaultCollisionConfiguration();
 
-    bool bMultiThreading = true;
-    if (!bMultiThreading) {
-        _dispatcher = new btCollisionDispatcher(_collisionConfig);
-        _solver = new btSequentialImpulseConstraintSolver();
-        _world = new btDiscreteDynamicsWorld(_dispatcher, _broadphase, _solver, _collisionConfig);
-    }
-    else {
+    if (_bMultiThreading) {
         _dispatcher = new btCollisionDispatcherMt(_collisionConfig);
         _solverPool = new btConstraintSolverPoolMt(BT_MAX_THREAD_COUNT);
         _solver = new btSequentialImpulseConstraintSolverMt();
         _world = new btDiscreteDynamicsWorldMt(_dispatcher, _broadphase, _solverPool, _solver, _collisionConfig);
         btSetTaskScheduler(btCreateDefaultTaskScheduler());
     }
+    else {
+        _dispatcher = new btCollisionDispatcher(_collisionConfig);
+        _solver = new btSequentialImpulseConstraintSolver();
+        _world = new btDiscreteDynamicsWorld(_dispatcher, _broadphase, _solver, _collisionConfig);
+    }
 
     _dbgDrawer = new SimDebugDrawer();
     _dbgDrawer->setDebugMode(
         btIDebugDraw::DBG_DrawWireframe |
-        btIDebugDraw::DBG_DrawConstraints
+        btIDebugDraw::DBG_DrawConstraints |
+        btIDebugDraw::DBG_DrawConstraintLimits
     );
 
     _world->setGravity(btVector3(0, -9.81, 0));
@@ -130,10 +130,16 @@ SimNode* SimWorld::getTerrainNode()
 SimWorld::~SimWorld()
 {
     delete _terrainNode;
+    _owner = 0;
 
-    delete _solver;
-    delete _collisionConfig;
-    delete _dispatcher;
     delete _broadphase;
+    delete _collisionConfig;
+    delete _solver;
+    delete _dispatcher;
+
+    if (_bMultiThreading) {
+        delete _solverPool;
+    }
+    delete _dbgDrawer;
     delete _world;
 }

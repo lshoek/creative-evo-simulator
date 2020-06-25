@@ -3,6 +3,7 @@
 #include "Simulator/SimNode.h"
 #include "Utils/toolbox.h"
 #include "Utils/MathUtils.h"
+#include "Utils/FixedQueue.h"
 
 #define APP_ID "neatures v0.2"
 #define CONSOLE_SIZE 600
@@ -53,7 +54,6 @@ void ofApp::initSim()
 		simulationManager.bAutoLoadGenome = settings.get("genome.autoload", true);
 		simulationManager.bCameraSnapFocus = settings.get("mode.snapfocus", true);
 		simulationManager.bAxisAlignedAttachments = settings.get("genome.axis_aligned_attachments", false);
-		simulationManager.bUseBodyGenomes = settings.get("genome.body_genomes", true);
 		simulationManager.bFeasibilityChecks = settings.get("genome.feasibility_checks", true);
 		simulationManager.bCanvasSensors = settings.get("sensors.type", "canvas").compare("canvas") == 0;
 		simulationManager.bSaveArtifactsToDisk = settings.get("canvas.save", true);
@@ -140,8 +140,8 @@ void ofApp::imGui()
 {
 	gui.begin();
 	{
-		ImVec2 windowSize(240, 540);
-		ImVec2 overlaySize(240, 140);
+		ImVec2 windowSize(200, 540);
+		ImVec2 overlaySize(240, 220);
 		ImVec2 margin(0, 4);
 		ImVec2 menuBarSize = ImVec2(0, 0);
 		uint32_t offset = 24;
@@ -170,17 +170,17 @@ void ofApp::imGui()
 					}
 					for (std::shared_ptr<GuiFileItem> i : items) {
 						if (ImGui::MenuItem(i->getRawFileName(), NULL, false)) {
-							simulationManager.loadBodyGenomeFromDisk(i->fileName);
+							simulationManager.loadGenomeFromDisk(i->fileName);
 						}
 					}
 					ImGui::EndMenu();
 				}
 				if (ImGui::MenuItem("Save", NULL, false)) {
-					simulationManager.getBodyGenome()->save();
+					simulationManager.getSelectedGenome()->save();
 				}
 				ImGui::Separator();
 				if (ImGui::MenuItem("Generate", NULL, false)) {
-					simulationManager.generateRandomBodyGenome();
+					simulationManager.generateRandomGenome();
 				}
 				if (ImGui::MenuItem("Feasibility Checks", NULL, simulationManager.bFeasibilityChecks)) {
 					simulationManager.bFeasibilityChecks = !simulationManager.bFeasibilityChecks;
@@ -258,7 +258,7 @@ void ofApp::imGui()
 			ImGui::SetNextWindowBgAlpha(0.5f);
 
 			if (ImGui::Begin("Meta", NULL, flags | ImGuiWindowFlags_NoScrollbar)) {
-				ImGui::Text("meta");
+				ImGui::Text("Meta");
 				ImGui::Separator();
 				ImGui::Dummy(margin);
 
@@ -273,10 +273,14 @@ void ofApp::imGui()
 				ImGui::Text("dbgdraw: %s", simulationManager.bDebugDraw ? "on" : "off");
 				ImGui::Dummy(margin);
 
-				//ImGui::Text("Creature Name");
-				//ImGui::Separator();
-				//if (simulationManager.getFocusCreature() != nullptr) {
-				//}
+				ImGui::Text("Creature");
+				ImGui::Separator();
+				if (simulationManager.getSelectedGenome()) {
+					ImGui::Text("id: %s", simulationManager.getSelectedGenome()->getName().c_str());
+					ImGui::Text("nodes: %d", simulationManager.getSelectedGenome()->getNumNodesUnfolded());
+					ImGui::Text("joints: %d", simulationManager.getSelectedGenome()->getNumJointsUnfolded());
+					ImGui::Text("brushes: %d", simulationManager.getSelectedGenome()->getNumBrushes());
+				}
 				//ImGui::InputFloat3("light:", &simulationManager.lightPosition[0], 2);
 			}	
 			ImGui::End();
@@ -300,27 +304,38 @@ void ofApp::imGui()
 			if (bSimulate) {
 				if (simulationManager.isInitialized()) {
 					ImGui::Text("Simulation Speed:");
-					ImGui::SliderInt("<", (int*)&simulationManager.simulationSpeed, 0, 16);
+					ImGui::SliderInt("##SimSpeed", (int*)&simulationManager.simulationSpeed, 0, 16);
 					ImGui::Separator();
 					if (simulationManager.isSimulationInstanceActive()) {
 						ImGui::Text("Elapsed time:");
 						ImGui::Text(simulationManager.getFocusInfo().c_str());
 						ImGui::Separator();
-						if (simulationManager.getFocusCanvas() != nullptr) {
+						if (simulationManager.getFocusCanvas()) {
 							ImGui::Text("Creature Artifact:");
-							ImGui::Image((void*)(intptr_t)simulationManager.getFocusCanvas()->getCanvasFbo()->getTexture().getTextureData().textureID, ImVec2(windowSize.x, windowSize.x));
+							ImGui::Image(
+								(void*)(intptr_t)simulationManager.getFocusCanvas()->getCanvasFbo()->getTexture().getTextureData().textureID, 
+								ImVec2(windowSize.x-margin.x, windowSize.x-margin.x)
+							);
 							ImGui::Text("Neural Input:");
-							ImGui::Image((void*)(intptr_t)simulationManager.getFocusCanvas()->getConvFbo()->getTexture().getTextureData().textureID, ImVec2(windowSize.x, windowSize.x));
+							ImGui::Image(
+								(void*)(intptr_t)simulationManager.getFocusCanvas()->getConvFbo()->getTexture().getTextureData().textureID, 
+								ImVec2(windowSize.x-margin.x, windowSize.x-margin.x)
+							);
+							ImGui::Separator();
+						}
+						if (simulationManager.getFocusCreature()) {
+							const auto hist = simulationManager.getCPGBuffer();
+							ImGui::Text("CPG:");
+							ImGui::PlotLines("##CPG", &hist[0], hist.size(), 0, ofToString(hist[0], 2).c_str(), 0, 1.f, ImVec2(windowSize.x-margin.x, windowSize.x/4));
 							ImGui::Separator();
 							ImGui::Text("Effectors:");
 							ImGui::TextWrapped(ofToString(simulationManager.getFocusCreature()->getOutputs()).c_str());
+							ImGui::Separator();
 						}
 						if (simulationManager.bDebugDraw) {
-							if (simulationManager.getFocusCreature() != nullptr) {
-								ImGui::Text("Global Motor Strength:");
-								ImGui::SliderFloat("<<", &simulationManager.getFocusCreature()->m_motorStrength, 0, 1);
-								ImGui::Separator();
-							}
+							ImGui::Text("Global Motor Strength:");
+							ImGui::SliderFloat("##GMStrength", &simulationManager.getFocusCreature()->m_motorStrength, 0, 1);
+							ImGui::Separator();
 						}
 					}
 				}
