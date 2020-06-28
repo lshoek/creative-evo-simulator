@@ -12,7 +12,7 @@ using json = nlohmann::json;
 
 DirectedGraph::DirectedGraph() {}
 
-DirectedGraph::DirectedGraph(bool bInitRandom, bool bAxisAlignedAttachments)
+DirectedGraph::DirectedGraph(uint32_t minNumNodes, uint32_t minNumConns, bool bAxisAlignedAttachments)
 {
     std::random_device::result_type seed = _rd();
     //ofLog() << "DirectedGraph seed: " << seed;
@@ -20,11 +20,7 @@ DirectedGraph::DirectedGraph(bool bInitRandom, bool bAxisAlignedAttachments)
     _rng = std::mt19937(seed);
     _distrib = std::uniform_real_distribution<>(0, 1);
 
-    if (bInitRandom) {
-        //initCurl();
-        //initPrefabStructure();
-        initRandom(bAxisAlignedAttachments, 6, 4);
-    }
+    initRandom(minNumNodes, minNumConns, bAxisAlignedAttachments);
 }
 
 DirectedGraph::DirectedGraph(const DirectedGraph& srcGraph)
@@ -48,7 +44,7 @@ DirectedGraph::DirectedGraph(const DirectedGraph& srcGraph)
     }
 };
 
-void DirectedGraph::initRandom(bool bAAAttachments, uint32_t minNumNodes, uint32_t minNumConns)
+void DirectedGraph::initRandom(uint32_t minNumNodes, uint32_t minNumConns, bool bAAAttachments)
 {
     uint32_t numNodes = minNumNodes; // +int32_t(_distrib(_rng) * 4.0);
     uint32_t numConnections = minNumConns; // +uint32_t(_distrib(_rng) * 4.0);
@@ -343,7 +339,7 @@ void DirectedGraph::save()
     const ofDirectory genomeDir = ofDirectory(ofToDataPath(NTRS_BODY_GENOME_DIR, true));
     const std::vector<ofFile> files = genomeDir.getFiles();
 
-    std::string id = ofGetTimestampString("%Y%m%d_%H%M%S_" + ofToString(_numNodesUnfolded) + "nodes");
+    std::string id = ofGetTimestampString("%Y%m%d_%H%M%S_" + ofToString(_numJointsUnfolded) + "J");
     ofDirectory::createDirectory(genomeDir.getAbsolutePath() + '\\' + id);
     _name = id;
 

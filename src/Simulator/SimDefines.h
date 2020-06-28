@@ -1,9 +1,8 @@
 #pragma once
 
 /// Global paths
-const std::string NTRS_SIMS_DIR = "output/sims/";
-const std::string NTRS_BODY_GENOME_DIR = "output/genomes/";
-const std::string NTRS_OUTPUT_DIR = "output/";
+const std::string NTRS_SIMS_DIR = "sims/";
+const std::string NTRS_BODY_GENOME_DIR = "genomes/";
 
 /// Prefixes
 const std::string NTRS_ARTIFACTS_PREFIX = "artifacts/";

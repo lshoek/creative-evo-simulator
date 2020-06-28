@@ -1,0 +1,7 @@
+*** Report ***
+Evaluation Type: CircleCoverageFitness: -inf/1
+Generations: 0/100
+Total Evaluations: 0
+Total genomes per population: 16
+Total species: 1
+

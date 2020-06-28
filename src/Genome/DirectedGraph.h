@@ -9,11 +9,11 @@ class DirectedGraph
 {
 public:
 	DirectedGraph();
-	DirectedGraph(bool bInitRandom, bool bAxisAlignedAttachments);
+	DirectedGraph(uint32_t minNumNodes, uint32_t minNumConns, bool bAxisAlignedAttachments);
 	DirectedGraph(const DirectedGraph& srcGraph);
 	~DirectedGraph();
 
-	void initRandom(bool bAxisAlignedAttachments, uint32_t minNumNodes, uint32_t minNumConns);
+	void initRandom(uint32_t minNumNodes, uint32_t minNumConns, bool bAxisAlignedAttachments);
 	void initPrefabStructure();
 	void initCurl();
 	void unfold();

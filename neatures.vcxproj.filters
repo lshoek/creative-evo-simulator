@@ -407,9 +407,6 @@
     <ClInclude Include="src\Genome\DirectedGraphNode.h">
       <Filter>src\Genome</Filter>
     </ClInclude>
-    <ClInclude Include="src\Utils\EvoUtils.h">
-      <Filter>src\Utils</Filter>
-    </ClInclude>
     <ClInclude Include="src\Utils\MathUtils.h">
       <Filter>src\Utils</Filter>
     </ClInclude>

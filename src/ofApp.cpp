@@ -80,7 +80,7 @@ void ofApp::start()
 
 	// Start simulator first so it can await evaluation requests
 	if (!simulationManager.isSimulationActive()) {
-		simulationManager.startSimulation(uniqueSimId, SimulationManager::EvaluationType::InverseCircleCoverage);
+		simulationManager.startSimulation(uniqueSimId);
 	}
 }
 
@@ -141,7 +141,7 @@ void ofApp::imGui()
 	gui.begin();
 	{
 		ImVec2 windowSize(200, 540);
-		ImVec2 overlaySize(240, 220);
+		ImVec2 overlaySize(240, 260);
 		ImVec2 margin(0, 4);
 		ImVec2 menuBarSize = ImVec2(0, 0);
 		uint32_t offset = 24;
@@ -182,6 +182,8 @@ void ofApp::imGui()
 				if (ImGui::MenuItem("Generate", NULL, false)) {
 					simulationManager.generateRandomGenome();
 				}
+				ImGui::InputInt("Min Nodes", &simulationManager.genomeGenMinNumNodes);
+				ImGui::InputInt("Min Connections", &simulationManager.genomeGenMinNumConns);
 				if (ImGui::MenuItem("Feasibility Checks", NULL, simulationManager.bFeasibilityChecks)) {
 					simulationManager.bFeasibilityChecks = !simulationManager.bFeasibilityChecks;
 				}
@@ -257,7 +259,7 @@ void ofApp::imGui()
 			ImGui::SetNextWindowSize(overlaySize);
 			ImGui::SetNextWindowBgAlpha(0.5f);
 
-			if (ImGui::Begin("Meta", NULL, flags | ImGuiWindowFlags_NoScrollbar)) {
+			if (ImGui::Begin("Overlay", NULL, flags | ImGuiWindowFlags_NoScrollbar)) {
 				ImGui::Text("Meta");
 				ImGui::Separator();
 				ImGui::Dummy(margin);
@@ -273,14 +275,18 @@ void ofApp::imGui()
 				ImGui::Text("dbgdraw: %s", simulationManager.bDebugDraw ? "on" : "off");
 				ImGui::Dummy(margin);
 
-				ImGui::Text("Creature");
-				ImGui::Separator();
 				if (simulationManager.getSelectedGenome()) {
+					ImGui::Text("Creature");
+					ImGui::Separator();
 					ImGui::Text("id: %s", simulationManager.getSelectedGenome()->getName().c_str());
 					ImGui::Text("nodes: %d", simulationManager.getSelectedGenome()->getNumNodesUnfolded());
 					ImGui::Text("joints: %d", simulationManager.getSelectedGenome()->getNumJointsUnfolded());
 					ImGui::Text("brushes: %d", simulationManager.getSelectedGenome()->getNumBrushes());
+					ImGui::Dummy(margin);
 				}
+				ImGui::Text("Eval");
+				ImGui::Separator();
+				ImGui::Text("func: %s", simulationManager.getEvaluationTypeStr().c_str());
 				//ImGui::InputFloat3("light:", &simulationManager.lightPosition[0], 2);
 			}	
 			ImGui::End();

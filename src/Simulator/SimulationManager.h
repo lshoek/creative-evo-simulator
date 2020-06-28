@@ -40,7 +40,7 @@ public:
     };
 
     void init(SimSettings settings);
-    void startSimulation(std::string id, EvaluationType evalType = EvaluationType::Coverage);
+    void startSimulation(std::string id);
     void stopSimulation();
 
     void update();
@@ -76,6 +76,9 @@ public:
     uint32_t getTimeStepsPerUpdate();
     const std::vector<float> getCPGBuffer();
 
+    EvaluationType getEvaluationType();
+    std::string getEvaluationTypeStr();
+
     bool loadGenomeFromDisk(std::string filename);
     void generateRandomGenome();
     const std::shared_ptr<DirectedGraph>& getSelectedGenome();
@@ -95,8 +98,8 @@ public:
 
     glm::vec3 lightPosition;
     uint32_t simulationSpeed = 1;
-
-    EvaluationType evaluationType;
+    int genomeGenMinNumNodes = 6;
+    int genomeGenMinNumConns = 4;
 
 private:
     void setLightUniforms(const std::shared_ptr<ofShader>& shader);
@@ -109,6 +112,7 @@ private:
     double evaluateArtifact(SimInstance* instance);
 
     SimSettings _settings;
+    EvaluationType _evaluationType;
 
     std::vector<simRunCallback_t> _simulationInstanceCallbackQueue;
     std::vector<SimInstance*> _simulationInstances;

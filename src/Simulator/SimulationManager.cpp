@@ -96,7 +96,7 @@ void SimulationManager::init(SimSettings settings)
         bGenomeLoaded = loadGenomeFromDisk(settings.genomeFile);
     }
     if (!bGenomeLoaded) {
-        _selectedGenome = std::make_shared<DirectedGraph>(true, bAxisAlignedAttachments);
+        _selectedGenome = std::make_shared<DirectedGraph>(genomeGenMinNumNodes, genomeGenMinNumConns, bAxisAlignedAttachments);
         _selectedGenome->unfold();
         _selectedGenome->print();
 
@@ -114,7 +114,7 @@ void SimulationManager::init(SimSettings settings)
     bInitialized = true;
 }
 
-void SimulationManager::startSimulation(std::string id, EvaluationType evalType)
+void SimulationManager::startSimulation(std::string id)
 {
     if (bInitialized && !bSimulationActive) {
         bSimulationActive = true;
@@ -132,9 +132,6 @@ void SimulationManager::startSimulation(std::string id, EvaluationType evalType)
         _frameTimeAccumulator = 0.0;
         _clock.reset();
 
-        // canvas
-        evaluationType = evalType;
-
         _maskMat = cv::Mat(_canvasResolution.x, _canvasResolution.y, CV_8UC1);
         _maskMat = cv::Scalar(0);
         cv::circle(_maskMat, cv::Point(_maskMat.rows / 2, _maskMat.cols / 2), _maskMat.cols / 4, cv::Scalar(255), cv::FILLED);
@@ -142,7 +139,7 @@ void SimulationManager::startSimulation(std::string id, EvaluationType evalType)
 
         _rewardMaskPtr = &_maskMat;
         _penaltyMaskPtr = &_invMaskMat;
-        if (evaluationType == EvaluationType::InverseCircleCoverage) {
+        if (_evaluationType == EvaluationType::InverseCircleCoverage) {
             _rewardMaskPtr = &_invMaskMat;
             _penaltyMaskPtr = &_maskMat;
         }
@@ -417,7 +414,7 @@ double SimulationManager::evaluateArtifact(SimInstance* instance)
     double total = 0.0;
     double fitness = 0.0;
 
-    if (evaluationType == EvaluationType::Coverage) {
+    if (_evaluationType == EvaluationType::Coverage) {
         for (uint32_t i = 0; i < _artifactMat.total(); i++) {
             total += _artifactMat.at<uchar>(i);
         }
@@ -617,6 +614,21 @@ const std::vector<float> SimulationManager::getCPGBuffer()
     return _cpgQueue.getBuffer();
 }
 
+SimulationManager::EvaluationType SimulationManager::getEvaluationType()
+{
+    return _evaluationType;
+}
+
+std::string SimulationManager::getEvaluationTypeStr()
+{
+    switch(_evaluationType) {
+        case Coverage: return "Coverage"; break;
+        case CircleCoverage: return "CircleCoverage"; break;
+        case InverseCircleCoverage: return "InverseCircleCoverage"; break;
+        default: return "NA";
+    }
+}
+
 bool SimulationManager::loadGenomeFromDisk(std::string filename)
 {
     _selectedGenome = std::make_shared<DirectedGraph>();
@@ -653,7 +665,7 @@ void SimulationManager::generateRandomGenome()
     int attempts = 0;
 
     ofLog() << "Generating genome...";
-    _selectedGenome = std::make_shared<DirectedGraph>(true, bAxisAlignedAttachments);
+    _selectedGenome = std::make_shared<DirectedGraph>(genomeGenMinNumNodes, genomeGenMinNumConns, bAxisAlignedAttachments);
     _selectedGenome->unfold();
 
     std::shared_ptr<SimCreature> tempCreature;
@@ -674,7 +686,7 @@ void SimulationManager::generateRandomGenome()
         }
         else {
             // Replace the managed object
-            _selectedGenome = std::make_shared<DirectedGraph>(true, bAxisAlignedAttachments);
+            _selectedGenome = std::make_shared<DirectedGraph>(genomeGenMinNumNodes, genomeGenMinNumConns, bAxisAlignedAttachments);
             _selectedGenome->unfold();
         }
         attempts++;
