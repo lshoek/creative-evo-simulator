@@ -16,7 +16,7 @@ public:
 	~SimCreature();
 
 	bool isAwaitingOutputUpdate();
-	bool updateTimeStep(double timeStep);
+	void updateTimeStep(double timeStep);
 	void update();
 
 	void updateOutputs(const std::vector<float>& outputs);
@@ -62,7 +62,7 @@ public:
 	void setAppearance(std::shared_ptr<ofShader> shader, std::shared_ptr<ofMaterial> mtl, std::shared_ptr<ofTexture> tex);
 
 	float m_motorStrength;
-	float m_targetFrequency;
+	uint32_t m_targetFrequency;
 
 private:
 	void buildPhenome(DirectedGraph* graph);

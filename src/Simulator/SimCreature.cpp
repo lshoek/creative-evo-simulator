@@ -18,7 +18,7 @@ SimCreature::SimCreature(btVector3 position, const std::shared_ptr<DirectedGraph
 	m_bodyGenome->unfold();
 
 	m_motorStrength = 0.025f * m_ownerWorld->getSolverInfo().m_numIterations;
-	m_targetFrequency = 3.0f;
+	m_targetFrequency = 3;
 	m_targetAccumulator = 0;
 
 	buildPhenome(m_bodyGenome);
@@ -210,15 +210,16 @@ bool SimCreature::isAwaitingOutputUpdate()
 	return m_bAwaitingOutputUpdate;
 }
 
-bool SimCreature::updateTimeStep(double timeStep)
+void SimCreature::updateTimeStep(double timeStep)
 {
-	m_timeStep = timeStep;
-	m_targetAccumulator += m_timeStep;
-	if (m_targetAccumulator >= 1.0 / (double)m_targetFrequency) {
-		m_targetAccumulator = 0;
-		m_bAwaitingOutputUpdate = true;
+	if (!m_bAwaitingOutputUpdate) {
+		m_timeStep = timeStep;
+		m_targetAccumulator += m_timeStep;
+		if (m_targetAccumulator >= 1.0 / (double)m_targetFrequency) {
+			m_targetAccumulator = 0;
+			m_bAwaitingOutputUpdate = true;
+		}
 	}
-	return m_bAwaitingOutputUpdate;
 }
 
 void SimCreature::updateOutputs(const std::vector<float>& outputs)

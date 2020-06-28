@@ -310,7 +310,7 @@ void ofApp::imGui()
 			if (bSimulate) {
 				if (simulationManager.isInitialized()) {
 					ImGui::Text("Simulation Speed:");
-					ImGui::SliderInt("##SimSpeed", (int*)&simulationManager.simulationSpeed, 0, 16);
+					ImGui::SliderInt("##SimSpeed", (int*)&simulationManager.simulationSpeed, 0, 32);
 					ImGui::Separator();
 					if (simulationManager.isSimulationInstanceActive()) {
 						ImGui::Text("Elapsed time:");

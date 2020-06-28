@@ -382,26 +382,22 @@ void SimulationManager::performTrueSteps(btScalar timeStep)
 
 void SimulationManager::updateSimInstance(SimInstance* instance, double timeStep)
 {
-    // Update siminstance timestep if the creature is not waiting
-    bool bTimeStepUpdate = true;
+    instance->updateTimeStep(timeStep);
+
     if (instance->isEffectorUpdateRequired()) {
-        bTimeStepUpdate = false;
-        if (_networkManager.isAgentOutputQueued()) {
-            if (_networkManager.getQueuedAgentId() == instance->getID()) {
+        bool bEffectorsQueued =
+            _networkManager.isAgentOutputQueued() &&
+            _networkManager.getQueuedAgentId() == instance->getID();
 
-                // update effectors
-                instance->getCreature()->updateOutputs(_networkManager.popOutputBuffer());
+        if (bEffectorsQueued) {
+            // update effectors
+            instance->getCreature()->updateOutputs(_networkManager.popOutputBuffer());
+            instance->update();
 
-                // send new observation
-                instance->getCanvas()->updateConvPixelBuffer();
-                _networkManager.sendState(instance);
-                bTimeStepUpdate = true;
-            }
+            // send new observation
+            instance->getCanvas()->updateConvPixelBuffer();
+            _networkManager.sendState(instance);
         }
-    }
-    if (bTimeStepUpdate) {
-        instance->updateTimeStep(timeStep);
-        instance->update();
     }
 }
 
