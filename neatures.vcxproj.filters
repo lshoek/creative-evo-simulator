@@ -58,6 +58,12 @@
     <Filter Include="src\Simulator">
       <UniqueIdentifier>{5d5d5fb1-20e3-4a75-a907-3319a0776e2c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\Artifact">
+      <UniqueIdentifier>{c34ec47b-7d55-41ad-bb4b-604d185bcfc4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\Artifact\ofxFractalCompression">
+      <UniqueIdentifier>{7fcafd08-451d-405f-8446-9af8ac2ac346}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="icon.rc" />
@@ -230,6 +236,12 @@
     </ClCompile>
     <ClCompile Include="src\Simulator\SimInstance.cpp">
       <Filter>src\Simulator</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Artifact\ofxFractalCompression\ofxFractalCompression.cpp">
+      <Filter>src\Artifact\ofxFractalCompression</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Artifact\Evaluator.cpp">
+      <Filter>src\Artifact</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -475,6 +487,18 @@
     </ClInclude>
     <ClInclude Include="src\Utils\FixedQueue.h">
       <Filter>src\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Artifact\Evaluator.h">
+      <Filter>src\Artifact</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Artifact\ofxFractalCompression\ofxFractalCompression.h">
+      <Filter>src\Artifact\ofxFractalCompression</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Artifact\ofxFractalCompression\EncodingResult.h">
+      <Filter>src\Artifact\ofxFractalCompression</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Artifact\ofxFractalCompression\FractalCompressionCommon.h">
+      <Filter>src\Artifact\ofxFractalCompression</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -110,6 +110,11 @@ void SimulationManager::init(SimSettings settings)
     _imageSaver.setup(_canvasResolution.x, _canvasResolution.y);
     _cpgQueue.allocate(32);
 
+    // eval
+    cv::Mat testImg = cv::imread("data/lenna.bmp", cv::ImreadModes::IMREAD_GRAYSCALE);
+    _evaluator.setup();
+    _evaluator.evaluate(testImg);
+
     _settings = settings;
     bInitialized = true;
 }

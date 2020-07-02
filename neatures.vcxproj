@@ -233,6 +233,8 @@
     <ClCompile Include="libs\lz4\lz4frame.c" />
     <ClCompile Include="libs\lz4\lz4hc.c" />
     <ClCompile Include="libs\lz4\xxhash.c" />
+    <ClCompile Include="src\Artifact\Evaluator.cpp" />
+    <ClCompile Include="src\Artifact\ofxFractalCompression\ofxFractalCompression.cpp" />
     <ClCompile Include="src\Genome\DirectedGraph.cpp" />
     <ClCompile Include="src\Genome\DirectedGraphConnection.cpp" />
     <ClCompile Include="src\Genome\DirectedGraphNode.cpp" />
@@ -307,6 +309,10 @@
     <ClInclude Include="libs\lz4\lz4frame.h" />
     <ClInclude Include="libs\lz4\lz4hc.h" />
     <ClInclude Include="libs\lz4\xxhash.h" />
+    <ClInclude Include="src\Artifact\Evaluator.h" />
+    <ClInclude Include="src\Artifact\ofxFractalCompression\EncodingResult.h" />
+    <ClInclude Include="src\Artifact\ofxFractalCompression\FractalCompressionCommon.h" />
+    <ClInclude Include="src\Artifact\ofxFractalCompression\ofxFractalCompression.h" />
     <ClInclude Include="src\Genome\DirectedGraph.h" />
     <ClInclude Include="src\Genome\DirectedGraphConnection.h" />
     <ClInclude Include="src\Genome\DirectedGraphNode.h" />

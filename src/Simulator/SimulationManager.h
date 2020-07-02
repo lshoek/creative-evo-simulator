@@ -5,6 +5,7 @@
 #include "Simulator/SimInstance.h"
 #include "Simulator/SimDebugDrawer.h"
 #include "Simulator/SimInfo.h"
+#include "Artifact/Evaluator.h"
 #include "Utils/Scheduler.h"
 #include "Utils/ImageSaverThread.h"
 #include "Utils/ImageSaver.h"
@@ -113,6 +114,7 @@ private:
 
     SimSettings _settings;
     EvaluationType _evaluationType;
+    Evaluator _evaluator;
 
     std::vector<simRunCallback_t> _simulationInstanceCallbackQueue;
     std::vector<SimInstance*> _simulationInstances;
