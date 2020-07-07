@@ -21,7 +21,7 @@ const float fademax = fademin+1/128.0;
 in vec2 texcoord_varying;
 out float fragColor;
  
-void main(void)
+void main()
 {
 	vec2 st = texcoord_varying;
 	float pct = 0.0;

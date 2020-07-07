@@ -149,6 +149,7 @@ private:
     std::shared_ptr<ofShader> _terrainShader;
     std::shared_ptr<ofShader> _nodeShader;
     std::shared_ptr<ofShader> _canvasShader;
+    std::shared_ptr<ofShader> _canvasSubTextureShader;
     std::shared_ptr<ofShader> _canvasColorShader;
     std::shared_ptr<ofShader> _canvasUpdateShader;
 
@@ -167,6 +168,7 @@ private:
     bool bInitialized = false;
     bool bSimulationActive = false;
     bool bStopSimulationQueued = false;
+    bool bCanvasLocalVisionMode = true;
     bool bCanvasDownSampling = false;
     bool bGenomeLoaded = false;
 

@@ -13,7 +13,10 @@ void SimulationManager::init(SimSettings settings)
     // canvas
     _canvasResolution = glm::ivec2(settings.canvasSize, settings.canvasSize);
     _canvasConvResolution = glm::ivec2(settings.canvasSizeConv, settings.canvasSizeConv);
-    bCanvasDownSampling = _canvasResolution.x != _canvasConvResolution.x;
+    
+    if (!bCanvasLocalVisionMode) {
+        bCanvasDownSampling = _canvasResolution.x != _canvasConvResolution.x;
+    }
 
     // parallellism
     _simInstanceLimit = settings.maxParallelSims;
@@ -111,9 +114,9 @@ void SimulationManager::init(SimSettings settings)
     _cpgQueue.allocate(32);
 
     // eval
-    cv::Mat testImg = cv::imread("data/lenna.bmp", cv::ImreadModes::IMREAD_GRAYSCALE);
-    _evaluator.setup();
-    _evaluator.evaluate(testImg);
+    //cv::Mat testImg = cv::imread("data/lenna.bmp", cv::ImreadModes::IMREAD_GRAYSCALE);
+    //_evaluator.setup();
+    //_evaluator.evaluate(testImg);
 
     _settings = settings;
     bInitialized = true;
@@ -247,12 +250,13 @@ int SimulationManager::createSimInstance(SimInfo info)
     SimCanvasNode* canv = new SimCanvasNode(position, canvasSize, spaceExtent, 
         _canvasResolution.x, _canvasResolution.y, 
         _canvasConvResolution.x, _canvasConvResolution.y, 
-        bCanvasDownSampling, world->getBtWorld()
+        bCanvasLocalVisionMode, bCanvasDownSampling, world->getBtWorld()
     );
     canv->setMaterial(_canvasMaterial);
     canv->setShader(_canvasShader);
     canv->setCanvasUpdateShader(_canvasUpdateShader);
     canv->setCanvasColorizeShader(_canvasColorShader);
+    canv->setSubTextureShader(_canvasSubTextureShader);
     canv->enableBounds();
     canv->addToWorld();
 
@@ -416,9 +420,7 @@ double SimulationManager::evaluateArtifact(SimInstance* instance)
     double fitness = 0.0;
 
     if (_evaluationType == EvaluationType::Coverage) {
-        for (uint32_t i = 0; i < _artifactMat.total(); i++) {
-            total += _artifactMat.at<uchar>(i);
-        }
+        total = cv::sum(_artifactMat)[0];
         fitness = total / double(_artifactMat.total() * 255);
     }
     else {
@@ -715,8 +717,9 @@ void SimulationManager::loadShaders()
     _terrainShader = std::make_shared<ofShader>();
     _nodeShader = std::make_shared<ofShader>();
     _canvasShader = std::make_shared<ofShader>();
-    _canvasColorShader = std::make_shared<ofShader>();
     _canvasUpdateShader = std::make_shared<ofShader>();
+    _canvasColorShader = std::make_shared<ofShader>();
+    _canvasSubTextureShader = std::make_shared<ofShader>();
 
     if (bShadows) {
         _terrainShader->load("shaders/checkersPhongShadow");
@@ -728,8 +731,9 @@ void SimulationManager::loadShaders()
         _nodeShader->load("shaders/phong");
         _canvasShader->load("shaders/phong");
     }
-    _canvasColorShader->load("shaders/lum2col");
     _canvasUpdateShader->load("shaders/canvas");
+    _canvasColorShader->load("shaders/lum2col");
+    _canvasSubTextureShader->load("shaders/subtexture");
 }
 
 bool SimulationManager::isInitialized()

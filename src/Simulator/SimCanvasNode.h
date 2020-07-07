@@ -7,11 +7,12 @@
 class SimCanvasNode : public SimNodeBase
 {
 public:
-	SimCanvasNode(btVector3 position, float size, float extraBounds, int xRes, int yRes, int xNeuralInput, int yNeuralInput, bool bDownSample, btDynamicsWorld* ownerWorld);
+	SimCanvasNode(btVector3 position, float size, float extraBounds, int xRes, int yRes, int xNeuralInput, int yNeuralInput, bool bLocalVisionMode, bool bDownSample, btDynamicsWorld* ownerWorld);
 	~SimCanvasNode();
 
 	void update();
 	void updateConvPixelBuffer();
+	void clearConvPixelBuffer();
 
 	virtual void draw() override;
 	virtual void drawImmediate() override;
@@ -31,6 +32,7 @@ public:
 
 	void setCanvasUpdateShader(std::shared_ptr<ofShader> shader);
 	void setCanvasColorizeShader(std::shared_ptr<ofShader> shader);
+	void setSubTextureShader(std::shared_ptr<ofShader> shader);
 	void enableBounds();
 
 private:
@@ -43,6 +45,10 @@ private:
 			return sizeof(glm::vec2) + 2*sizeof(float);
 		}
 	};
+	//static void deleteSampler(GLuint* sampler) {
+	//	glDeleteSamplers(1, sampler);
+	//}
+	//std::unique_ptr<GLuint, decltype(&deleteSampler)> samplerId{ new GLuint, &deleteSampler };
 
 	void initPlane(btVector3 position, float size);
 	void swapPbo();
@@ -62,12 +68,17 @@ private:
 	std::vector<BrushCoord> _brushCoordQueue;
 	unsigned int _brushQueueSize = 0;
 
+	BrushCoord _cachedBrushCoord;
+
 	// render buffers
 	ofFbo _convFbo;
+	ofFbo _convLocalFbo;
 	ofFbo _colorFbo;
 	ofFbo _fbo[2];
 	int iFbo = 0;
-	bool _bDownSample = false;
+
+	bool _bLocalVisionMode = false;
+	bool _bDownSample = true;
 
 	ofPixels _convPixelBuffer;
 	ofBufferObject _pixelWriteBuffers[2];
@@ -84,4 +95,5 @@ private:
 	// special shaders
 	std::shared_ptr<ofShader> _updateShader;
 	std::shared_ptr<ofShader> _colorizeShader;
+	std::shared_ptr<ofShader> _subTextureShader;
 };

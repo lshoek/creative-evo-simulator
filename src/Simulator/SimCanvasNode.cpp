@@ -8,15 +8,16 @@
 // This number should be synced with BRUSH_COORD_BUF_MAXSIZE in canvas.frag.
 #define BRUSH_COORD_BUF_MAXSIZE 8
 
-SimCanvasNode::SimCanvasNode(btVector3 position, float size, float extraBounds, int xRes, int yRes, int xConvRes, int yConvRes, bool bDownSample, btDynamicsWorld* ownerWorld) :
+SimCanvasNode::SimCanvasNode(btVector3 position, float size, float extraBounds, int xRes, int yRes, int xConvRes, int yConvRes, bool bLocalVisionMode, bool bDownSample, btDynamicsWorld* ownerWorld) :
     SimNodeBase(CanvasTag, ownerWorld), _canvasSize(size), _margin(extraBounds)
 {
     _color = ofColor::white;
     _brushColor = ofColor::black;
 
     _bDownSample = bDownSample;
+    _bLocalVisionMode = bLocalVisionMode;
     _canvasRes = glm::ivec2(xRes, yRes);
-    _canvasConvRes = _bDownSample ? glm::vec2(xConvRes, yConvRes) : _canvasRes;
+    _canvasConvRes = (_bDownSample || _bLocalVisionMode) ? glm::vec2(xConvRes, yConvRes) : _canvasRes;
     _drawQuad = MeshUtils::rectMesh(0, 0, _canvasRes.x, _canvasRes.y, true);
     _drawQuadConv = MeshUtils::rectMesh(0, 0, _canvasConvRes.x, _canvasConvRes.y, true);
 
@@ -33,7 +34,22 @@ SimCanvasNode::SimCanvasNode(btVector3 position, float size, float extraBounds, 
     fboSettings.internalformat = GL_R8;
     fboSettings.minFilter = GL_NEAREST;
     fboSettings.maxFilter = GL_NEAREST;
+    //fboSettings.wrapModeHorizontal = GL_CLAMP_TO_EDGE;
+    //fboSettings.wrapModeVertical = GL_CLAMP_TO_EDGE;
     _convFbo.allocate(fboSettings);
+
+    //glGenSamplers(1, samplerId.get());
+    //glSamplerParameteri(*samplerId, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    //glSamplerParameteri(*samplerId, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    //glSamplerParameteri(*samplerId, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    //glSamplerParameteri(*samplerId, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    //glSamplerParameteri(*samplerId, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+    //glSamplerParameteri(*samplerId, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+
+    //float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    //glSamplerParameterfv(*samplerId, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+    _convLocalFbo.allocate(fboSettings);
 
     // Canvas color and alpha separated
     _colorFbo.allocate(_canvasRes.x, _canvasRes.y, GL_RGBA);
@@ -98,6 +114,9 @@ void SimCanvasNode::update()
         glDisable(GL_BLEND);
 
         _brushCoordBuffer.unbindBase(GL_SHADER_STORAGE_BUFFER, 0);
+
+        // copy the last brush coord to local vision cache
+        _cachedBrushCoord = _brushCoordQueue[_brushQueueSize-1];
     }
 
     // This is just for visualization so completely optional and can be skipped in headless mode
@@ -124,13 +143,24 @@ void SimCanvasNode::update()
 
 void SimCanvasNode::updateConvPixelBuffer()
 {
+    // Sample local patch from full-size canvas fbo
+    if (_bLocalVisionMode) {
+        _convLocalFbo.begin();
+        _subTextureShader->begin();
+        _subTextureShader->setUniformTexture("tex", _fbo[iFbo].getTexture(), 0);
+        _subTextureShader->setUniform2f("patchLocation", _cachedBrushCoord.coord);
+        _subTextureShader->setUniform1f("patchSize", _canvasConvRes.x/float(_canvasRes.x));
+        _drawQuadConv.draw();
+        _subTextureShader->end();
+        _convLocalFbo.end();
+    }
     // Reduce height map resolution for neural inputs
     if (_bDownSample) {
         _convFbo.begin();
         _fbo[iFbo].draw(0, 0, _canvasConvRes.x, _canvasConvRes.y);
         _convFbo.end();
     }
-    ofFbo* fboPtr = _bDownSample ? &_convFbo : &_fbo[iFbo];
+    ofFbo* fboPtr = _bLocalVisionMode ? &_convLocalFbo : (_bDownSample ? &_convFbo : &_fbo[iFbo]);
 
     fboPtr->copyTo(*_pboPtr);
     _pboPtr->bind(GL_PIXEL_UNPACK_BUFFER);
@@ -144,6 +174,14 @@ void SimCanvasNode::updateConvPixelBuffer()
     backBufPtr->unbind(GL_PIXEL_UNPACK_BUFFER);
 
     swapPbo();
+}
+
+void SimCanvasNode::clearConvPixelBuffer()
+{
+    ofFbo* fboPtr = _bLocalVisionMode ? &_convLocalFbo : &_convFbo;
+    fboPtr->begin();
+    ofClear(0, 0);
+    fboPtr->end();
 }
 
 void SimCanvasNode::draw()
@@ -207,7 +245,7 @@ const ofPixels& SimCanvasNode::getConvPixelBuffer()
 
 ofFbo* SimCanvasNode::getConvFbo()
 {
-    return &_convFbo;
+    return _bLocalVisionMode ? &_convLocalFbo : &_convFbo;
 }
 
 ofFbo* SimCanvasNode::getCanvasRawFbo()
@@ -231,6 +269,10 @@ void SimCanvasNode::setCanvasUpdateShader(std::shared_ptr<ofShader> shader) {
 
 void SimCanvasNode::setCanvasColorizeShader(std::shared_ptr<ofShader> shader) {
     _colorizeShader = shader;
+}
+
+void SimCanvasNode::setSubTextureShader(std::shared_ptr<ofShader> shader) {
+    _subTextureShader = shader;
 }
 
 void SimCanvasNode::enableBounds()
