@@ -114,8 +114,13 @@ void SimulationManager::init(SimSettings settings)
     _cpgQueue.allocate(32);
 
     // eval
+    if (_evaluationType == Coverage) _evaluator = CoverageEvaluator();
+    else if (_evaluationType == CircleCoverage) _evaluator = CircleCoverageEvaluator();
+    else if (_evaluationType == InverseCircleCoverage) _evaluator = InverseCircleCoverageEvaluator();
+    else if (_evaluationType == Aesthetics) _evaluator = AestheticEvaluator();
+
+    _evaluator.setup(_canvasConvResolution.x, _canvasConvResolution.y);
     //cv::Mat testImg = cv::imread("data/lenna.bmp", cv::ImreadModes::IMREAD_GRAYSCALE);
-    //_evaluator.setup();
     //_evaluator.evaluate(testImg);
 
     _settings = settings;
@@ -139,27 +144,6 @@ void SimulationManager::startSimulation(std::string id)
         _startTime = _clock.getTimeMilliseconds();
         _frameTimeAccumulator = 0.0;
         _clock.reset();
-
-        _maskMat = cv::Mat(_canvasResolution.x, _canvasResolution.y, CV_8UC1);
-        _maskMat = cv::Scalar(0);
-        cv::circle(_maskMat, cv::Point(_maskMat.rows / 2, _maskMat.cols / 2), _maskMat.cols / 4, cv::Scalar(255), cv::FILLED);
-        cv::bitwise_not(_maskMat, _invMaskMat);
-
-        _rewardMaskPtr = &_maskMat;
-        _penaltyMaskPtr = &_invMaskMat;
-        if (_evaluationType == EvaluationType::InverseCircleCoverage) {
-            _rewardMaskPtr = &_invMaskMat;
-            _penaltyMaskPtr = &_maskMat;
-        }
-
-        // Calculate maximum reward/fitness
-        for (uint32_t i = 0; i < _rewardMaskPtr->total(); i++) {
-            _maxReward += _rewardMaskPtr->at<uchar>(i);
-        }
-
-        // Debug Canvas Evaluation Mask
-        _cvDebugImage.allocate(_maskMat.rows, _maskMat.cols);
-        _cvDebugImage.setFromPixels(_maskMat.ptr<uchar>(), _maskMat.rows, _maskMat.cols);
 
         // Register network event listeners
         _networkManager.setup(_settings.host, _settings.inPort, _settings.outPort);
@@ -351,7 +335,11 @@ void SimulationManager::update()
         if (instance->isFinished() || instance->isTerminated()) {
 
             uint32_t id = instance->getID();
-            double fitness = evaluateArtifact(instance);
+
+            _imageSaver.copyToBuffer(instance->getCanvas()->getCanvasRawFbo()->getTexture(), [&](uint8_t* p) {
+                _artifactMat = cv::Mat(_canvasResolution.x, _canvasResolution.y, CV_8UC1, p);
+            });
+            double fitness = _evaluator.evaluate(_artifactMat);
 
             ofLog() << "Ended (" << instance->getID() << ") id: " << id << " fitness: " << fitness;
 
@@ -408,36 +396,6 @@ void SimulationManager::updateSimInstance(SimInstance* instance, double timeStep
             _networkManager.sendState(instance);
         }
     }
-}
-
-double SimulationManager::evaluateArtifact(SimInstance* instance)
-{
-    _imageSaver.copyToBuffer(instance->getCanvas()->getCanvasRawFbo()->getTexture(), [&](uint8_t* p) {
-        _artifactMat = cv::Mat(_canvasResolution.x, _canvasResolution.y, CV_8UC1, p);
-    });
-
-    double total = 0.0;
-    double fitness = 0.0;
-
-    if (_evaluationType == EvaluationType::Coverage) {
-        total = cv::sum(_artifactMat)[0];
-        fitness = total / double(_artifactMat.total() * 255);
-    }
-    else {
-        cv::bitwise_and(_artifactMat, *_rewardMaskPtr, _rewardMat);
-        cv::bitwise_and(_artifactMat, *_penaltyMaskPtr, _penaltyMat);
-
-        for (uint32_t i = 0; i < _artifactMat.total(); i++) {
-            total += _rewardMat.at<uchar>(i);
-            total -= _penaltyMat.at<uchar>(i);
-        }
-        fitness = total / _maxReward;
-
-        if (bViewCanvasEvaluationMask) {
-            _cvDebugImage.setFromPixels(_rewardMat.ptr<uchar>(), _artifactMat.cols, _artifactMat.rows);
-        }
-    }
-    return fitness;
 }
 
 void SimulationManager::shadowPass()

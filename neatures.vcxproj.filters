@@ -240,7 +240,7 @@
     <ClCompile Include="src\Artifact\ofxFractalCompression\ofxFractalCompression.cpp">
       <Filter>src\Artifact\ofxFractalCompression</Filter>
     </ClCompile>
-    <ClCompile Include="src\Artifact\Evaluator.cpp">
+    <ClCompile Include="src\Artifact\AestheticEvaluator.cpp">
       <Filter>src\Artifact</Filter>
     </ClCompile>
   </ItemGroup>
@@ -488,9 +488,6 @@
     <ClInclude Include="src\Utils\FixedQueue.h">
       <Filter>src\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="src\Artifact\Evaluator.h">
-      <Filter>src\Artifact</Filter>
-    </ClInclude>
     <ClInclude Include="src\Artifact\ofxFractalCompression\ofxFractalCompression.h">
       <Filter>src\Artifact\ofxFractalCompression</Filter>
     </ClInclude>
@@ -499,6 +496,15 @@
     </ClInclude>
     <ClInclude Include="src\Artifact\ofxFractalCompression\FractalCompressionCommon.h">
       <Filter>src\Artifact\ofxFractalCompression</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Artifact\EvaluatorBase.h">
+      <Filter>src\Artifact</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Artifact\AestheticEvaluator.h">
+      <Filter>src\Artifact</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Artifact\SimpleEvaluators.h">
+      <Filter>src\Artifact</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

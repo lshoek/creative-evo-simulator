@@ -1,0 +1,44 @@
+*** Report ***
+Evaluation Type: InverseCircleCoverageFitness: 0.179422/1
+Generations: 37/100
+Total Evaluations: 37
+Total genomes per population: 30
+Total species: 12
+
+Highest Fitness at GEN0 : 0.0206627
+Highest Fitness at GEN1 : 0.0674607
+Highest Fitness at GEN2 : 0.0694513
+Highest Fitness at GEN3 : 0.133329
+Highest Fitness at GEN4 : 0.179422
+Highest Fitness at GEN5 : 0.179422
+Highest Fitness at GEN6 : 0.179422
+Highest Fitness at GEN7 : 0.179422
+Highest Fitness at GEN8 : 0.179422
+Highest Fitness at GEN9 : 0.179422
+Highest Fitness at GEN10 : 0.179422
+Highest Fitness at GEN11 : 0.179422
+Highest Fitness at GEN12 : 0.179422
+Highest Fitness at GEN13 : 0.179422
+Highest Fitness at GEN14 : 0.179422
+Highest Fitness at GEN15 : 0.179422
+Highest Fitness at GEN16 : 0.179422
+Highest Fitness at GEN17 : 0.179422
+Highest Fitness at GEN18 : 0.179422
+Highest Fitness at GEN19 : 0.179422
+Highest Fitness at GEN20 : 0.179422
+Highest Fitness at GEN21 : 0.179422
+Highest Fitness at GEN22 : 0.179422
+Highest Fitness at GEN23 : 0.179422
+Highest Fitness at GEN24 : 0.179422
+Highest Fitness at GEN25 : 0.179422
+Highest Fitness at GEN26 : 0.179422
+Highest Fitness at GEN27 : 0.179422
+Highest Fitness at GEN28 : 0.179422
+Highest Fitness at GEN29 : 0.179422
+Highest Fitness at GEN30 : 0.179422
+Highest Fitness at GEN31 : 0.179422
+Highest Fitness at GEN32 : 0.179422
+Highest Fitness at GEN33 : 0.179422
+Highest Fitness at GEN34 : 0.179422
+Highest Fitness at GEN35 : 0.179422
+Highest Fitness at GEN36 : 0.179422

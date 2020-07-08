@@ -5,7 +5,8 @@
 #include "Simulator/SimInstance.h"
 #include "Simulator/SimDebugDrawer.h"
 #include "Simulator/SimInfo.h"
-#include "Artifact/Evaluator.h"
+#include "Artifact/SimpleEvaluators.h"
+#include "Artifact/AestheticEvaluator.h"
 #include "Utils/Scheduler.h"
 #include "Utils/ImageSaverThread.h"
 #include "Utils/ImageSaver.h"
@@ -26,7 +27,8 @@ public:
     {
         Coverage,
         CircleCoverage,
-        InverseCircleCoverage
+        InverseCircleCoverage,
+        Aesthetics
     };
     struct SimSettings
     {
@@ -110,11 +112,10 @@ private:
     void updateSimInstance(SimInstance* instance, double timeStep);
 
     void performTrueSteps(btScalar timeStep);
-    double evaluateArtifact(SimInstance* instance);
 
     SimSettings _settings;
     EvaluationType _evaluationType;
-    Evaluator _evaluator;
+    EvaluatorBase _evaluator;
 
     std::vector<simRunCallback_t> _simulationInstanceCallbackQueue;
     std::vector<SimInstance*> _simulationInstances;
@@ -168,7 +169,7 @@ private:
     bool bInitialized = false;
     bool bSimulationActive = false;
     bool bStopSimulationQueued = false;
-    bool bCanvasLocalVisionMode = true;
+    bool bCanvasLocalVisionMode = false;
     bool bCanvasDownSampling = false;
     bool bGenomeLoaded = false;
 
@@ -184,12 +185,6 @@ private:
     glm::ivec2 _canvasConvResolution;
 
     cv::Mat _artifactMat;
-    cv::Mat _maskMat, _invMaskMat;
-    cv::Mat _rewardMat, _penaltyMat;
-    cv::Mat* _rewardMaskPtr;
-    cv::Mat* _penaltyMaskPtr;
-    double _maxReward = 255.0;
-
     ofxCvGrayscaleImage _cvDebugImage;
 
     // io
