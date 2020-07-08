@@ -622,16 +622,6 @@ SimulationManager::EvaluationType SimulationManager::getEvaluationType()
     return _evaluationType;
 }
 
-std::string SimulationManager::getEvaluationTypeStr()
-{
-    switch(_evaluationType) {
-        case Coverage: return "Coverage"; break;
-        case CircleCoverage: return "CircleCoverage"; break;
-        case InverseCircleCoverage: return "InverseCircleCoverage"; break;
-        default: return "NA";
-    }
-}
-
 bool SimulationManager::loadGenomeFromDisk(std::string filename)
 {
     _selectedGenome = std::make_shared<DirectedGraph>();

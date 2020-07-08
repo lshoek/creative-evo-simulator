@@ -41,7 +41,7 @@ private:
 	uint64_t perf_draw = 0;
 
 	// Gui toggles
-	bool bWindow = true;
+	bool bMonitor = true;
 	bool bMetaOverlay = true;
 
 	// App toggles
@@ -51,6 +51,25 @@ private:
 	bool bShadows = true;
 	bool bGui = true;
 	bool bLockFrameRate = true;
+
+	using EvalType = SimulationManager::EvaluationType;
+	std::string evalTypeStr(EvalType evalType)
+	{
+		switch (evalType) {
+			case SimulationManager::Coverage: return "Coverage"; break;
+			case SimulationManager::CircleCoverage: return "CircleCoverage"; break;
+			case SimulationManager::InverseCircleCoverage: return "InverseCircleCoverage"; break;
+			case SimulationManager::Aesthetics: return "Aesthetics"; break;
+			default: return "NA";
+		}
+	}
+	EvalType evalType(std::string evalTypeStr)
+	{
+		if (evalTypeStr == "Coverage") return EvalType::Coverage;
+		else if (evalTypeStr == "CircleCoverage") return EvalType::CircleCoverage;
+		else if (evalTypeStr == "InverseCircleCoverage") return EvalType::Aesthetics;
+		else if (evalTypeStr == "Aesthetics") return EvalType::Coverage;
+	}
 
 	struct GuiFileItem
 	{
