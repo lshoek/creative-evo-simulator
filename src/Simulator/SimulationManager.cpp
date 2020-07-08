@@ -114,14 +114,15 @@ void SimulationManager::init(SimSettings settings)
     _cpgQueue.allocate(32);
 
     // eval
-    if (_evaluationType == Coverage) _evaluator = CoverageEvaluator();
-    else if (_evaluationType == CircleCoverage) _evaluator = CircleCoverageEvaluator();
-    else if (_evaluationType == InverseCircleCoverage) _evaluator = InverseCircleCoverageEvaluator();
-    else if (_evaluationType == Aesthetics) _evaluator = AestheticEvaluator();
+    _evaluationType = settings.evalType;
+    if (_evaluationType == Coverage) _evaluator = std::make_unique<CoverageEvaluator>();
+    else if (_evaluationType == CircleCoverage) _evaluator = std::make_unique<CircleCoverageEvaluator>();
+    else if (_evaluationType == InverseCircleCoverage) _evaluator = std::make_unique<InverseCircleCoverageEvaluator>();
+    else if (_evaluationType == Aesthetics) _evaluator = std::make_unique<AestheticEvaluator>();
 
-    _evaluator.setup(_canvasConvResolution.x, _canvasConvResolution.y);
-    //cv::Mat testImg = cv::imread("data/lenna.bmp", cv::ImreadModes::IMREAD_GRAYSCALE);
-    //_evaluator.evaluate(testImg);
+    _evaluator->setup(_canvasResolution.x, _canvasResolution.y);
+    cv::Mat testImage = cv::imread("data/artifact_1.bmp", cv::ImreadModes::IMREAD_GRAYSCALE);
+    _evaluator->evaluate(testImage);
 
     _settings = settings;
     bInitialized = true;
@@ -339,7 +340,7 @@ void SimulationManager::update()
             _imageSaver.copyToBuffer(instance->getCanvas()->getCanvasRawFbo()->getTexture(), [&](uint8_t* p) {
                 _artifactMat = cv::Mat(_canvasResolution.x, _canvasResolution.y, CV_8UC1, p);
             });
-            double fitness = _evaluator.evaluate(_artifactMat);
+            double fitness = _evaluator->evaluate(_artifactMat);
 
             ofLog() << "Ended (" << instance->getID() << ") id: " << id << " fitness: " << fitness;
 

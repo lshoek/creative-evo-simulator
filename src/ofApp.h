@@ -67,8 +67,8 @@ private:
 	{
 		if (evalTypeStr == "Coverage") return EvalType::Coverage;
 		else if (evalTypeStr == "CircleCoverage") return EvalType::CircleCoverage;
-		else if (evalTypeStr == "InverseCircleCoverage") return EvalType::Aesthetics;
-		else if (evalTypeStr == "Aesthetics") return EvalType::Coverage;
+		else if (evalTypeStr == "InverseCircleCoverage") return EvalType::InverseCircleCoverage;
+		else if (evalTypeStr == "Aesthetics") return EvalType::Aesthetics;
 	}
 
 	struct GuiFileItem

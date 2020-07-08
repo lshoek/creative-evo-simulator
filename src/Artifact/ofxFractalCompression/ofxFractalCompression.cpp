@@ -66,7 +66,7 @@ void ofxFractalCompression::decode(int depth)
 		}
 	}
 	for (int i = 0; i < depth; i++) {
-		if (m_bImageToDisk) {
+		if (m_bImageToDisk && i > 0) {
 			std::string filename_out = "data/decoded_out_" + ofToString(i) + ".bmp";
 			WriteImage(filename_out.c_str(), m_decodedImageData, m_imageWidth, m_imageHeight);
 		}
@@ -85,7 +85,7 @@ void ofxFractalCompression::decodeFromFile(int depth)
 		}
 	}
 	for (int i = 0; i < depth; i++) {
-		if (m_bImageToDisk) {
+		if (m_bImageToDisk && i > 0) {
 			std::string filename_out = "data/decoded_out_" + ofToString(i) + ".bmp";
 			WriteImage(filename_out.c_str(), m_decodedImageData, m_imageWidth, m_imageHeight);
 		}

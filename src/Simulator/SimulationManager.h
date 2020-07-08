@@ -114,7 +114,7 @@ private:
 
     SimSettings _settings;
     EvaluationType _evaluationType;
-    EvaluatorBase _evaluator;
+    std::unique_ptr<EvaluatorBase> _evaluator;
 
     std::vector<simRunCallback_t> _simulationInstanceCallbackQueue;
     std::vector<SimInstance*> _simulationInstances;

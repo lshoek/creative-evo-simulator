@@ -14,6 +14,11 @@ public:
 	{
 		double total = cv::sum(im)[0];
 		double fitness = total / _maxReward;
+
+		char msg[256];
+		sprintf(msg, "Artifact Evaluation Report:\nfitness: %f\n", fitness);
+		ofLog() << msg;
+
 		return fitness;
 	};
 private:

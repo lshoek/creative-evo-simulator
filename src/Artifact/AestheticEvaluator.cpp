@@ -46,7 +46,7 @@ double AestheticEvaluator::evaluate(cv::Mat im)
 	// Processing Complexity -- Fractal method 
 	_compressor.allocate(srcImage);
 	_compressor.encode();
-	_compressor.decode(6);
+	_compressor.decode(5);
 
 	cv::Mat fractalMat = _compressor.getDecodedImage();
 	cv::subtract(srcImage, fractalMat, diff);
