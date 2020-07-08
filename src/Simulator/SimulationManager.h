@@ -80,7 +80,6 @@ public:
     const std::vector<float> getCPGBuffer();
 
     EvaluationType getEvaluationType();
-    std::string getEvaluationTypeStr();
 
     bool loadGenomeFromDisk(std::string filename);
     void generateRandomGenome();

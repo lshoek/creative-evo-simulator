@@ -32,7 +32,7 @@ void ofApp::setup()
 
 	settings = ofxIniSettings("settings.ini");
 	bDraw = settings.get("mode.draw", true);
-	bWindow = settings.get("mode.window", true);
+	bMonitor = settings.get("mode.monitor", true);
 
 	HWND hwnd = GetConsoleWindow();
 	MoveWindow(
@@ -51,22 +51,22 @@ void ofApp::initSim()
 {
 	if (!simulationManager.isInitialized()) {
 		simulationManager.bDebugDraw = settings.get("mode.debugdraw", true);
-		simulationManager.bAutoLoadGenome = settings.get("genome.autoload", true);
 		simulationManager.bCameraSnapFocus = settings.get("mode.snapfocus", true);
+		simulationManager.bAutoLoadGenome = settings.get("genome.autoload", true);
 		simulationManager.bAxisAlignedAttachments = settings.get("genome.axis_aligned_attachments", false);
 		simulationManager.bFeasibilityChecks = settings.get("genome.feasibility_checks", true);
 		simulationManager.bCanvasSensors = settings.get("sensors.type", "canvas").compare("canvas") == 0;
 		simulationManager.bSaveArtifactsToDisk = settings.get("canvas.save", true);
 
 		SimulationManager::SimSettings simSettings;
-		simSettings.evalType = SimulationManager::Coverage;
+		simSettings.evalType = evalType(settings.get("eval.type", "Coverage"));
 		simSettings.canvasSize = settings.get("canvas.size", 256);
 		simSettings.canvasSizeConv = settings.get("canvas.size_conv", 128);
 		simSettings.maxParallelSims = settings.get("evolution.max_parallel_sims", 1);
 		simSettings.genomeFile = settings.get("genome.id", "0");
-		simSettings.host = settings.get("io.host", "localhost");
-		simSettings.inPort = settings.get("io.port_in", 1025);
-		simSettings.outPort = settings.get("io.port_out", 1024);
+		simSettings.host = settings.get("controller.host", "localhost");
+		simSettings.outPort = settings.get("controller.port", 1024);
+		simSettings.inPort = settings.get("controller.port_in", 1025);
 
 		simulationManager.init(simSettings);
 	}
@@ -211,8 +211,8 @@ void ofApp::imGui()
 			}
 			if (ImGui::BeginMenu("Window"))
 			{
-				if (ImGui::MenuItem("Monitor", "w", bWindow)) {
-					bWindow = !bWindow;
+				if (ImGui::MenuItem("Monitor", "m", bMonitor)) {
+					bMonitor = !bMonitor;
 				}
 				ImGui::EndMenu();
 			}
@@ -286,7 +286,7 @@ void ofApp::imGui()
 				}
 				ImGui::Text("Eval");
 				ImGui::Separator();
-				ImGui::Text("func: %s", simulationManager.getEvaluationTypeStr().c_str());
+				ImGui::Text("func: %s", evalTypeStr(simulationManager.getEvaluationType()).c_str());
 				//ImGui::InputFloat3("light:", &simulationManager.lightPosition[0], 2);
 			}	
 			ImGui::End();
@@ -301,7 +301,7 @@ void ofApp::imGui()
 			ImGui::End();
 		}
 
-		if (bWindow) {
+		if (bMonitor) {
 			ImGui::SetNextWindowPos(ImVec2(0, menuBarSize.y));
 			ImGui::SetNextWindowSize(ImVec2(240, ofGetWindowHeight()-(menuBarSize.y+offset)));
 			ImGui::SetNextWindowBgAlpha(0.5f);
@@ -368,8 +368,8 @@ void ofApp::keyPressed(int key)
 		if (key == 'g') {
 			bGui = !bGui;
 		}
-		if (key == 'w') {
-			bWindow = !bWindow;
+		if (key == 'm') {
+			bMonitor = !bMonitor;
 		}
 		if (simulationManager.isInitialized()) {
 			if (key == 'd') {
