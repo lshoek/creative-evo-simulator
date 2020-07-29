@@ -21,6 +21,8 @@ SimCreature::SimCreature(btVector3 position, const std::shared_ptr<DirectedGraph
 	m_targetFrequency = 3;
 	m_targetAccumulator = 0;
 
+	m_bodyColor = ofColor::fromHsb(ofRandom(255), 0.7f * 255, 255, 255);
+
 	buildPhenome(m_bodyGenome);
 }
 
@@ -58,7 +60,7 @@ void SimCreature::dfs(
 	}
 	recursionLimits[graphNode->getGraphIndex()]--;
 	
-	SimNode* simNodePtr = new SimNode(BodyTag, m_ownerWorld);
+	SimNode* simNodePtr = new SimNode(BodyTag, m_bodyColor, m_ownerWorld);
 	simNodePtr->setCreatureOwner(this);
 
 	if (!bIsRootNode) {

@@ -118,6 +118,8 @@ private:
 	btScalar gForeLegLength = 0.75f;
 	btScalar gForeLegRadius = 0.08f;
 
+	ofColor m_bodyColor;
+
 	const ofColor INK = ofColor::fromHex(0x333333);
 	const btVector3 FORWARD = btVector3(1, 0, 0);
 	const btVector3 UP = btVector3(0, 1, 0);

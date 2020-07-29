@@ -78,6 +78,11 @@ float shadow_calc(vec4 fragPosLightSpace, vec3 lightDir)
 	return shadow;
 }
 
+vec3 fresnelSchlick(float cosTheta, vec3 F0)
+{
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
 void main() 
 {
 	vec2 st = texcoord_varying;
@@ -101,8 +106,12 @@ void main()
 	float spec = 1.0 * pow(max(dot(view_dir, reflect_dir), 0.0), mtl.shininess);
 	vec4 specular = light.specular * (spec * mtl.specular);
 
+	// fresnel
+	vec3 F0 = vec3(0.05, 0.05, 0.05);
+	vec3 fresnel = fresnelSchlick(max(dot(normal_varying.xyz, view_dir), 0.0), F0);
+
 	float shadow = shadow_calc(fragPosLightSpace, light_dir);
-    vec3 lighting = (ambient.rgb + inv(shadow) * (diffuse.rgb + specular.rgb)) * texcol.rgb;  
+    vec3 lighting = (ambient.rgb + inv(shadow) * (diffuse.rgb + specular.rgb * fresnel)) * texcol.rgb;  
 
     vec4 outcol = vec4(lighting, 1.0);
 	outcol.a = alpha;

@@ -40,6 +40,7 @@ private:
 	int m_blockSize = 8;
 	int m_numBlocks = 0;
 	int m_encodingBytes = 0;
+	int m_currentDecodingDepth = 0;
 
 	bool m_bLog = false;
 	bool m_bEncToDisk = false;

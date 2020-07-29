@@ -49,10 +49,10 @@ void SimulationManager::init(SimSettings settings)
 
     ofMaterialSettings mtlSettings;
     mtlSettings.ambient = ofFloatColor(0.375f, 1.0f);
-    mtlSettings.diffuse = ofFloatColor(0.95f, 1.0f);
+    mtlSettings.diffuse = ofFloatColor(0.8f, 1.0f);
     mtlSettings.specular = ofFloatColor(1.0f, 1.0f);
     mtlSettings.emissive = ofFloatColor(0.0f, 1.0f);
-    mtlSettings.shininess = 32;
+    mtlSettings.shininess = 24;
 
     _nodeMaterial = std::make_shared<ofMaterial>();
     _nodeMaterial->setup(mtlSettings);
@@ -70,11 +70,12 @@ void SimulationManager::init(SimSettings settings)
 
     _light = std::make_shared<ofLight>();
     _light->setDirectional();
-    _light->setAmbientColor(ofColor::white);
-    _light->setDiffuseColor(ofColor::white);
-    _light->setSpecularColor(ofColor::white);
+    _light->setAmbientColor(ofFloatColor(1.0f, 1.0f));
+    _light->setDiffuseColor(ofFloatColor(1.0f, 1.0f));
+    _light->setSpecularColor(ofFloatColor(1.0f, 1.0f));
     _light->setPosition(lightPosition);
     _light->lookAt(glm::vec3(0));
+    //ofColor::fromHex(ofHexToInt());
 
     //  shadows
     _shadowMap.setup(1024);
@@ -335,20 +336,18 @@ void SimulationManager::update()
     for (auto& instance : _simulationInstances) {
         if (instance->isFinished() || instance->isTerminated()) {
 
-            uint32_t id = instance->getID();
-
             _imageSaver.copyToBuffer(instance->getCanvas()->getCanvasRawFbo()->getTexture(), [&](uint8_t* p) {
                 _artifactMat = cv::Mat(_canvasResolution.x, _canvasResolution.y, CV_8UC1, p);
             });
             double fitness = _evaluator->evaluate(_artifactMat);
 
-            ofLog() << "Ended (" << instance->getID() << ") id: " << id << " fitness: " << fitness;
+            ofLog() << "Ended (" << instance->getID() << ") id: " << instance->getID() << " fitness: " << fitness;
 
             if (bSaveArtifactsToDisk) {
-                std::string path = _simDir + '/' + NTRS_ARTIFACTS_PREFIX + ofToString(id) + '_' + ofToString(fitness, 2);
+                std::string path = _simDir + '/' + NTRS_ARTIFACTS_PREFIX + ofToString(instance->getGeneration()) + '_' + ofToString(instance->getID()) + '_' + ofToString(fitness, 2);
                 _imageSaver.save(instance->getCanvas()->getCanvasFbo()->getTexture(), path);
             }
-            _networkManager.send(OSC_FITNESS + '/' + ofToString(id), fitness);
+            _networkManager.send(OSC_FITNESS + '/' + ofToString(instance->getID()), fitness);
 
             delete instance;
             _simulationInstances.erase(_simulationInstances.begin() + i);

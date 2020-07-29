@@ -43,28 +43,61 @@ double AestheticEvaluator::evaluate(cv::Mat im)
 
 	double IC = rmseIC / compRatioIC;
 
-	// Processing Complexity -- Fractal method 
-	_compressor.allocate(srcImage);
-	_compressor.encode();
-	_compressor.decode(5);
+	// Filter complexities outside of acceptable bounds
+	if (IC < minComplexity || IC > maxComplexity) {
+		ofLog() << "Artifact discarded -> IC: " << IC;
+		return 0.0;
+	}
 
-	cv::Mat fractalMat = _compressor.getDecodedImage();
-	cv::subtract(srcImage, fractalMat, diff);
+	// Processing Complexity -- Fractal method 
+
+	_compressor.allocate(srcImage);
+	size_t encodingSize = _compressor.getEncodingBytes();
+
+	_compressor.encode();
+
+	_compressor.decode(_decodingDepth);
+	cv::Mat fractalMat_t0 = _compressor.getDecodedImage();
+
+	_compressor.decode(1);
+	cv::Mat fractalMat_t1 = _compressor.getDecodedImage();
+
+	// PCt0
+	cv::subtract(srcImage, fractalMat_t0, diff);
 	cv::pow(diff, 2, se);
 
-	size_t encodingSize = _compressor.getEncodingBytes();
-	double rmsePC = sqrt(cv::sum(se)[0] / rawSize);
-	double compRatioPC = encodingSize / (double)rawSize;
+	double rmsePCt0 = sqrt(cv::sum(se)[0] / rawSize);
+	double compRatioPCt0 = encodingSize / (double)rawSize;
 
-	double PC = rmsePC / compRatioPC;
+	double PCt0 = glm::max(rmsePCt0 / compRatioPCt0, pc0LowerBound);
 
-	double fitness = IC/PC;
+	// PCt1
+	cv::subtract(srcImage, fractalMat_t1, diff);
+	cv::pow(diff, 2, se);
+
+	double rmsePCt1 = sqrt(cv::sum(se)[0] / rawSize);
+	double compRatioPCt1 = encodingSize / (double)rawSize;
+
+	double PCt1 = glm::max(rmsePCt1 / compRatioPCt1, pc1Lowerbound);
+
+	// Complexity Bias
+	double a = 1.0;
+	double b = 0.4;
+	double c = 0.2;
+
+	// Total Fitness
+	double fitness = std::pow(IC, a) / std::pow(PCt0 * PCt1, b) * std::pow((PCt1 - PCt0) / PCt1, c);
 
 	char msg[256];
-	sprintf(msg, "Artifact Evaluation Report:\nrmse[jpeg]: %f\ncompratio[jpeg]: %f\nIC: %f\nrmse[fract]: %f\ncompratio[fract]: %f\nPC: %f\nfitness: %f\n", 
-		rmseIC, compRatioIC, IC, rmsePC, compRatioPC, PC, fitness
+	sprintf(msg, "Artifact Evaluation Report:\nrmse[jpeg]: %f\ncompratio[jpeg]: %f\nIC: %f\nrmse[fract/t0]: %f\ncompratio[fract/t0]: %f\nPC/t0: %f\nrmse[fract/t1]: %f\ncompratio[fract/t1]: %f\nPC/t1: %f\nfitness: %f\n", 
+		rmseIC, compRatioIC, IC, rmsePCt0, compRatioPCt0, PCt0, rmsePCt1, compRatioPCt1, PCt1, fitness
 	);
 	ofLog() << msg;
 
 	return fitness;
+}
+
+void AestheticEvaluator::setDecodingDepth(int depth)
+{
+	_decodingDepth = depth;
 }

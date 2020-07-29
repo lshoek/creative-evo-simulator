@@ -17,6 +17,7 @@ public:
     bool isFinished();
 
     int getID();
+    int getGeneration();
     btScalar getElapsedTime();
     btScalar getDuration();
 

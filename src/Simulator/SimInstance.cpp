@@ -52,6 +52,11 @@ int SimInstance::getID()
 	return _instanceId;
 }
 
+int SimInstance::getGeneration()
+{
+	return _generation;
+}
+
 btScalar SimInstance::getElapsedTime()
 {
 	return _elapsed;

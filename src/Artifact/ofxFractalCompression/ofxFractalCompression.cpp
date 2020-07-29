@@ -27,11 +27,16 @@ bool ofxFractalCompression::allocate(cv::Mat im)
 
 		m_imageData = ConvertFromMat(im);
 		m_decodedImageData = IntAlloc2(m_imageWidth, m_imageHeight);
-
+		for (int i = 0; i < m_imageHeight; i++) {
+			for (int j = 0; j < m_imageWidth; j++) {
+				m_decodedImageData[i][j] = 0x80;
+			}
+		}
 		m_imageEncoding = ERAlloc2(m_imageWidth / m_blockSize, m_imageHeight / m_blockSize);
 		m_numBlocks = (m_imageWidth / m_blockSize) * (m_imageHeight / m_blockSize);
 		m_encodingBytes = m_numBlocks * sizeof(EncodingResult);
 
+		m_currentDecodingDepth = 0;
 		m_bMemoryAllocated = true;
 		return true;
 	}
@@ -60,17 +65,13 @@ void ofxFractalCompression::encode()
 
 void ofxFractalCompression::decode(int depth)
 {
-	for (int i = 0; i < m_imageHeight; i++) {
-		for (int j = 0; j < m_imageWidth; j++) {
-			m_decodedImageData[i][j] = 0x80;
-		}
-	}
 	for (int i = 0; i < depth; i++) {
-		if (m_bImageToDisk && i > 0) {
-			std::string filename_out = "data/decoded_out_" + ofToString(i) + ".bmp";
+		if (m_bImageToDisk && m_currentDecodingDepth > 0) {
+			std::string filename_out = "data/decoded_out_" + ofToString(m_currentDecodingDepth) + ".bmp";
 			WriteImage(filename_out.c_str(), m_decodedImageData, m_imageWidth, m_imageHeight);
 		}
 		Decoding(m_imageEncoding, m_decodedImageData, m_imageWidth, m_imageHeight, m_blockSize, m_blockSize);
+		m_currentDecodingDepth++;
 	}
 }
 
@@ -79,11 +80,6 @@ void ofxFractalCompression::decodeFromFile(int depth)
 	EncodingResult** en_result = ERAlloc2(m_imageWidth / m_blockSize, m_imageHeight / m_blockSize);
 	ReadParameter("data/encoding.txt", en_result, m_imageWidth / m_blockSize, m_imageHeight / m_blockSize);
 
-	for (int i = 0; i < m_imageHeight; i++) {
-		for (int j = 0; j < m_imageWidth; j++) {
-			m_decodedImageData[i][j] = 0x80;
-		}
-	}
 	for (int i = 0; i < depth; i++) {
 		if (m_bImageToDisk && i > 0) {
 			std::string filename_out = "data/decoded_out_" + ofToString(i) + ".bmp";
@@ -191,7 +187,7 @@ size_t ofxFractalCompression::getEncodingBytes()
 
 cv::Mat ofxFractalCompression::getDecodedImage()
 {
-	return cv::Mat(m_imageWidth, m_imageHeight, CV_8UC1, (uchar*)m_decodedImageData);
+	return cv::Mat(m_imageWidth, m_imageHeight, CV_8UC1, (uchar*)m_decodedImageData).clone();
 }
 
 void ofxFractalCompression::setLog(bool enable) {
