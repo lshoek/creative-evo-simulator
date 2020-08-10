@@ -207,19 +207,19 @@ void SimCreature::dfs(
 	}
 }
 
-bool SimCreature::isAwaitingOutputUpdate()
+bool SimCreature::isAwaitingEffectorUpdate()
 {
-	return m_bAwaitingOutputUpdate;
+	return m_bAwaitingEffectorUpdate;
 }
 
 void SimCreature::updateTimeStep(double timeStep)
 {
-	if (!m_bAwaitingOutputUpdate) {
+	if (!m_bAwaitingEffectorUpdate) {
 		m_timeStep = timeStep;
 		m_targetAccumulator += m_timeStep;
 		if (m_targetAccumulator >= 1.0 / (double)m_targetFrequency) {
 			m_targetAccumulator = 0;
-			m_bAwaitingOutputUpdate = true;
+			m_bAwaitingEffectorUpdate = true;
 		}
 	}
 }
@@ -228,7 +228,7 @@ void SimCreature::updateOutputs(const std::vector<float>& outputs)
 {
 	//m_outputs = std::vector<double>(outputs.begin(), outputs.end());
 	m_outputs = outputs;
-	m_bAwaitingOutputUpdate = false;
+	m_bAwaitingEffectorUpdate = false;
 }
 
 const std::vector<float>& SimCreature::getOutputs()

@@ -76,11 +76,9 @@ void ofApp::initSim()
 // which can cause problems on certain user-input.
 void ofApp::start()
 {
-	std::string uniqueSimId = ofGetTimestampString("%Y%m%d_%H%M%S_%i");
-
 	// Start simulator first so it can await evaluation requests
 	if (!simulationManager.isSimulationActive()) {
-		simulationManager.startSimulation(uniqueSimId);
+		simulationManager.startSimulation();
 	}
 }
 
@@ -287,6 +285,11 @@ void ofApp::imGui()
 				ImGui::Text("Eval");
 				ImGui::Separator();
 				ImGui::Text("func: %s", evalTypeStr(simulationManager.getEvaluationType()).c_str());
+				ImGui::Text("prev artifact: %.02f", simulationManager.getPrevArtifactFitness());
+				ImGui::Image(
+					(void*)(intptr_t)simulationManager.getPrevArtifactTexture().getTextureData().textureID,
+					ImVec2(windowSize.x - margin.x, windowSize.x - margin.x)
+				);
 				//ImGui::InputFloat3("light:", &simulationManager.lightPosition[0], 2);
 			}	
 			ImGui::End();

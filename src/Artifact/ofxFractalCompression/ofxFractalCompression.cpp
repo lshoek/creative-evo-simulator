@@ -66,12 +66,12 @@ void ofxFractalCompression::encode()
 void ofxFractalCompression::decode(int depth)
 {
 	for (int i = 0; i < depth; i++) {
-		if (m_bImageToDisk && m_currentDecodingDepth > 0) {
-			std::string filename_out = "data/decoded_out_" + ofToString(m_currentDecodingDepth) + ".bmp";
-			WriteImage(filename_out.c_str(), m_decodedImageData, m_imageWidth, m_imageHeight);
-		}
 		Decoding(m_imageEncoding, m_decodedImageData, m_imageWidth, m_imageHeight, m_blockSize, m_blockSize);
 		m_currentDecodingDepth++;
+		if (m_bImageToDisk) {
+			std::string fname = "data/decoded_out_" + ofToString(m_currentDecodingDepth) + ".bmp";
+			cv::imwrite(fname, getDecodedImage());
+		}
 	}
 }
 
@@ -81,11 +81,11 @@ void ofxFractalCompression::decodeFromFile(int depth)
 	ReadParameter("data/encoding.txt", en_result, m_imageWidth / m_blockSize, m_imageHeight / m_blockSize);
 
 	for (int i = 0; i < depth; i++) {
-		if (m_bImageToDisk && i > 0) {
-			std::string filename_out = "data/decoded_out_" + ofToString(i) + ".bmp";
-			WriteImage(filename_out.c_str(), m_decodedImageData, m_imageWidth, m_imageHeight);
-		}
 		Decoding(en_result, m_decodedImageData, m_imageWidth, m_imageHeight, m_blockSize, m_blockSize);
+		if (m_bImageToDisk) {
+			std::string fname = "data/decoded_out_" + ofToString(i) + ".bmp";
+			cv::imwrite(fname, getDecodedImage());
+		}
 	}
 }
 
@@ -180,6 +180,16 @@ void ofxFractalCompression::printEncodingResult(EncodingResult** en_result, int 
 	);
 }
 
+const EncodingResult* ofxFractalCompression::getEncodingResultPtr() const
+{
+	return &m_imageEncoding[0][0];
+}
+
+int ofxFractalCompression::getNumBlocks()
+{
+	return m_numBlocks;
+}
+
 size_t ofxFractalCompression::getEncodingBytes()
 {
 	return m_encodingBytes;
@@ -187,7 +197,7 @@ size_t ofxFractalCompression::getEncodingBytes()
 
 cv::Mat ofxFractalCompression::getDecodedImage()
 {
-	return cv::Mat(m_imageWidth, m_imageHeight, CV_8UC1, (uchar*)m_decodedImageData).clone();
+	return ConvertToMat(m_decodedImageData, m_imageWidth, m_imageHeight);
 }
 
 void ofxFractalCompression::setLog(bool enable) {

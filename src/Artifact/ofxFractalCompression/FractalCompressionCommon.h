@@ -8,7 +8,7 @@
 #include "EncodingResult.h"
 #include <stdio.h>
 
-int** IntAlloc2(int width, int height) 
+int** IntAlloc2(int width, int height)
 {
 	int** tmp;
 	tmp = (int**)calloc(height, sizeof(int*));
@@ -18,7 +18,7 @@ int** IntAlloc2(int width, int height)
 	return(tmp);
 }
 
-void IntFree2(int** image, int width, int height) 
+void IntFree2(int** image, int width, int height)
 {
 	for (int i = 0; i < height; i++) {
 		free(image[i]);
@@ -26,7 +26,7 @@ void IntFree2(int** image, int width, int height)
 	free(image);
 }
 
-EncodingResult** ERAlloc2(int width, int height) 
+EncodingResult** ERAlloc2(int width, int height)
 {
 	EncodingResult** tmp;
 	tmp = (EncodingResult**)calloc(height, sizeof(EncodingResult*));
@@ -36,7 +36,7 @@ EncodingResult** ERAlloc2(int width, int height)
 	return(tmp);
 }
 
-void ERFree2(EncodingResult** image, int width, int height) 
+void ERFree2(EncodingResult** image, int width, int height)
 {
 	for (int i = 0; i < height; i++) {
 		free(image[i]);
@@ -57,10 +57,10 @@ int** ConvertFromMat(cv::Mat img)
 
 cv::Mat ConvertToMat(int** image, int width, int height)
 {
-	cv::Mat img(width, height, CV_8UC1, (uchar*)image);
+	cv::Mat img(width, height, CV_8UC1);
 	for (int i = 0; i < img.rows; i++) {
 		for (int j = 0; j < img.cols; j++) {
-			image[i][j] = img.at<unsigned char>(i, j);
+			img.at<unsigned char>(i, j) = (unsigned char)image[i][j];
 		}
 	}
 	return img;
@@ -82,18 +82,7 @@ int** ReadImage(const char* name, int* width, int* height)
 	return(image);
 }
 
-void WriteImage(const char* name, int** image, int width, int height) 
-{
-	cv::Mat img(height, width, CV_8UC1);
-	for (int i = 0; i < height; i++) {
-		for (int j = 0; j < width; j++) {
-			img.at<unsigned char>(i, j) = (unsigned char)image[i][j];
-		}
-	}
-	cv::imwrite(name, img);
-}
-
-void Contraction(int** image, int** image_out, int width, int height) 
+void Contraction(int** image, int** image_out, int width, int height)
 {
 	for (int y = 0; y < height - 1; y += 2) {
 		for (int x = 0; x < width - 1; x += 2) {
@@ -102,7 +91,7 @@ void Contraction(int** image, int** image_out, int width, int height)
 	}
 }
 
-void IsoM_0(int** img_in, int width, int height, int** img_out) 
+void IsoM_0(int** img_in, int width, int height, int** img_out)
 {
 	for (int y = 0; y < height; y++) {
 		for (int x = 0; x < width; x++) {
@@ -111,7 +100,7 @@ void IsoM_0(int** img_in, int width, int height, int** img_out)
 	}
 }
 
-void IsoM_1(int** img_in, int width, int height, int** img_out) 
+void IsoM_1(int** img_in, int width, int height, int** img_out)
 {
 	for (int i = 0; i < height; i++) {
 		for (int j = 0; j < width; j++) {
@@ -120,7 +109,7 @@ void IsoM_1(int** img_in, int width, int height, int** img_out)
 	}
 }
 
-void IsoM_2(int** img_in, int width, int height, int** img_out) 
+void IsoM_2(int** img_in, int width, int height, int** img_out)
 {
 	for (int i = 0; i < height; i++) {
 		for (int j = 0; j < width; j++) {
@@ -129,7 +118,7 @@ void IsoM_2(int** img_in, int width, int height, int** img_out)
 	}
 }
 
-void IsoM_3(int** img_in, int width, int height, int** img_out) 
+void IsoM_3(int** img_in, int width, int height, int** img_out)
 {
 	for (int i = 0; i < height; i++) {
 		for (int j = 0; j < width; j++) {
@@ -138,7 +127,7 @@ void IsoM_3(int** img_in, int width, int height, int** img_out)
 	}
 }
 
-void IsoM_4(int** img_in, int width, int height, int** img_out) 
+void IsoM_4(int** img_in, int width, int height, int** img_out)
 {
 	for (int i = 0; i < height; i++) {
 		for (int j = 0; j < width; j++) {
@@ -147,7 +136,7 @@ void IsoM_4(int** img_in, int width, int height, int** img_out)
 	}
 }
 
-void IsoM_5(int** img_in, int width, int height, int** img_out) 
+void IsoM_5(int** img_in, int width, int height, int** img_out)
 {
 	if (width != height) {
 		for (int i = 0; i < width; i++) {
@@ -165,7 +154,7 @@ void IsoM_5(int** img_in, int width, int height, int** img_out)
 	}
 }
 
-void IsoM_6(int** img_in, int width, int height, int** img_out) 
+void IsoM_6(int** img_in, int width, int height, int** img_out)
 {
 	for (int i = 0; i < height; i++) {
 		for (int j = 0; j < width; j++) {
@@ -174,7 +163,7 @@ void IsoM_6(int** img_in, int width, int height, int** img_out)
 	}
 }
 
-void IsoM_7(int** img_in, int width, int height, int** img_out) 
+void IsoM_7(int** img_in, int width, int height, int** img_out)
 {
 	for (int i = 0; i < height; i++) {
 		for (int j = 0; j < width; j++) {
@@ -183,7 +172,7 @@ void IsoM_7(int** img_in, int width, int height, int** img_out)
 	}
 }
 
-void Isometry(int num, int** img_in, int width, int height, int** img_out) 
+void Isometry(int num, int** img_in, int width, int height, int** img_out)
 {
 	switch (num)
 	{
@@ -208,7 +197,7 @@ void Isometry(int num, int** img_in, int width, int height, int** img_out)
 	}
 }
 
-int ComputeAVG(int** image, int width, int height) 
+int ComputeAVG(int** image, int width, int height)
 {
 	int avg = 0;
 	for (int i = 0; i < height; i++) {
@@ -219,7 +208,7 @@ int ComputeAVG(int** image, int width, int height)
 	return avg = avg / (width * height) + 0.5;
 }
 
-void ReadBlock(int** image, int x, int y, int dx, int dy, int** block) 
+void ReadBlock(int** image, int x, int y, int dx, int dy, int** block)
 {
 	for (int i = 0; i < dy; i++) {
 		for (int j = 0; j < dx; j++) {
@@ -228,7 +217,7 @@ void ReadBlock(int** image, int x, int y, int dx, int dy, int** block)
 	}
 }
 
-void WriteBlock(int** image, int x, int y, int dx, int dy, int** block) 
+void WriteBlock(int** image, int x, int y, int dx, int dy, int** block)
 {
 	for (int i = 0; i < dy; i++) {
 		for (int j = 0; j < dx; j++) {
@@ -237,7 +226,7 @@ void WriteBlock(int** image, int x, int y, int dx, int dy, int** block)
 	}
 }
 
-int ComputeAbsError(int** block, int size_block, int** image, int width, int height, int x_temp, int y_temp) 
+int ComputeAbsError(int** block, int size_block, int** image, int width, int height, int x_temp, int y_temp)
 {
 	int temp = 0;
 	for (int y = 0; y < size_block; y++) {
@@ -255,13 +244,13 @@ double ComputeRMSE(int** block, int size_block, int** image, int width, int heig
 	for (int y = 0; y < size_block; y++) {
 		for (int x = 0; x < size_block; x++) {
 			int err = image[y][x] - block[y + y_temp][x + x_temp];
-			mse += (err * err)/n;
+			mse += (err * err) / n;
 		}
 	}
 	return sqrt(mse);
 }
 
-void Find_AC(int** image, int size_x, int size_y, int block_avg) 
+void Find_AC(int** image, int size_x, int size_y, int block_avg)
 {
 	for (int y = 0; y < size_y; y++) {
 		for (int x = 0; x < size_x; x++) {

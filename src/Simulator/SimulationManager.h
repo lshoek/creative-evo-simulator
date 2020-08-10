@@ -43,7 +43,7 @@ public:
     };
 
     void init(SimSettings settings);
-    void startSimulation(std::string id);
+    void startSimulation();
     void stopSimulation();
 
     void update();
@@ -67,6 +67,9 @@ public:
     bool isSimulationInstanceActive();
 
     ofxGrabCam* getCamera();
+
+    ofTexture getPrevArtifactTexture();
+    float getPrevArtifactFitness();
 
     SimCreature* getFocusCreature();
     SimCanvasNode* getFocusCanvas();
@@ -166,6 +169,7 @@ private:
     btScalar canvasMargin = 4.0;
 
     bool bInitialized = false;
+    bool bHasSimulationId = false;
     bool bSimulationActive = false;
     bool bStopSimulationQueued = false;
     bool bCanvasLocalVisionMode = false;
@@ -185,6 +189,10 @@ private:
 
     cv::Mat _artifactMat;
     ofxCvGrayscaleImage _cvDebugImage;
+
+    ofTexture _prevArtifactTexture;
+    ofBufferObject _artifactCopyBuffer;
+    float _prevArtifactFitness = 0.0;
 
     // io
     NetworkManager _networkManager;

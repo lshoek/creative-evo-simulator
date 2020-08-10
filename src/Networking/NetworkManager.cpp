@@ -99,8 +99,8 @@ void NetworkManager::receive()
 				}
 				if (addr_id == OSC_INFO_IN) {
 					SimInfo info;
-					info.id = ofToInt(tokens[2]);
-					info.evalId = ofToInt(tokens[3]);
+					info.ga_id = tokens[2];
+					info.candidate_id = ofToInt(tokens[3]);
 					info.generation = ofToInt(tokens[4]);
 					info.duration = ofToInt(tokens[5]);
 					onInfoReceived.notify(info);
@@ -111,7 +111,7 @@ void NetworkManager::receive()
 					break;
 				}
 
-				// Receive neural network output vector
+				// Receive neural network effector vector
 				if (addr_id == OSC_ACTIVATION) {
 					_queuedAgentId = ofToInt(tokens[2]);
 					buf.append(m.getArgAsBlob(0));

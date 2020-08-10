@@ -10,11 +10,12 @@ SimInstance::SimInstance(int id, int generation, SimWorld* world, SimCreature* c
 void SimInstance::updateTimeStep(double timeStep)
 {
 	if (!_bIsFinished) {
-		_creature->updateTimeStep(timeStep);
-		_world->getBtWorld()->stepSimulation(timeStep, 1, FixedTimeStep);
-
-		_elapsed += timeStep;
-
+		// prevent updates if an effector vector is required
+		if (!_creature->isAwaitingEffectorUpdate()) {
+			_creature->updateTimeStep(timeStep);
+			_world->getBtWorld()->stepSimulation(timeStep, 1, FixedTimeStep);
+			_elapsed += timeStep;
+		}
 		if (_elapsed >= _duration) {
 			_bIsFinished = true;
 		}
@@ -44,7 +45,7 @@ bool SimInstance::isFinished()
 
 bool SimInstance::isEffectorUpdateRequired()
 {
-	return _creature->isAwaitingOutputUpdate();
+	return _creature->isAwaitingEffectorUpdate();
 }
 
 int SimInstance::getID()

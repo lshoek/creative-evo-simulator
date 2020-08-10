@@ -20,6 +20,9 @@ public:
 	void decode(int depth);
 	void decodeFromFile(int depth);
 
+	const EncodingResult* getEncodingResultPtr() const;
+	int getNumBlocks();
+
 	size_t getEncodingBytes();
 	cv::Mat getDecodedImage();
 

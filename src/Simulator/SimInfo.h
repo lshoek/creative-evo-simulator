@@ -1,8 +1,8 @@
 #pragma once
 
 struct SimInfo {
-	unsigned int id;
-	unsigned int evalId;
+	std::string ga_id;
+	unsigned int candidate_id;
 	unsigned int generation;
 	unsigned int duration;
 };

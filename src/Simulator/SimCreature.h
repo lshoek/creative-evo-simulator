@@ -15,7 +15,7 @@ public:
 
 	~SimCreature();
 
-	bool isAwaitingOutputUpdate();
+	bool isAwaitingEffectorUpdate();
 	void updateTimeStep(double timeStep);
 	void update();
 
@@ -108,7 +108,7 @@ private:
 	btScalar m_targetAccumulator;
 	btScalar m_timeStep;
 
-	bool m_bAwaitingOutputUpdate = false;
+	bool m_bAwaitingEffectorUpdate = false;
 	bool m_bHasBrush = false;
 
 	btScalar gRootBodyRadius = 0.25f;

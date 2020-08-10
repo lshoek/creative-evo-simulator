@@ -114,6 +114,10 @@ void SimulationManager::init(SimSettings settings)
     _imageSaver.setup(_canvasResolution.x, _canvasResolution.y);
     _cpgQueue.allocate(32);
 
+    // texture
+    _prevArtifactTexture.allocate(_canvasResolution.x, _canvasResolution.y, GL_RGBA);
+    _artifactCopyBuffer.allocate(_canvasResolution.x* _canvasResolution.y * 4, GL_DYNAMIC_COPY);
+
     // eval
     _evaluationType = settings.evalType;
     if (_evaluationType == Coverage) _evaluator = std::make_unique<CoverageEvaluator>();
@@ -121,21 +125,18 @@ void SimulationManager::init(SimSettings settings)
     else if (_evaluationType == InverseCircleCoverage) _evaluator = std::make_unique<InverseCircleCoverageEvaluator>();
     else if (_evaluationType == Aesthetics) _evaluator = std::make_unique<AestheticEvaluator>();
 
-    _evaluator->setup(_canvasResolution.x, _canvasResolution.y);
-    cv::Mat testImage = cv::imread("data/artifact_1.bmp", cv::ImreadModes::IMREAD_GRAYSCALE);
-    _evaluator->evaluate(testImage);
+    //_evaluator->setup(_canvasResolution.x, _canvasResolution.y);
+    //cv::Mat testImage = cv::imread("data/artifact_1.bmp", cv::ImreadModes::IMREAD_GRAYSCALE);
+    //_evaluator->evaluate(testImage);
 
     _settings = settings;
     bInitialized = true;
 }
 
-void SimulationManager::startSimulation(std::string id)
+void SimulationManager::startSimulation()
 {
     if (bInitialized && !bSimulationActive) {
         bSimulationActive = true;
-        
-        _uniqueSimId = id;
-        _simDir = NTRS_SIMS_DIR + '/' + id + '/';
 
         if (_previewCreature) {
             _previewCreature->removeFromWorld();
@@ -161,6 +162,14 @@ void SimulationManager::startSimulation(std::string id)
             );
         });
         _infoReceivedListener = _networkManager.onInfoReceived.newListener([this](SimInfo info) {
+            if (!bHasSimulationId) {
+                _uniqueSimId = info.ga_id;
+                _simDir = NTRS_SIMS_DIR + '/' + _uniqueSimId + '/';
+                ofLog() << ">> Simulation ID: " << _uniqueSimId;
+            }
+            else if (_uniqueSimId != info.ga_id) {
+                ofLog() << "Simulation ID mismatch: " << _uniqueSimId << " / " << info.ga_id;
+            }
             queueSimInstance(info);
         });
         _pulseReceivedListener = _networkManager.onPulseReceived.newListener([this](float pulse) {
@@ -172,8 +181,7 @@ void SimulationManager::startSimulation(std::string id)
         uint32_t numJoints = _selectedGenome->getNumJointsUnfolded();
         _networkManager.allocate(numJoints, numJoints + 1, _canvasConvResolution.x, _canvasConvResolution.y, OF_PIXELS_GRAY);
         _networkManager.search();
-
-        ofLog() << ">> Simulation ID: " << _uniqueSimId;
+       
         setStatus("Awaiting evolution module input...");
     }
 }
@@ -206,18 +214,14 @@ int SimulationManager::queueSimInstance(SimInfo info)
         int worldId = _simInstanceIdCounter; // Not really using this anymore
         _simInstanceIdCounter = (bMultiEval) ? (_simInstanceIdCounter + 1) % _simInstanceLimit : 0;
     }
-
-    setStatus("Queued simulation instance. /Global id: " + ofToString(info.generation) + 
-        " /Local id: " + ofToString(info.id) + 
-        " /Evaluation id: " + ofToString(info.evalId)
-    );
-    return info.id;
+    setStatus("Queued simulation instance. /Generation id: " + ofToString(info.generation) + " /Local id: " + ofToString(info.candidate_id));
+    return info.candidate_id;
 }
 
 int SimulationManager::createSimInstance(SimInfo info)
 {
-    int grid_x = info.id % _simInstanceGridSize;
-    int grid_z = info.id / _simInstanceGridSize;
+    int grid_x = info.candidate_id % _simInstanceGridSize;
+    int grid_z = info.candidate_id / _simInstanceGridSize;
 
     btScalar spaceExtent = canvasSize/2.0;
     btScalar stride = canvasSize * 2.0 + spaceExtent * 2.0;
@@ -246,12 +250,12 @@ int SimulationManager::createSimInstance(SimInfo info)
     canv->enableBounds();
     canv->addToWorld();
 
-    SimInstance* instance = new SimInstance(info.id, info.generation, world, crtr, canv, info.duration);
+    SimInstance* instance = new SimInstance(info.candidate_id, info.generation, world, crtr, canv, info.duration);
     _networkManager.sendState(instance);
     _simulationInstances.push_back(instance);
 
-    setStatus("Running simulation instance [GEN:" + ofToString(info.generation) + "] [ID:" + ofToString(info.id) + "] [EVAL:" + ofToString(info.evalId) + "]");
-    return info.id;
+    setStatus("Running simulation instance [GEN:" + ofToString(info.generation) + "] [ID:" + ofToString(info.candidate_id) + "]");
+    return info.candidate_id;
 }
 
 void SimulationManager::lateUpdate()
@@ -344,10 +348,21 @@ void SimulationManager::update()
             ofLog() << "Ended (" << instance->getID() << ") id: " << instance->getID() << " fitness: " << fitness;
 
             if (bSaveArtifactsToDisk) {
-                std::string path = _simDir + '/' + NTRS_ARTIFACTS_PREFIX + ofToString(instance->getGeneration()) + '_' + ofToString(instance->getID()) + '_' + ofToString(fitness, 2);
-                _imageSaver.save(instance->getCanvas()->getCanvasFbo()->getTexture(), path);
+                bool bSave = true;
+                AestheticEvaluator* evalPtr = dynamic_cast<AestheticEvaluator*>(_evaluator.get());
+                if (evalPtr != nullptr) {
+                    bSave = evalPtr->getLatestCoverageScore() > 0.0;
+                }
+                if (bSave) {
+                    std::string path = _simDir + '/' + NTRS_ARTIFACTS_PREFIX + ofToString(instance->getGeneration()) + '_' + ofToString(instance->getID()) + '_' + ofToString(fitness, 2);
+                    _imageSaver.save(instance->getCanvas()->getCanvasFbo()->getTexture(), path);
+                }
             }
             _networkManager.send(OSC_FITNESS + '/' + ofToString(instance->getID()), fitness);
+
+            instance->getCanvas()->getCanvasFbo()->getTexture().copyTo(_artifactCopyBuffer);
+            _prevArtifactTexture.loadData(_artifactCopyBuffer, GL_RGBA, GL_UNSIGNED_BYTE);
+            _prevArtifactFitness = (float)fitness;
 
             delete instance;
             _simulationInstances.erase(_simulationInstances.begin() + i);
@@ -485,7 +500,10 @@ void SimulationManager::draw()
 
 std::string SimulationManager::getUniqueSimId()
 {
-    return _uniqueSimId;
+    if (bHasSimulationId) {
+        return _uniqueSimId;
+    }
+    return "NA";
 }
 
 void SimulationManager::setStatus(std::string msg)
@@ -501,6 +519,16 @@ const std::string& SimulationManager::getStatus()
 ofxGrabCam* SimulationManager::getCamera()
 {
     return &cam;
+}
+
+ofTexture SimulationManager::getPrevArtifactTexture()
+{
+    return _prevArtifactTexture;
+}
+
+float SimulationManager::getPrevArtifactFitness()
+{
+    return _prevArtifactFitness;
 }
 
 SimCreature* SimulationManager::getFocusCreature()
