@@ -126,8 +126,9 @@ void SimulationManager::init(SimSettings settings)
     else if (_evaluationType == Aesthetics) _evaluator = std::make_unique<AestheticEvaluator>();
 
     //_evaluator->setup(_canvasResolution.x, _canvasResolution.y);
-    //cv::Mat testImage = cv::imread("data/artifact_1.bmp", cv::ImreadModes::IMREAD_GRAYSCALE);
+    //cv::Mat testImage = cv::imread("data/keep/circle.bmp", cv::ImreadModes::IMREAD_GRAYSCALE);
     //_evaluator->evaluate(testImage);
+    //OF_EXIT_APP(0);
 
     _settings = settings;
     bInitialized = true;
@@ -354,7 +355,7 @@ void SimulationManager::update()
                     bSave = evalPtr->getLatestCoverageScore() > 0.0;
                 }
                 if (bSave) {
-                    std::string path = _simDir + '/' + NTRS_ARTIFACTS_PREFIX + ofToString(instance->getGeneration()) + '_' + ofToString(instance->getID()) + '_' + ofToString(fitness, 2);
+                    std::string path = _simDir + '/' + NTRS_ARTIFACTS_PREFIX + ofToString(instance->getGeneration()) + '_' + ofToString(instance->getID()) + '_' + ofToString(fitness, 6);
                     _imageSaver.save(instance->getCanvas()->getCanvasFbo()->getTexture(), path);
                 }
             }
@@ -371,6 +372,7 @@ void SimulationManager::update()
             i++;
         }
     }
+
     // quick and dirty
     if (bInstanceDestroyed && !bStopSimulationQueued) {
         _networkManager.search();

@@ -139,7 +139,7 @@ void ofApp::imGui()
 	gui.begin();
 	{
 		ImVec2 windowSize(200, 540);
-		ImVec2 overlaySize(240, 260);
+		ImVec2 overlaySize(240, 480);
 		ImVec2 margin(0, 4);
 		ImVec2 menuBarSize = ImVec2(0, 0);
 		uint32_t offset = 24;

@@ -58,7 +58,7 @@ void ofxFractalCompression::encode()
 		}
 	}
 	if (m_bEncToDisk) {
-		WriteParameter("data/encoding.txt", m_imageEncoding, m_imageWidth / m_blockSize, m_imageHeight / m_blockSize);
+		WriteParameter("data/keep/encoding.txt", m_imageEncoding, m_imageWidth / m_blockSize, m_imageHeight / m_blockSize);
 	}
 	IntFree2(block_temp, m_blockSize, m_blockSize);
 }
@@ -69,7 +69,7 @@ void ofxFractalCompression::decode(int depth)
 		Decoding(m_imageEncoding, m_decodedImageData, m_imageWidth, m_imageHeight, m_blockSize, m_blockSize);
 		m_currentDecodingDepth++;
 		if (m_bImageToDisk) {
-			std::string fname = "data/decoded_out_" + ofToString(m_currentDecodingDepth) + ".bmp";
+			std::string fname = "data/keep/decoded_out_" + ofToString(m_currentDecodingDepth) + ".bmp";
 			cv::imwrite(fname, getDecodedImage());
 		}
 	}
@@ -78,12 +78,12 @@ void ofxFractalCompression::decode(int depth)
 void ofxFractalCompression::decodeFromFile(int depth)
 {
 	EncodingResult** en_result = ERAlloc2(m_imageWidth / m_blockSize, m_imageHeight / m_blockSize);
-	ReadParameter("data/encoding.txt", en_result, m_imageWidth / m_blockSize, m_imageHeight / m_blockSize);
+	ReadParameter("data/keep/encoding.txt", en_result, m_imageWidth / m_blockSize, m_imageHeight / m_blockSize);
 
 	for (int i = 0; i < depth; i++) {
 		Decoding(en_result, m_decodedImageData, m_imageWidth, m_imageHeight, m_blockSize, m_blockSize);
 		if (m_bImageToDisk) {
-			std::string fname = "data/decoded_out_" + ofToString(i) + ".bmp";
+			std::string fname = "data/keep/decoded_out_" + ofToString(i) + ".bmp";
 			cv::imwrite(fname, getDecodedImage());
 		}
 	}

@@ -16,6 +16,11 @@ public:
 		return (1.0 / (s * sqrt(2.0 * PI))) * exp(-0.5 * (x - u) * (x - u) / s * s);
 	}
 
+	static double absCurve(double x, double k) 
+	{
+		return abs(x + k) / (abs(x + k) + 1.0);
+	}
+
 	// ------------------------------------------------------------
 	// Step functions
 	// ------------------------------------------------------------

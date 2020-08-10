@@ -13,6 +13,8 @@ public:
 	void setDecodingDepth(int depth);
 
 private:
+	double coverageFunc(double coverage);
+
 	ofxFractalCompression _compressor;
 
 	int _decodingDepth = 3;

@@ -10,19 +10,6 @@ void AestheticEvaluator::setup(uint32_t width, uint32_t height)
 	_maxCoverageReward = width * height * 255.0;
 }
 
-double t_func(double x, double k) {
-	return abs(x + k) / (abs(x + k) + 1.0);
-}
-
-double coverageFunc(double coverage) {
-	double x = coverage;
-	double k = 0.0;
-	if (x > 0) {
-		return std::min(7.7478 * MathUtils::normPDF(4.0 * (1.0 - x), 0.0, 1.0) * t_func(4.0 * (1.0 - x), k), 1.0);
-	}
-	return 0.0;
-}
-
 double AestheticEvaluator::evaluate(cv::Mat im)
 {
 	if (im.elemSize() != 1) {
@@ -54,7 +41,7 @@ double AestheticEvaluator::evaluate(cv::Mat im)
 	ofLoadImage(jpegPixBuffer, jpegBuffer, settings);
 
 	cv::Mat jpegMat(srcImage.rows, srcImage.cols, CV_8UC1, jpegPixBuffer.getData());
-	cv::imwrite("data/jpeg_out.bmp", jpegMat);
+	cv::imwrite("data/keep/jpeg_out.bmp", jpegMat);
 
 	cv::Mat diff;
 	cv::Mat diffConverted;
@@ -89,11 +76,11 @@ double AestheticEvaluator::evaluate(cv::Mat im)
 	_compressor.encode();
 	_compressor.decode(_decodingDepth - 1);
 	cv::Mat fractalMat_t0 = _compressor.getDecodedImage();
-	cv::imwrite("data/1.bmp", fractalMat_t0);
+	cv::imwrite("data/keep/1.bmp", fractalMat_t0);
 
 	_compressor.decode(2); // 1
 	cv::Mat fractalMat_t1 = _compressor.getDecodedImage();
-	cv::imwrite("data/2.bmp", fractalMat_t1);
+	cv::imwrite("data/keep/2.bmp", fractalMat_t1);
 
 	// PCt0
 	cv::absdiff(srcImage, fractalMat_t0, diff);
@@ -154,6 +141,17 @@ double AestheticEvaluator::evaluate(cv::Mat im)
 	ofLog() << msg << std::endl;
 
 	return fitness;
+}
+
+double AestheticEvaluator::coverageFunc(double coverage)
+{
+	double x = coverage;
+	double k = 0.0;			// center
+	double q = 3.0;			// stretches the curve
+	if (x > 0) {
+		return std::min(7.7478 * MathUtils::normPDF(q * x, 0.0, 1.0) * MathUtils::absCurve(q * x, k), 1.0);
+	}
+	return 0.0;
 }
 
 double AestheticEvaluator::getLatestCoverageScore()
