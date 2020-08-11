@@ -9,7 +9,10 @@ SimNode::SimNode(int tag, btDynamicsWorld* owner) : SimNodeBase(tag, owner)
 {
     setColor(ofColor::fromHsb(ofRandom(255), 0.7f * 255, 255, 255));
 }
-SimNode::SimNode(int tag, ofColor color, btDynamicsWorld* owner) : SimNodeBase(tag, color, owner) {}
+SimNode::SimNode(int tag, ofColor color, btDynamicsWorld* owner) : SimNodeBase(tag, color, owner)
+{
+    setColor(color);
+}
 
 void SimNode::initBox(btVector3 position, btVector3 size, float mass)
 {
