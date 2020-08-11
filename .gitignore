@@ -25,7 +25,6 @@ bld/
 [Ll]og/
 
 bin/data/sims/
-bin/data/genomes/
 
 # Exclude binaries and etc
 *.exe
