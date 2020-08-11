@@ -121,7 +121,8 @@ void SimulationManager::init(SimSettings settings)
     }
 
     // eval
-    _evaluationDispatcher.setup(settings.evalType, _canvasResolution.x, _canvasResolution.y);
+    _evaluationType = settings.evalType;
+    _evaluationDispatcher.setup(_evaluationType, _canvasResolution.x, _canvasResolution.y);
 
     //cv::Mat testImage = cv::imread("data/keep/circle.bmp", cv::ImreadModes::IMREAD_GRAYSCALE);
     //_evaluator->evaluate(testImage);
@@ -543,7 +544,7 @@ SimCreature* SimulationManager::getFocusCreature()
 SimCanvasNode* SimulationManager::getFocusCanvas()
 {
     if (!_simulationInstances.empty() && _focusIndex < _simulationInstances.size()) {
-        _simulationInstances[_focusIndex]->getCanvas();
+        return _simulationInstances[_focusIndex]->getCanvas();
     }
     else return nullptr;
 }
