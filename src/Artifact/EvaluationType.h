@@ -5,5 +5,6 @@ enum EvaluationType
     Coverage,
     CircleCoverage,
     InverseCircleCoverage,
+    OrderlyCoverage,
     Aesthetics
 };

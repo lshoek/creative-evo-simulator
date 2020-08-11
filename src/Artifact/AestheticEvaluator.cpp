@@ -116,7 +116,7 @@ double AestheticEvaluator::evaluate(cv::Mat im)
 
 	if (abs(PCt0 - PCt1) > eps) {
 		double term_a = std::pow(IC, a);
-		double term_b = std::pow(PCt0 * PCt1, b);
+		double term_b = std::pow(PCt0 * PCt1, b);			  // a 'better' estimate of processing complexity
 		double term_c = std::pow(abs(PCt1 - PCt0) / PCt1, c); // abs(x) because PCt0 can be higher than PCt1 causing pow(x, double) to fail
 
 		double result = term_a / (term_b * term_c);

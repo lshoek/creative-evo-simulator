@@ -8,6 +8,7 @@ void EvaluationDispatcher::setup(EvaluationType type, uint32_t width, uint32_t h
 	if (type == Coverage) _evaluator = std::make_unique<CoverageEvaluator>();
 	else if (type == CircleCoverage) _evaluator = std::make_unique<CircleCoverageEvaluator>();
 	else if (type == InverseCircleCoverage) _evaluator = std::make_unique<InverseCircleCoverageEvaluator>();
+	else if (type == OrderlyCoverage) _evaluator = std::make_unique<OrderlyCoverageEvaluator>();
 	else if (type == Aesthetics) _evaluator = std::make_unique<AestheticEvaluator>();
 	else _evaluator = std::make_unique<CoverageEvaluator>();
 

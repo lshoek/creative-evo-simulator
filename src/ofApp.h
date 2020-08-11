@@ -58,6 +58,7 @@ private:
 		if (evalType == EvaluationType::Coverage) return "Coverage";
 		if (evalType == EvaluationType::CircleCoverage) return "CircleCoverage";
 		if (evalType == EvaluationType::InverseCircleCoverage) return "InverseCircleCoverage";
+		if (evalType == EvaluationType::OrderlyCoverage) return "OrderlyCoverage";
 		if (evalType == EvaluationType::Aesthetics) return "Aesthetics";
 		else return "NA";
 	}
@@ -67,6 +68,7 @@ private:
 		if (evalTypeStr == "Coverage") return EvaluationType::Coverage;
 		else if (evalTypeStr == "CircleCoverage") return EvaluationType::CircleCoverage;
 		else if (evalTypeStr == "InverseCircleCoverage") return EvaluationType::InverseCircleCoverage;
+		else if (evalTypeStr == "OrderlyCoverage") return EvaluationType::OrderlyCoverage;
 		else if (evalTypeStr == "Aesthetics") return EvaluationType::Aesthetics;
 		else return EvaluationType::Coverage;
 	}

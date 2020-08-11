@@ -4,6 +4,7 @@
 #include "Artifact/EvaluationType.h"
 #include "Artifact/SimpleEvaluators.h"
 #include "Artifact/AestheticEvaluator.h"
+#include "Artifact/OrderlyCoverageEvaluator.h"
 
 class EvaluationDispatcher : public ofThread 
 {

@@ -246,6 +246,9 @@
     <ClCompile Include="src\Utils\EvaluationDispatcher.cpp">
       <Filter>src\Utils</Filter>
     </ClCompile>
+    <ClCompile Include="src\Artifact\OrderlyCoverageEvaluator.cpp">
+      <Filter>src\Artifact</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ofApp.h">
@@ -513,6 +516,9 @@
       <Filter>src\Utils</Filter>
     </ClInclude>
     <ClInclude Include="src\Artifact\EvaluationType.h">
+      <Filter>src\Artifact</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Artifact\OrderlyCoverageEvaluator.h">
       <Filter>src\Artifact</Filter>
     </ClInclude>
   </ItemGroup>
