@@ -251,6 +251,7 @@
     <ClCompile Include="src\Simulator\SimNodeBase.cpp" />
     <ClCompile Include="src\Simulator\SimulationManager.cpp" />
     <ClCompile Include="src\Simulator\SimWorld.cpp" />
+    <ClCompile Include="src\Utils\EvaluationDispatcher.cpp" />
     <ClCompile Include="src\Utils\ImageSaver.cpp" />
     <ClCompile Include="src\Utils\ImageSaverThread.cpp" />
   </ItemGroup>
@@ -310,6 +311,7 @@
     <ClInclude Include="libs\lz4\lz4hc.h" />
     <ClInclude Include="libs\lz4\xxhash.h" />
     <ClInclude Include="src\Artifact\AestheticEvaluator.h" />
+    <ClInclude Include="src\Artifact\EvaluationType.h" />
     <ClInclude Include="src\Artifact\EvaluatorBase.h" />
     <ClInclude Include="src\Artifact\ofxFractalCompression\EncodingResult.h" />
     <ClInclude Include="src\Artifact\ofxFractalCompression\FractalCompressionCommon.h" />
@@ -334,6 +336,7 @@
     <ClInclude Include="src\Simulator\SimNodeBase.h" />
     <ClInclude Include="src\Simulator\SimulationManager.h" />
     <ClInclude Include="src\Simulator\SimWorld.h" />
+    <ClInclude Include="src\Utils\EvaluationDispatcher.h" />
     <ClInclude Include="src\Utils\FixedQueue.h" />
     <ClInclude Include="src\Utils\ImageSaver.h" />
     <ClInclude Include="src\Utils\ImageSaverThread.h" />

@@ -5,12 +5,14 @@
 #include "Simulator/SimInstance.h"
 #include "Simulator/SimDebugDrawer.h"
 #include "Simulator/SimInfo.h"
+#include "Artifact/EvaluationType.h"
 #include "Artifact/SimpleEvaluators.h"
 #include "Artifact/AestheticEvaluator.h"
 #include "Utils/Scheduler.h"
 #include "Utils/ImageSaverThread.h"
 #include "Utils/ImageSaver.h"
 #include "Utils/FixedQueue.h"
+#include "Utils/EvaluationDispatcher.h"
 #include "Networking/BufferSender.h"
 #include "Networking/NetworkManager.h"
 #include "ofMain.h"
@@ -23,13 +25,6 @@ typedef std::function<void(uint32_t)> simRunCallback_t;
 class SimulationManager
 {
 public:
-    enum EvaluationType
-    {
-        Coverage,
-        CircleCoverage,
-        InverseCircleCoverage,
-        Aesthetics
-    };
     struct SimSettings
     {
         EvaluationType evalType = EvaluationType::Coverage;
@@ -67,9 +62,7 @@ public:
     bool isSimulationInstanceActive();
 
     ofxGrabCam* getCamera();
-
-    ofTexture getPrevArtifactTexture();
-    float getPrevArtifactFitness();
+    ofTexture* getPrevArtifactTexture();
 
     SimCreature* getFocusCreature();
     SimCanvasNode* getFocusCanvas();
@@ -99,6 +92,7 @@ public:
     bool bCanvasSensors = false;
     bool bAxisAlignedAttachments = false;
     bool bSaveArtifactsToDisk = false;
+    bool bStoreLastArtifact = false;
     bool bMultiEval = false;
 
     glm::vec3 lightPosition;
@@ -192,17 +186,18 @@ private:
 
     ofTexture _prevArtifactTexture;
     ofBufferObject _artifactCopyBuffer;
-    float _prevArtifactFitness = 0.0;
 
     // io
     NetworkManager _networkManager;
 
     ofEventListener _connectionEstablishedListener;
     ofEventListener _connectionClosedListener;
-    ofEventListener _onActivationReceived;
     ofEventListener _infoReceivedListener;
     ofEventListener _pulseReceivedListener;
+    ofEventListener _fitnessRequestReceivedListener;
+    ofEventListener _fitnessResponseReadyListener;
 
+    EvaluationDispatcher _evaluationDispatcher;
     ImageSaver _imageSaver;
     FixedQueue _cpgQueue;
 };

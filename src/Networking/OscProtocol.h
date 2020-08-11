@@ -6,9 +6,10 @@ const int OSC_BUFFER_SIZE = 2048;
 // send
 const std::string OSC_HELLO = "/hi";
 const std::string OSC_INFO = "/info";
+const std::string OSC_END_ROLLOUT = "/end";
 const std::string OSC_BYE = "/bye";
-const std::string OSC_FITNESS = "/fit";
 const std::string OSC_JOINTS = "/jnts";
+const std::string OSC_FITNESS = "/fit";
 
 const std::string OSC_ARTIFACT_START = "/art/start/";
 const std::string OSC_ARTIFACT_PART = "/art/part/";
@@ -22,7 +23,8 @@ const std::string OSC_BYE_IN = "bye";
 const std::string OSC_ACTIVATION = "act";
 const std::string OSC_ACTIVATION_BUF = "actbuf";
 const std::string OSC_ID = "id";
-const std::string OSC_PULSE = "pls";
+const std::string OSC_PULSE = "pls"; 
+const std::string OSC_FITNESS_IN = "fit";
 
 const std::string OSC_START = "start";
 const std::string OSC_PART = "part";

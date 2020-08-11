@@ -2,6 +2,7 @@
 
 #include "ofMain.h"
 #include "Simulator/SimulationManager.h"
+#include "Artifact/EvaluationType.h"
 #include "ofxGrabCam.h"
 #include "ofxImGui.h"
 #include "ofxIniSettings.h"
@@ -52,23 +53,22 @@ private:
 	bool bGui = true;
 	bool bLockFrameRate = true;
 
-	using EvalType = SimulationManager::EvaluationType;
-	std::string evalTypeStr(EvalType evalType)
+	std::string evalTypeStr(EvaluationType evalType)
 	{
-		switch (evalType) {
-			case SimulationManager::Coverage: return "Coverage"; break;
-			case SimulationManager::CircleCoverage: return "CircleCoverage"; break;
-			case SimulationManager::InverseCircleCoverage: return "InverseCircleCoverage"; break;
-			case SimulationManager::Aesthetics: return "Aesthetics"; break;
-			default: return "NA";
-		}
+		if (evalType == EvaluationType::Coverage) return "Coverage";
+		if (evalType == EvaluationType::CircleCoverage) return "CircleCoverage";
+		if (evalType == EvaluationType::InverseCircleCoverage) return "InverseCircleCoverage";
+		if (evalType == EvaluationType::Aesthetics) return "Aesthetics";
+		else return "NA";
 	}
-	EvalType evalType(std::string evalTypeStr)
+
+	EvaluationType evalType(std::string evalTypeStr)
 	{
-		if (evalTypeStr == "Coverage") return EvalType::Coverage;
-		else if (evalTypeStr == "CircleCoverage") return EvalType::CircleCoverage;
-		else if (evalTypeStr == "InverseCircleCoverage") return EvalType::InverseCircleCoverage;
-		else if (evalTypeStr == "Aesthetics") return EvalType::Aesthetics;
+		if (evalTypeStr == "Coverage") return EvaluationType::Coverage;
+		else if (evalTypeStr == "CircleCoverage") return EvaluationType::CircleCoverage;
+		else if (evalTypeStr == "InverseCircleCoverage") return EvaluationType::InverseCircleCoverage;
+		else if (evalTypeStr == "Aesthetics") return EvaluationType::Aesthetics;
+		else return EvaluationType::Coverage;
 	}
 
 	struct GuiFileItem

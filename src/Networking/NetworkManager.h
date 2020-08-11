@@ -12,6 +12,7 @@ public:
 	ofEvent<void> onConnectionEstablished;
 	ofEvent<void> onConnectionClosed;
 	ofEvent<float> onPulseReceived;
+	ofEvent<void> onFitnessRequestReceived;
 	ofEvent<SimInfo> onInfoReceived;
 
 	void setup(std::string host, int inPort, int outPort);
@@ -22,6 +23,7 @@ public:
 	void send(std::string address, std::string arg);
 	void send(std::string address, int arg);
 	void send(std::string address, double arg);
+	void send(std::string address, const std::vector<double>& values);
 	void sendState(SimInstance* instance);
 	
 	void receive();

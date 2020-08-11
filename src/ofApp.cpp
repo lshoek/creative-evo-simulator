@@ -285,12 +285,12 @@ void ofApp::imGui()
 				ImGui::Text("Eval");
 				ImGui::Separator();
 				ImGui::Text("func: %s", evalTypeStr(simulationManager.getEvaluationType()).c_str());
-				ImGui::Text("prev artifact: %.02f", simulationManager.getPrevArtifactFitness());
-				ImGui::Image(
-					(void*)(intptr_t)simulationManager.getPrevArtifactTexture().getTextureData().textureID,
-					ImVec2(windowSize.x - margin.x, windowSize.x - margin.x)
-				);
-				//ImGui::InputFloat3("light:", &simulationManager.lightPosition[0], 2);
+				if (simulationManager.bStoreLastArtifact && simulationManager.getPrevArtifactTexture() != nullptr) {
+					ImGui::Image(
+						(void*)(intptr_t)simulationManager.getPrevArtifactTexture()->getTextureData().textureID,
+						ImVec2(windowSize.x - margin.x, windowSize.x - margin.x)
+					);
+				}
 			}	
 			ImGui::End();
 

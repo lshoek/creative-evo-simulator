@@ -243,6 +243,9 @@
     <ClCompile Include="src\Artifact\AestheticEvaluator.cpp">
       <Filter>src\Artifact</Filter>
     </ClCompile>
+    <ClCompile Include="src\Utils\EvaluationDispatcher.cpp">
+      <Filter>src\Utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ofApp.h">
@@ -504,6 +507,12 @@
       <Filter>src\Artifact</Filter>
     </ClInclude>
     <ClInclude Include="src\Artifact\SimpleEvaluators.h">
+      <Filter>src\Artifact</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Utils\EvaluationDispatcher.h">
+      <Filter>src\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Artifact\EvaluationType.h">
       <Filter>src\Artifact</Filter>
     </ClInclude>
   </ItemGroup>

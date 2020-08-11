@@ -71,6 +71,16 @@ void NetworkManager::send(std::string addr, double arg)
 	_sender.sendMessage(msg);
 }
 
+void NetworkManager::send(std::string addr, const std::vector<double>& values)
+{
+	ofxOscMessage msg;
+	msg.setAddress(addr);
+	for (const double& d : values) {
+		msg.addDoubleArg(d);
+	}
+	_sender.sendMessage(msg);
+}
+
 void NetworkManager::receive()
 {
 	if (_receiver.isListening()) {
@@ -122,23 +132,9 @@ void NetworkManager::receive()
 					float pulse = m.getArgAsFloat(0);
 					onPulseReceived.notify(pulse);
 				}
-				if (addr_id == OSC_ACTIVATION_BUF) {
-					//const std::string& addr_info = tokens[2];
-
-					//if (addr_info == OSC_START) {
-					//	bMsgStart = true;
-					//}
-					//else if (addr_info == OSC_PART) {
-					//	if (!bMsgStart) continue;
-					//	buf.append(m.getArgAsBlob(0));
-					//	numFrameParts++;
-					//}
-					//else if (addr_info == OSC_END) {
-					//	if (!bMsgStart) continue;
-					//	if (buf.size() > 0) {
-					//		break;
-					//	}
-					//}
+				// Receive fitness request
+				if (addr_id == OSC_FITNESS_IN) {
+					onFitnessRequestReceived.notify();
 				}
 			}
 			//std::ostringstream ss;

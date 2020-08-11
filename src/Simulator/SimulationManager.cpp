@@ -115,17 +115,14 @@ void SimulationManager::init(SimSettings settings)
     _cpgQueue.allocate(32);
 
     // texture
-    _prevArtifactTexture.allocate(_canvasResolution.x, _canvasResolution.y, GL_RGBA);
-    _artifactCopyBuffer.allocate(_canvasResolution.x* _canvasResolution.y * 4, GL_DYNAMIC_COPY);
+    if (bStoreLastArtifact) {
+        _prevArtifactTexture.allocate(_canvasResolution.x, _canvasResolution.y, GL_RGBA);
+        _artifactCopyBuffer.allocate(_canvasResolution.x * _canvasResolution.y * 4, GL_DYNAMIC_COPY);
+    }
 
     // eval
-    _evaluationType = settings.evalType;
-    if (_evaluationType == Coverage) _evaluator = std::make_unique<CoverageEvaluator>();
-    else if (_evaluationType == CircleCoverage) _evaluator = std::make_unique<CircleCoverageEvaluator>();
-    else if (_evaluationType == InverseCircleCoverage) _evaluator = std::make_unique<InverseCircleCoverageEvaluator>();
-    else if (_evaluationType == Aesthetics) _evaluator = std::make_unique<AestheticEvaluator>();
+    _evaluationDispatcher.setup(settings.evalType, _canvasResolution.x, _canvasResolution.y);
 
-    //_evaluator->setup(_canvasResolution.x, _canvasResolution.y);
     //cv::Mat testImage = cv::imread("data/keep/circle.bmp", cv::ImreadModes::IMREAD_GRAYSCALE);
     //_evaluator->evaluate(testImage);
     //OF_EXIT_APP(0);
@@ -175,6 +172,12 @@ void SimulationManager::startSimulation()
         });
         _pulseReceivedListener = _networkManager.onPulseReceived.newListener([this](float pulse) {
             _cpgQueue.push(pulse);
+        });
+        _fitnessRequestReceivedListener = _networkManager.onFitnessRequestReceived.newListener([this] {
+            _evaluationDispatcher.queueResponse();
+        });
+        _fitnessResponseReadyListener = _evaluationDispatcher.onFitnessResponseReady.newListener([this](const std::vector<double>& fitness) {
+            _networkManager.send(OSC_FITNESS, fitness);
         });
         _connectionClosedListener = _networkManager.onConnectionClosed.newListener([this] {
             stopSimulation();
@@ -344,9 +347,7 @@ void SimulationManager::update()
             _imageSaver.copyToBuffer(instance->getCanvas()->getCanvasRawFbo()->getTexture(), [&](uint8_t* p) {
                 _artifactMat = cv::Mat(_canvasResolution.x, _canvasResolution.y, CV_8UC1, p);
             });
-            double fitness = _evaluator->evaluate(_artifactMat);
-
-            ofLog() << "Ended (" << instance->getID() << ") id: " << instance->getID() << " fitness: " << fitness;
+            _evaluationDispatcher.queue(_artifactMat, instance->getGeneration(), instance->getID());
 
             if (bSaveArtifactsToDisk) {
                 bool bSave = true;
@@ -355,15 +356,16 @@ void SimulationManager::update()
                     bSave = evalPtr->getLatestCoverageScore() > 0.0;
                 }
                 if (bSave) {
-                    std::string path = _simDir + '/' + NTRS_ARTIFACTS_PREFIX + ofToString(instance->getGeneration()) + '_' + ofToString(instance->getID()) + '_' + ofToString(fitness, 6);
+                    std::string path = _simDir + '/' + NTRS_ARTIFACTS_PREFIX + ofToString(instance->getGeneration()) + '_' + ofToString(instance->getID());
                     _imageSaver.save(instance->getCanvas()->getCanvasFbo()->getTexture(), path);
                 }
             }
-            _networkManager.send(OSC_FITNESS + '/' + ofToString(instance->getID()), fitness);
+            _networkManager.send(OSC_END_ROLLOUT + '/' + ofToString(instance->getID()));
 
-            instance->getCanvas()->getCanvasFbo()->getTexture().copyTo(_artifactCopyBuffer);
-            _prevArtifactTexture.loadData(_artifactCopyBuffer, GL_RGBA, GL_UNSIGNED_BYTE);
-            _prevArtifactFitness = (float)fitness;
+            if (bStoreLastArtifact) {
+                instance->getCanvas()->getCanvasFbo()->getTexture().copyTo(_artifactCopyBuffer);
+                _prevArtifactTexture.loadData(_artifactCopyBuffer, GL_RGBA, GL_UNSIGNED_BYTE);
+            }
 
             delete instance;
             _simulationInstances.erase(_simulationInstances.begin() + i);
@@ -523,14 +525,9 @@ ofxGrabCam* SimulationManager::getCamera()
     return &cam;
 }
 
-ofTexture SimulationManager::getPrevArtifactTexture()
+ofTexture* SimulationManager::getPrevArtifactTexture()
 {
-    return _prevArtifactTexture;
-}
-
-float SimulationManager::getPrevArtifactFitness()
-{
-    return _prevArtifactFitness;
+    return &_prevArtifactTexture;
 }
 
 SimCreature* SimulationManager::getFocusCreature()
@@ -605,7 +602,7 @@ const std::vector<float> SimulationManager::getCPGBuffer()
     return _cpgQueue.getBuffer();
 }
 
-SimulationManager::EvaluationType SimulationManager::getEvaluationType()
+EvaluationType SimulationManager::getEvaluationType()
 {
     return _evaluationType;
 }
