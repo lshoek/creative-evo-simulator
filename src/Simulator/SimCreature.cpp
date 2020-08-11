@@ -154,7 +154,7 @@ void SimCreature::dfs(
 			parentWorldTrans.inverse() * parentFrameInWorld, 
 			childWorldTrans.inverse() * childFrameInWorld
 		);
-		joint->setLimit(-SIMD_HALF_PI, SIMD_HALF_PI);
+		joint->setLimit(-SIMD_HALF_PI * btScalar(0.666667), SIMD_HALF_PI * btScalar(0.666667));
 		joint->setDbgDrawSize(0.25f);
 		joint->setEnabled(true);
 

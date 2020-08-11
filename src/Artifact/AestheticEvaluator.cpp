@@ -4,7 +4,7 @@
 void AestheticEvaluator::setup(uint32_t width, uint32_t height)
 {
 	_compressor.setup(16);
-	_compressor.setWriteImageToDisk(true);
+	_compressor.setWriteImageToDisk(false);
 	_compressor.setWriteEncodingToDisk(false);
 
 	_maxCoverageReward = width * height * 255.0;
@@ -41,7 +41,7 @@ double AestheticEvaluator::evaluate(cv::Mat im)
 	ofLoadImage(jpegPixBuffer, jpegBuffer, settings);
 
 	cv::Mat jpegMat(srcImage.rows, srcImage.cols, CV_8UC1, jpegPixBuffer.getData());
-	cv::imwrite("data/keep/jpeg_out.bmp", jpegMat);
+	//cv::imwrite("data/keep/jpeg_out.bmp", jpegMat);
 
 	cv::Mat diff;
 	cv::Mat diffConverted;
@@ -51,7 +51,7 @@ double AestheticEvaluator::evaluate(cv::Mat im)
 	diff.convertTo(diffConverted, CV_64F);
 
 	cv::pow(diffConverted, 2, se);
-	cv::imwrite("data/se.bmp", se);
+	//cv::imwrite("data/se.bmp", se);
 
 	double rmseIC = sqrt(cv::mean(se)[0]);
 	double compressionRatioIC = (double)rawSize / jpegBuffer.size();

@@ -6,7 +6,7 @@
 
 // Maximum number of contactpoints registered and applied to canvas per frame.
 // This number should be synced with BRUSH_COORD_BUF_MAXSIZE in canvas.frag.
-#define BRUSH_COORD_BUF_MAXSIZE 8
+#define BRUSH_COORD_BUF_MAXSIZE 16
 
 SimCanvasNode::SimCanvasNode(btVector3 position, float size, float extraBounds, int xRes, int yRes, int xConvRes, int yConvRes, bool bLocalVisionMode, bool bDownSample, btDynamicsWorld* ownerWorld) :
     SimNodeBase(CanvasTag, ownerWorld), _canvasSize(size), _margin(extraBounds)
