@@ -154,7 +154,7 @@ void SimCreature::dfs(
 			parentWorldTrans.inverse() * parentFrameInWorld, 
 			childWorldTrans.inverse() * childFrameInWorld
 		);
-		joint->setLimit(-SIMD_HALF_PI * btScalar(0.666667), SIMD_HALF_PI * btScalar(0.666667));
+		joint->setLimit(-SIMD_HALF_PI * btScalar(1.0), SIMD_HALF_PI * btScalar(1.0));
 		joint->setDbgDrawSize(0.25f);
 		joint->setEnabled(true);
 
@@ -261,8 +261,8 @@ void SimCreature::update()
 	}
 
 	// update brushes
+	float pressure = m_outputs[m_numOutputs - m_numBrushes] * 0.5f + 0.5f;
 	for (int i = 0; i < m_numBrushes; i++) {
-		float pressure = m_outputs[m_numJoints + i] * 0.5f + 0.5f;
 		m_brushNodes[i]->setBrushPressure(pressure);
 	}
 

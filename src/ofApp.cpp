@@ -56,6 +56,7 @@ void ofApp::initSim()
 		simulationManager.bAxisAlignedAttachments = settings.get("genome.axis_aligned_attachments", false);
 		simulationManager.bFeasibilityChecks = settings.get("genome.feasibility_checks", true);
 		simulationManager.bCanvasSensors = settings.get("sensors.type", "canvas").compare("canvas") == 0;
+		simulationManager.bCanvasLocalVisionMode = settings.get("sensors.perception", "local").compare("local") == 0;
 		simulationManager.bSaveArtifactsToDisk = settings.get("canvas.save", true);
 
 		SimulationManager::SimSettings simSettings;

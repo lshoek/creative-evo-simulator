@@ -90,6 +90,7 @@ public:
     bool bCameraSnapFocus = true;
     bool bFeasibilityChecks = false;
     bool bCanvasSensors = false;
+    bool bCanvasLocalVisionMode = false;
     bool bAxisAlignedAttachments = false;
     bool bSaveArtifactsToDisk = false;
     bool bStoreLastArtifact = false;
@@ -166,7 +167,6 @@ private:
     bool bHasSimulationId = false;
     bool bSimulationActive = false;
     bool bStopSimulationQueued = false;
-    bool bCanvasLocalVisionMode = false;
     bool bCanvasDownSampling = false;
     bool bGenomeLoaded = false;
 

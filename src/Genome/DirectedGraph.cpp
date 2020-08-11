@@ -277,6 +277,7 @@ uint32_t DirectedGraph::getNumJointsUnfolded()
 
 uint32_t DirectedGraph::getNumBrushes()
 {
+    // THIS IS ALWAYS 1!
     return _numBrushes;
 }
 

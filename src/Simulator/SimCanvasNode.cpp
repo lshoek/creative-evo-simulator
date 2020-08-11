@@ -6,7 +6,7 @@
 
 // Maximum number of contactpoints registered and applied to canvas per frame.
 // This number should be synced with BRUSH_COORD_BUF_MAXSIZE in canvas.frag.
-#define BRUSH_COORD_BUF_MAXSIZE 16
+#define BRUSH_COORD_BUF_MAXSIZE 32
 
 SimCanvasNode::SimCanvasNode(btVector3 position, float size, float extraBounds, int xRes, int yRes, int xConvRes, int yConvRes, bool bLocalVisionMode, bool bDownSample, btDynamicsWorld* ownerWorld) :
     SimNodeBase(CanvasTag, ownerWorld), _canvasSize(size), _margin(extraBounds)
@@ -229,6 +229,9 @@ void SimCanvasNode::addBrushStroke(btVector3 location, float pressure)
         _brushCoordQueue[_brushQueueSize].coord = px;
         _brushCoordQueue[_brushQueueSize].pressure = pressure;
         _brushQueueSize++;
+    }
+    else {
+        ofLog() << "Warning: Brush queue full.";
     }
 }
 

@@ -183,7 +183,9 @@ void SimulationManager::startSimulation()
             stopSimulation();
         });
         uint32_t numJoints = _selectedGenome->getNumJointsUnfolded();
-        _networkManager.allocate(numJoints, numJoints + 1, _canvasConvResolution.x, _canvasConvResolution.y, OF_PIXELS_GRAY);
+        uint32_t numBrushes = 1; // This is 1 & fixed with regard to the local perception method
+
+        _networkManager.allocate(numJoints, numJoints + numBrushes, _canvasConvResolution.x, _canvasConvResolution.y, OF_PIXELS_GRAY);
         _networkManager.search();
        
         setStatus("Awaiting evolution module input...");

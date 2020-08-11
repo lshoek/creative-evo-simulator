@@ -65,6 +65,7 @@ void handleCollisions(btDynamicsWorld* worldPtr, bool bCanvasSensors)
 
         for (int j = 0; j < contactManifold->getNumContacts(); j++)
         {
+            // Collisions for touch sensors
             if (!bCanvasSensors &&
                 o1->getUserIndex() & BodyTag && o2->getUserIndex() & ~BodyTag ||
                 o1->getUserIndex() & ~BodyTag && o2->getUserIndex() & BodyTag)
@@ -81,6 +82,7 @@ void handleCollisions(btDynamicsWorld* worldPtr, bool bCanvasSensors)
                     creaturePtr->setTouchSensor(o2);
                 }
             }
+            // Collisions for canvas sensors
             if ((o1->getUserIndex() & BrushTag && o2->getUserIndex() & CanvasTag) ||
                 (o1->getUserIndex() & CanvasTag && o2->getUserIndex() & BrushTag))
             {
@@ -99,7 +101,9 @@ void handleCollisions(btDynamicsWorld* worldPtr, bool bCanvasSensors)
                 if (brushNodePtr->isBrushActivated()) {
                     btManifoldPoint& pt = contactManifold->getContactPoint(j);
                     btVector3 localPt = pt.getPositionWorldOnA() - canvasPtr->getPosition();
-                    canvasPtr->addBrushStroke(localPt, brushNodePtr->getBrushPressure());
+
+                    double pressure = 1.0; //brushNodePtr->getBrushPressure()
+                    canvasPtr->addBrushStroke(localPt, pressure);
                 }
             }
         }
