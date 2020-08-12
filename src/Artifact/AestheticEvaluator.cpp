@@ -92,18 +92,16 @@ double AestheticEvaluator::evaluate(cv::Mat im)
 		double PCdiff = std::min(PCt1 - PCt0, eps);
 
 		double term_a = std::pow(IC, a);
-		double term_b = std::pow(PCt0 * PCt1, b);			  // a 'better' estimate of processing complexity
+		double term_b = std::pow(PCt0 * PCt1, b);
 		double term_c = std::pow(PCdiff / PCt1, c);
 
 		double result = term_a / (term_b * term_c);
-		if (!isnan(result)) {
-			aestheticReward = result;
-		}
+		aestheticReward = result;
 	}
 	double weightedAestheticReward = aestheticReward * coverageReward;
 
 	// Make aesthetic reward partly proportional to the coverage reward to prevent high rewards for low coverage artifacts
-	double fitness = weightedAestheticReward + coverageReward * !bDiscard;
+	double fitness = weightedAestheticReward + coverageReward * 1000.0 * !bDiscard;
 
 	char msg[512];
 	sprintf(msg,
@@ -115,9 +113,9 @@ double AestheticEvaluator::evaluate(cv::Mat im)
 	);
 	ofLog() << msg << std::endl;
 
-	cv::imwrite("data/keep/eval_out_lvl1.bmp", fractalMat_t0);
-	cv::imwrite("data/keep/eval_out_lvl2.bmp", fractalMat_t1);
-	cv::imwrite("data/keep/eval_out_laplace.bmp", edges);
+	//cv::imwrite("data/keep/eval_out_lvl1.bmp", fractalMat_t0);
+	//cv::imwrite("data/keep/eval_out_lvl2.bmp", fractalMat_t1);
+	//cv::imwrite("data/keep/eval_out_laplace.bmp", edges);
 
 	if (bDiscard) {
 		return 0.0;
