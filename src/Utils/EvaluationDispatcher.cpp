@@ -19,11 +19,12 @@ void EvaluationDispatcher::setup(EvaluationType type, uint32_t width, uint32_t h
 	bSetup = true;
 }
 
-void EvaluationDispatcher::queue(cv::Mat image, int generation, int id)
+void EvaluationDispatcher::queue(cv::Mat image, int generation, int id, bool report)
 {
 	ArtifactEntry entry{image};
 	entry.generation = generation;
 	entry.id = id;
+	entry.report = report;
 
 	ofLog() << "Queued " << generation << ":" << id << " for evaluation";
 	_evalQueue.send(entry);
@@ -54,7 +55,9 @@ void EvaluationDispatcher::update(ofEventArgs& a)
 	if (_updateQueue.tryReceive(entry)) {
 		if (entry.response != 1) {
 			ofLog() << "Finished evaluating " << entry.generation << ":" << entry.id << "  f:" << entry.fitness;
-			_fitnessQueue.push_back(entry.fitness);
+			if (entry.report) {
+				_fitnessQueue.push_back(entry.fitness);
+			}
 		}
 		else {
 			onFitnessResponseReady.notify(_fitnessQueue);

@@ -3,11 +3,11 @@
 
 void AestheticEvaluator::setup(uint32_t width, uint32_t height)
 {
-	_compressor.setup(16);
+	_compressor.setup(8);
 	_compressor.setWriteImageToDisk(false);
 	_compressor.setWriteEncodingToDisk(false);
 
-	_maxCoverageReward = width * height * 255.0;
+	_maxCoverage = width * height * 255.0;
 }
 
 double AestheticEvaluator::evaluate(cv::Mat im)
@@ -15,109 +15,85 @@ double AestheticEvaluator::evaluate(cv::Mat im)
 	if (im.elemSize() != 1) {
 		ofLog() << "[Evaluator] Warning: elemSize of im is not equal to 1.";
 	}
-	if (im.rows * im.cols * 255.0 != _maxCoverageReward) {
-		_maxCoverageReward = im.rows * im.cols * 255.0;
+	if (im.total() * 255.0 != _maxCoverage) {
+		_maxCoverage = im.total() * 255.0;
 	}
+	size_t rawSize = im.total();
 
 	// Coverage measure
 	double coverage = cv::mean(im)[0] / 255.0;
-	_latestCoverageScore = coverage;
+	double coverageReward = coverageFunc(coverage);
 
-	// Lower contrast to improve the reliability of the fractal compression algorithm (alpha[1.0-3.0], beta[0-100])
-	cv::Mat srcImage;
-	im.convertTo(srcImage, CV_8UC1, 0.7, 50.0);
+	// Image Complexity
 
-	size_t rawSize = srcImage.total();
-	ofPixels rawPixBuffer;
-	rawPixBuffer.setFromExternalPixels(srcImage.ptr(), srcImage.rows, srcImage.cols, ofPixelFormat::OF_PIXELS_GRAY);
-
-	// Image Complexity -- JPEG method 
-	ofImageLoadSettings settings;
-	settings.grayscale = true;
-
-	ofPixels jpegPixBuffer;
-	ofBuffer jpegBuffer;
-	ofSaveImage(rawPixBuffer, jpegBuffer, ofImageFormat::OF_IMAGE_FORMAT_JPEG, ofImageQualityType::OF_IMAGE_QUALITY_HIGH);
-	ofLoadImage(jpegPixBuffer, jpegBuffer, settings);
-
-	cv::Mat jpegMat(srcImage.rows, srcImage.cols, CV_8UC1, jpegPixBuffer.getData());
-	//cv::imwrite("data/keep/jpeg_out.bmp", jpegMat);
-
-	cv::Mat diff;
-	cv::Mat diffConverted;
-	cv::Mat se(srcImage.rows, srcImage.cols, CV_64F);
-
-	cv::absdiff(srcImage, jpegMat, diff);
-	diff.convertTo(diffConverted, CV_64F);
-
-	cv::pow(diffConverted, 2, se);
-	//cv::imwrite("data/se.bmp", se);
-
-	double rmseIC = sqrt(cv::mean(se)[0]);
-	double compressionRatioIC = (double)rawSize / jpegBuffer.size();
-	double IC = rmseIC / compressionRatioIC;
-
-	// Filter complexities outside of acceptable bounds
-	if (IC < minComplexity || IC > maxComplexity) {
-		ofLog() << "Artifact discarded -> IC: " << IC;
-		ofLog() << rawSize << '/' << jpegBuffer.size() << '=' << compressionRatioIC;
-		ofLog() << rmseIC << '/' << compressionRatioIC << '=' << IC;
-		return 0.0;
-	}
+	cv::Mat edges, edges_abs;
+	cv::Laplacian(im, edges, CV_64FC1, 3);
+	cv::convertScaleAbs(edges, edges_abs);
+	
+	// The edgeRate of noise would be ~0.5, therefore IC = edgeRate*2.0
+	double edgeRate = cv::sum(edges_abs)[0]/(double)_maxCoverage;
+	double IC = std::min(edgeRate, 0.5) * 2.0;
 
 	// Processing Complexity -- Fractal method
 
-	_compressor.allocate(srcImage);
-	size_t encodingSize = _compressor.getEncodingBytes();
+	// Lower contrast to improve the reliability of the fractal compression algorithm (alpha[1.0-3.0], beta[0-100])
+	cv::Mat pcImage, blur;
+	cv::blur(im, blur, cv::Size(5, 5));
+	blur.convertTo(pcImage, CV_8UC1);
 
-	// We do not have to calculate the compression ratio as it will be same for both images, whatever it is.
-	double compressionRatio = 1.0;
+	_compressor.allocate(pcImage);
+	size_t encodingSize = _compressor.getEncodingBytes();
 
 	_compressor.encode();
 	_compressor.decode(_decodingDepth - 1);
 	cv::Mat fractalMat_t0 = _compressor.getDecodedImage();
-	cv::imwrite("data/keep/1.bmp", fractalMat_t0);
 
 	_compressor.decode(2); // 1
 	cv::Mat fractalMat_t1 = _compressor.getDecodedImage();
-	cv::imwrite("data/keep/2.bmp", fractalMat_t1);
+
+	cv::Mat diff;
+	cv::Mat diffConverted;
+	cv::Mat se(pcImage.rows, pcImage.cols, CV_64FC1);
 
 	// PCt0
-	cv::absdiff(srcImage, fractalMat_t0, diff);
-	diff.convertTo(diffConverted, CV_64F);
+	cv::absdiff(pcImage, fractalMat_t0, diff);
+	diff.convertTo(diffConverted, CV_64FC1);
 	cv::pow(diffConverted, 2, se);
 
 	double rmsePCt0 = sqrt(cv::mean(se)[0]);
-	double PCt0 = glm::max(rmsePCt0 / compressionRatio, pc0LowerBound);
+	double PCt0 = glm::max(rmsePCt0, pc0LowerBound);
 
 	// PCt1
-	cv::absdiff(srcImage, fractalMat_t1, diff);
-	diff.convertTo(diffConverted, CV_64F);
+	cv::absdiff(pcImage, fractalMat_t1, diff);
+	diff.convertTo(diffConverted, CV_64FC1);
 	cv::pow(diffConverted, 2, se);
 
 	double rmsePCt1 = sqrt(cv::mean(se)[0]);
-	double PCt1 = glm::max(rmsePCt1 / compressionRatio, pc1Lowerbound);
+	double PCt1 = glm::max(rmsePCt1, pc1Lowerbound);
 
 	// Complexity Bias
-	double a = 1.0;
+	double a = 1.0; // a = 2.0 grants a lot of extra fitness for higher IC
 	double b = 0.4;
 	double c = 0.2;
 
-	// Coverage Reward
-	double coverageReward = coverageFunc(coverage);
-
 	// Total Fitness
+	bool bDiscard = false;
+
 	double eps = 0.0005;
 	double aestheticReward = 0.0;
 
+	double PCdiffRaw = PCt1 - PCt0;
 	if (PCt0 > PCt1) {
-		ofLog() << "Warning: PCt0 > PCt1!";
+		ofLog() << "DISCARDED: PCt0 > PCt1";
+		bDiscard = true;
 	}
 
-	if (abs(PCt0 - PCt1) > eps) {
+	if (!bDiscard) {
+		double PCdiff = std::min(PCt1 - PCt0, eps);
+
 		double term_a = std::pow(IC, a);
 		double term_b = std::pow(PCt0 * PCt1, b);			  // a 'better' estimate of processing complexity
-		double term_c = std::pow(abs(PCt1 - PCt0) / PCt1, c); // abs(x) because PCt0 can be higher than PCt1 causing pow(x, double) to fail
+		double term_c = std::pow(PCdiff / PCt1, c);
 
 		double result = term_a / (term_b * term_c);
 		if (!isnan(result)) {
@@ -127,36 +103,34 @@ double AestheticEvaluator::evaluate(cv::Mat im)
 	double weightedAestheticReward = aestheticReward * coverageReward;
 
 	// Make aesthetic reward partly proportional to the coverage reward to prevent high rewards for low coverage artifacts
-	double fitness = weightedAestheticReward + coverageReward;
+	double fitness = weightedAestheticReward + coverageReward * !bDiscard;
 
 	char msg[512];
 	sprintf(msg,
-		"Artifact Evaluation Report:\ncoverage:%.4f\ncoverageReward:%.4f\nrmse[jpeg]: %.4f\ncompressionRatio[jpeg]: %.4f\nIC: %.4f\nrmse[fract/t0]: %.4f\nPC/t0: %.4f\nrmse[fract/t1]: %.4f\nPC/t1: %.4f\naestheticReward:%.4f\nweightedAestheticReward:%.4f\nfitness: %.4f",
-		coverage, coverageReward,
-		rmseIC, compressionRatioIC, IC,
-		rmsePCt0, PCt0,
-		rmsePCt1, PCt1,
-		aestheticReward, weightedAestheticReward, fitness
+		"\nEvaluation Report:\ncoverage: %.4f%% -> %.4f\nIC (laplace): %.4f; PCt0: %.4f; PCt1: %.4f; diff: %.4f\naestheticReward:%.4f -> %.4f\nfitness: %.4f",
+		coverage*100.0, coverageReward,
+		IC, PCt0, PCt1, PCdiffRaw,
+		aestheticReward, weightedAestheticReward, 
+		fitness
 	);
 	ofLog() << msg << std::endl;
 
+	cv::imwrite("data/keep/eval_out_lvl1.bmp", fractalMat_t0);
+	cv::imwrite("data/keep/eval_out_lvl2.bmp", fractalMat_t1);
+	cv::imwrite("data/keep/eval_out_laplace.bmp", edges);
+
+	if (bDiscard) {
+		return 0.0;
+	}
 	return fitness;
 }
 
 double AestheticEvaluator::coverageFunc(double coverage)
 {
-	double x = coverage;
-	double k = 0.0;			// center
-	double q = 3.0;			// stretches the curve
-	if (x > 0) {
-		return std::min(7.7478 * MathUtils::normPDF(q * x, 0.0, 1.0) * MathUtils::absCurve(q * x, k), 1.0);
-	}
-	return 0.0;
-}
+	double x = std::min(coverage, 0.25);
+	double y = 1.0 - std::pow(sin(PI * (4.0 * x + 1.0) / 2.0), 4.0);
 
-double AestheticEvaluator::getLatestCoverageScore()
-{
-	return _latestCoverageScore;
+	return std::min(std::max(y, 0.0), 1.0);
 }
 
 void AestheticEvaluator::setDecodingDepth(int depth)

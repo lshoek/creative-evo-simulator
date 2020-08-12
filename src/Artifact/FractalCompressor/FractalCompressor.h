@@ -10,7 +10,7 @@
 #include "ofxOpenCv.h"
 #include "ofFileUtils.h"
 
-class ofxFractalCompression
+class FractalCompressor
 {
 public:
 	void setup(int blockSize);

@@ -63,6 +63,7 @@ void handleCollisions(btDynamicsWorld* worldPtr, bool bCanvasSensors)
         btCollisionObject* o1 = (btCollisionObject*)(contactManifold->getBody0());
         btCollisionObject* o2 = (btCollisionObject*)(contactManifold->getBody1());
 
+        bool bBrushContact = false;
         for (int j = 0; j < contactManifold->getNumContacts(); j++)
         {
             // Collisions for touch sensors
@@ -83,6 +84,7 @@ void handleCollisions(btDynamicsWorld* worldPtr, bool bCanvasSensors)
                 }
             }
             // Collisions for canvas sensors
+            if (bBrushContact) continue; // test: register single contact point per update
             if ((o1->getUserIndex() & BrushTag && o2->getUserIndex() & CanvasTag) ||
                 (o1->getUserIndex() & CanvasTag && o2->getUserIndex() & BrushTag))
             {
@@ -104,6 +106,7 @@ void handleCollisions(btDynamicsWorld* worldPtr, bool bCanvasSensors)
 
                     double pressure = 1.0; //brushNodePtr->getBrushPressure()
                     canvasPtr->addBrushStroke(localPt, pressure);
+                    bBrushContact = true;
                 }
             }
         }

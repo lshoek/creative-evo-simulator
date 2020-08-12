@@ -1,6 +1,6 @@
 #pragma once
 #include "Artifact/EvaluatorBase.h"
-#include "Artifact/ofxFractalCompression/ofxFractalCompression.h"
+#include "Artifact/FractalCompressor/FractalCompressor.h"
 #include "ofxOpenCv.h"
 
 class OrderlyCoverageEvaluator : public EvaluatorBase
@@ -14,8 +14,6 @@ public:
 
 private:
 	double coverageFunc(double coverage);
-
-	ofxFractalCompression _compressor;
 
 	int _decodingDepth = 3;
 

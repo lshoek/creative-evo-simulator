@@ -112,7 +112,7 @@ private:
 
     SimSettings _settings;
     EvaluationType _evaluationType;
-    std::unique_ptr<EvaluatorBase> _evaluator;
+    EvaluationDispatcher _evaluationDispatcher;
 
     std::vector<simRunCallback_t> _simulationInstanceCallbackQueue;
     std::vector<SimInstance*> _simulationInstances;
@@ -197,7 +197,6 @@ private:
     ofEventListener _fitnessRequestReceivedListener;
     ofEventListener _fitnessResponseReadyListener;
 
-    EvaluationDispatcher _evaluationDispatcher;
     ImageSaver _imageSaver;
     FixedQueue _cpgQueue;
 };

@@ -222,12 +222,22 @@ void SimCanvasNode::addBrushStroke(btVector3 location, float pressure)
 
         // convert to normalized texture coordinates
         glm::vec2 px = (glm::vec2(loc.x, loc.z) + glm::vec2(_canvasSize)) / glm::vec2(_canvasSize * 2);
+
+        // discard if it already occurs in the bufer
+        //for (int i = 0; i < _brushQueueSize; i++) {
+        //    if (glm::all(glm::epsilonEqual(px, _brushCoordQueue[i].coord, glm::vec2(0.0001f)))) {
+        //        return;
+        //    }
+        //}
+        // discard if out of bounds
         if (px.x > 1.0f || px.x < 0 || px.y > 1.0f || px.y < 0) {
             return;
         }
+        
         // add brushstroke
         _brushCoordQueue[_brushQueueSize].coord = px;
         _brushCoordQueue[_brushQueueSize].pressure = pressure;
+        _brushCoordQueue[_brushQueueSize].active = 1.0f;
         _brushQueueSize++;
     }
     else {

@@ -124,9 +124,9 @@ void SimulationManager::init(SimSettings settings)
     _evaluationType = settings.evalType;
     _evaluationDispatcher.setup(_evaluationType, _canvasResolution.x, _canvasResolution.y);
 
-    //cv::Mat testImage = cv::imread("data/keep/circle.bmp", cv::ImreadModes::IMREAD_GRAYSCALE);
-    //_evaluator->evaluate(testImage);
-    //OF_EXIT_APP(0);
+    // test
+    cv::Mat testImage = cv::imread("data/keep/validate_0.bmp", cv::ImreadModes::IMREAD_GRAYSCALE);
+    _evaluationDispatcher.queue(testImage, 0, 0, false);
 
     _settings = settings;
     bInitialized = true;
@@ -353,15 +353,8 @@ void SimulationManager::update()
             _evaluationDispatcher.queue(_artifactMat, instance->getGeneration(), instance->getID());
 
             if (bSaveArtifactsToDisk) {
-                bool bSave = true;
-                AestheticEvaluator* evalPtr = dynamic_cast<AestheticEvaluator*>(_evaluator.get());
-                if (evalPtr != nullptr) {
-                    bSave = evalPtr->getLatestCoverageScore() > 0.0;
-                }
-                if (bSave) {
-                    std::string path = _simDir + '/' + NTRS_ARTIFACTS_PREFIX + ofToString(instance->getGeneration()) + '_' + ofToString(instance->getID());
-                    _imageSaver.save(instance->getCanvas()->getCanvasFbo()->getTexture(), path);
-                }
+                std::string path = _simDir + '/' + NTRS_ARTIFACTS_PREFIX + ofToString(instance->getGeneration()) + '_' + ofToString(instance->getID());
+                _imageSaver.save(instance->getCanvas()->getCanvasFbo()->getTexture(), path);
             }
             _networkManager.send(OSC_END_ROLLOUT + '/' + ofToString(instance->getID()));
 
@@ -623,7 +616,7 @@ bool SimulationManager::loadGenomeFromDisk(std::string filename)
         _previewCreature->addToWorld();
 
         char label[256];
-        sprintf_s(label, "Loaded genome '%s' with a total of% d node(s), % d joint(s), % d end(s), % d brush(es), % d output(s) in %d attempt(s)", filename.c_str(),
+        sprintf_s(label, "Loaded genome '%s' with a total of% d node(s), % d joint(s), % d end(s), % d brush(es), % d output(s)", filename.c_str(),
             _selectedGenome->getNumNodesUnfolded(),
             _selectedGenome->getNumJointsUnfolded(),
             _selectedGenome->getNumEndNodesUnfolded(),

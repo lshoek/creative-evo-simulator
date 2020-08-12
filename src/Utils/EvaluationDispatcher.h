@@ -15,7 +15,7 @@ public:
     ~EvaluationDispatcher();
 
     void setup(EvaluationType type, uint32_t width, uint32_t height);
-    void queue(cv::Mat image, int generation, int id);
+    void queue(cv::Mat image, int generation, int id, bool report = true);
     void queueResponse();
 
 private:
@@ -33,6 +33,7 @@ private:
         double fitness = -1.0;
         int generation;
         int id;
+        int report = 1;
         int response = 0;
     };
     ofThreadChannel<ArtifactEntry> _evalQueue;

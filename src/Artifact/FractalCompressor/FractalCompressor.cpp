@@ -7,15 +7,15 @@
 #pragma once
 #include <stdio.h>
 
-#include "ofxFractalCompression.h"
-#include "FractalCompressionCommon.h"
+#include "FractalCompressor.h"
+#include "FractalCompressorCommon.h"
 
-void ofxFractalCompression::setup(int blockSize)
+void FractalCompressor::setup(int blockSize)
 {
 	m_blockSize = blockSize;
 }
 
-bool ofxFractalCompression::allocate(cv::Mat im)
+bool FractalCompressor::allocate(cv::Mat im)
 {
 	if (m_bMemoryAllocated) {
 		dealloc();
@@ -43,7 +43,7 @@ bool ofxFractalCompression::allocate(cv::Mat im)
 	else return false;
 }
 
-void ofxFractalCompression::encode()
+void FractalCompressor::encode()
 {
 	int** block_temp = (int**)IntAlloc2(m_blockSize, m_blockSize);
 
@@ -63,7 +63,7 @@ void ofxFractalCompression::encode()
 	IntFree2(block_temp, m_blockSize, m_blockSize);
 }
 
-void ofxFractalCompression::decode(int depth)
+void FractalCompressor::decode(int depth)
 {
 	for (int i = 0; i < depth; i++) {
 		Decoding(m_imageEncoding, m_decodedImageData, m_imageWidth, m_imageHeight, m_blockSize, m_blockSize);
@@ -75,7 +75,7 @@ void ofxFractalCompression::decode(int depth)
 	}
 }
 
-void ofxFractalCompression::decodeFromFile(int depth)
+void FractalCompressor::decodeFromFile(int depth)
 {
 	EncodingResult** en_result = ERAlloc2(m_imageWidth / m_blockSize, m_imageHeight / m_blockSize);
 	ReadParameter("data/keep/encoding.txt", en_result, m_imageWidth / m_blockSize, m_imageHeight / m_blockSize);
@@ -89,7 +89,7 @@ void ofxFractalCompression::decodeFromFile(int depth)
 	}
 }
 
-EncodingResult ofxFractalCompression::TemplateMatchingWithDownSamplingPlusShuffle_StructEncoding(int** block, int bx, int by, int** image, int width, int height, double alpha)
+EncodingResult FractalCompressor::TemplateMatchingWithDownSamplingPlusShuffle_StructEncoding(int** block, int bx, int by, int** image, int width, int height, double alpha)
 {
 	EncodingResult struct_Tmp;
 	int error_min = INT_MAX;
@@ -137,7 +137,7 @@ EncodingResult ofxFractalCompression::TemplateMatchingWithDownSamplingPlusShuffl
 	return struct_Tmp;
 }
 
-void ofxFractalCompression::Decoding(EncodingResult** en_Result, int** image_dec, int width, int height, int size_x, int size_y)
+void FractalCompressor::Decoding(EncodingResult** en_Result, int** image_dec, int width, int height, int size_x, int size_y)
 {
 	int** block = IntAlloc2(size_x * 2, size_y * 2);
 	int** block_contract_tmp = IntAlloc2(size_x, size_y);
@@ -164,7 +164,7 @@ void ofxFractalCompression::Decoding(EncodingResult** en_Result, int** image_dec
 	IntFree2(image_dec_tmp, width, height);
 }
 
-void ofxFractalCompression::printEncodingResult(EncodingResult** en_result, int block_x, int block_y)
+void FractalCompressor::printEncodingResult(EncodingResult** en_result, int block_x, int block_y)
 {
 	int i = block_x;
 	int j = block_y;
@@ -180,37 +180,37 @@ void ofxFractalCompression::printEncodingResult(EncodingResult** en_result, int 
 	);
 }
 
-const EncodingResult* ofxFractalCompression::getEncodingResultPtr() const
+const EncodingResult* FractalCompressor::getEncodingResultPtr() const
 {
 	return &m_imageEncoding[0][0];
 }
 
-int ofxFractalCompression::getNumBlocks()
+int FractalCompressor::getNumBlocks()
 {
 	return m_numBlocks;
 }
 
-size_t ofxFractalCompression::getEncodingBytes()
+size_t FractalCompressor::getEncodingBytes()
 {
 	return m_encodingBytes;
 }
 
-cv::Mat ofxFractalCompression::getDecodedImage()
+cv::Mat FractalCompressor::getDecodedImage()
 {
 	return ConvertToMat(m_decodedImageData, m_imageWidth, m_imageHeight);
 }
 
-void ofxFractalCompression::setLog(bool enable) {
+void FractalCompressor::setLog(bool enable) {
 	m_bLog = enable;
 }
-void ofxFractalCompression::setWriteEncodingToDisk(bool enable) {
+void FractalCompressor::setWriteEncodingToDisk(bool enable) {
 	m_bEncToDisk = enable;
 }
-void ofxFractalCompression::setWriteImageToDisk(bool enable) {
+void FractalCompressor::setWriteImageToDisk(bool enable) {
 	m_bImageToDisk = enable;
 }
 
-void ofxFractalCompression::dealloc()
+void FractalCompressor::dealloc()
 {
 	if (m_bMemoryAllocated) {
 		ERFree2(m_imageEncoding, m_imageWidth / m_numBlocks, m_imageHeight / m_numBlocks);

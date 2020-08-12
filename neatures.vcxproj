@@ -234,8 +234,10 @@
     <ClCompile Include="libs\lz4\lz4hc.c" />
     <ClCompile Include="libs\lz4\xxhash.c" />
     <ClCompile Include="src\Artifact\AestheticEvaluator.cpp" />
-    <ClCompile Include="src\Artifact\ofxFractalCompression\ofxFractalCompression.cpp" />
+    <ClCompile Include="src\Artifact\FractalCompressor\FractalCompressor.cpp" />
     <ClCompile Include="src\Artifact\OrderlyCoverageEvaluator.cpp" />
+    <ClCompile Include="src\Artifact\QuadtreeCompressor\main.cpp" />
+    <ClCompile Include="src\Artifact\QuadtreeCompressor\qtree.cpp" />
     <ClCompile Include="src\Genome\DirectedGraph.cpp" />
     <ClCompile Include="src\Genome\DirectedGraphConnection.cpp" />
     <ClCompile Include="src\Genome\DirectedGraphNode.cpp" />
@@ -314,10 +316,11 @@
     <ClInclude Include="src\Artifact\AestheticEvaluator.h" />
     <ClInclude Include="src\Artifact\EvaluationType.h" />
     <ClInclude Include="src\Artifact\EvaluatorBase.h" />
-    <ClInclude Include="src\Artifact\ofxFractalCompression\EncodingResult.h" />
-    <ClInclude Include="src\Artifact\ofxFractalCompression\FractalCompressionCommon.h" />
-    <ClInclude Include="src\Artifact\ofxFractalCompression\ofxFractalCompression.h" />
+    <ClInclude Include="src\Artifact\FractalCompressor\EncodingResult.h" />
+    <ClInclude Include="src\Artifact\FractalCompressor\FractalCompressor.h" />
+    <ClInclude Include="src\Artifact\FractalCompressor\FractalCompressorCommon.h" />
     <ClInclude Include="src\Artifact\OrderlyCoverageEvaluator.h" />
+    <ClInclude Include="src\Artifact\QuadtreeCompressor\qtree.hpp" />
     <ClInclude Include="src\Artifact\SimpleEvaluators.h" />
     <ClInclude Include="src\Genome\DirectedGraph.h" />
     <ClInclude Include="src\Genome\DirectedGraphConnection.h" />

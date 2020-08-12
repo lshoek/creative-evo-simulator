@@ -61,8 +61,11 @@
     <Filter Include="src\Artifact">
       <UniqueIdentifier>{c34ec47b-7d55-41ad-bb4b-604d185bcfc4}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\Artifact\ofxFractalCompression">
+    <Filter Include="src\Artifact\FractalCompressor">
       <UniqueIdentifier>{7fcafd08-451d-405f-8446-9af8ac2ac346}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\Artifact\QuadTreeCompressor">
+      <UniqueIdentifier>{760ca42e-c2cd-46ff-b54e-26510e587b5a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -237,9 +240,6 @@
     <ClCompile Include="src\Simulator\SimInstance.cpp">
       <Filter>src\Simulator</Filter>
     </ClCompile>
-    <ClCompile Include="src\Artifact\ofxFractalCompression\ofxFractalCompression.cpp">
-      <Filter>src\Artifact\ofxFractalCompression</Filter>
-    </ClCompile>
     <ClCompile Include="src\Artifact\AestheticEvaluator.cpp">
       <Filter>src\Artifact</Filter>
     </ClCompile>
@@ -248,6 +248,15 @@
     </ClCompile>
     <ClCompile Include="src\Artifact\OrderlyCoverageEvaluator.cpp">
       <Filter>src\Artifact</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Artifact\FractalCompressor\FractalCompressor.cpp">
+      <Filter>src\Artifact\FractalCompressor</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Artifact\QuadtreeCompressor\qtree.cpp">
+      <Filter>src\Artifact\QuadTreeCompressor</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Artifact\QuadtreeCompressor\main.cpp">
+      <Filter>src\Artifact\QuadTreeCompressor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -494,15 +503,6 @@
     <ClInclude Include="src\Utils\FixedQueue.h">
       <Filter>src\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="src\Artifact\ofxFractalCompression\ofxFractalCompression.h">
-      <Filter>src\Artifact\ofxFractalCompression</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Artifact\ofxFractalCompression\EncodingResult.h">
-      <Filter>src\Artifact\ofxFractalCompression</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Artifact\ofxFractalCompression\FractalCompressionCommon.h">
-      <Filter>src\Artifact\ofxFractalCompression</Filter>
-    </ClInclude>
     <ClInclude Include="src\Artifact\EvaluatorBase.h">
       <Filter>src\Artifact</Filter>
     </ClInclude>
@@ -520,6 +520,18 @@
     </ClInclude>
     <ClInclude Include="src\Artifact\OrderlyCoverageEvaluator.h">
       <Filter>src\Artifact</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Artifact\FractalCompressor\FractalCompressor.h">
+      <Filter>src\Artifact\FractalCompressor</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Artifact\FractalCompressor\FractalCompressorCommon.h">
+      <Filter>src\Artifact\FractalCompressor</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Artifact\FractalCompressor\EncodingResult.h">
+      <Filter>src\Artifact\FractalCompressor</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Artifact\QuadtreeCompressor\qtree.hpp">
+      <Filter>src\Artifact\QuadTreeCompressor</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
