@@ -243,9 +243,6 @@
     <ClCompile Include="src\Artifact\AestheticEvaluator.cpp">
       <Filter>src\Artifact</Filter>
     </ClCompile>
-    <ClCompile Include="src\Utils\EvaluationDispatcher.cpp">
-      <Filter>src\Utils</Filter>
-    </ClCompile>
     <ClCompile Include="src\Artifact\OrderlyCoverageEvaluator.cpp">
       <Filter>src\Artifact</Filter>
     </ClCompile>
@@ -257,6 +254,9 @@
     </ClCompile>
     <ClCompile Include="src\Artifact\QuadtreeCompressor\main.cpp">
       <Filter>src\Artifact\QuadTreeCompressor</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Utils\EvaluationDispatcher.cpp">
+      <Filter>src\Artifact</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -512,9 +512,6 @@
     <ClInclude Include="src\Artifact\SimpleEvaluators.h">
       <Filter>src\Artifact</Filter>
     </ClInclude>
-    <ClInclude Include="src\Utils\EvaluationDispatcher.h">
-      <Filter>src\Utils</Filter>
-    </ClInclude>
     <ClInclude Include="src\Artifact\EvaluationType.h">
       <Filter>src\Artifact</Filter>
     </ClInclude>
@@ -532,6 +529,9 @@
     </ClInclude>
     <ClInclude Include="src\Artifact\QuadtreeCompressor\qtree.hpp">
       <Filter>src\Artifact\QuadTreeCompressor</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Utils\EvaluationDispatcher.h">
+      <Filter>src\Artifact</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
