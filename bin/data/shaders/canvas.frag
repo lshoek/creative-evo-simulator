@@ -1,7 +1,7 @@
 #version 450
 
 #define inv(x) 1.0-x
-#define BRUSH_COORD_BUF_MAXSIZE 32
+#define BRUSH_COORD_BUF_MAXSIZE 16
 
 struct BrushCoord {
 	vec2 coord;

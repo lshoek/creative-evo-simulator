@@ -126,8 +126,8 @@ void SimulationManager::init(SimSettings settings)
     _evaluationDispatcher.setup(_evaluationType, _canvasResolution.x, _canvasResolution.y);
 
     // test
-    cv::Mat testImage = cv::imread("data/keep/validate_0.bmp", cv::ImreadModes::IMREAD_GRAYSCALE);
-    _evaluationDispatcher.queue(testImage, 0, 0, false);
+    //cv::Mat testImage = cv::imread("data/keep/validate_0.bmp", cv::ImreadModes::IMREAD_GRAYSCALE);
+    //_evaluationDispatcher.queue(testImage, 0, 0, false);
 
     _settings = settings;
     bInitialized = true;
@@ -400,20 +400,23 @@ void SimulationManager::updateSimInstance(SimInstance* instance, double timeStep
 {
     instance->updateTimeStep(timeStep);
 
+    bool bEffectorsQueued = false;
     if (instance->isEffectorUpdateRequired()) {
-        bool bEffectorsQueued =
+        bEffectorsQueued =
             _networkManager.isAgentOutputQueued() &&
             _networkManager.getQueuedAgentId() == instance->getID();
 
         if (bEffectorsQueued) {
             // update effectors
             instance->getCreature()->updateOutputs(_networkManager.popOutputBuffer());
-            instance->update();
-
-            // send new observation
-            instance->getCanvas()->updateConvPixelBuffer();
-            _networkManager.sendState(instance);
+            instance->updateCreature();
         }
+    }
+    instance->updateCanvas();
+
+    if (bEffectorsQueued) {
+        // send new observation
+        _networkManager.sendState(instance);
     }
 }
 
@@ -466,6 +469,17 @@ void SimulationManager::draw()
 
             for (const auto& instance : _simulationInstances)
                 instance->getCreature()->draw();
+
+            // TESTCODE
+            glDisable(GL_DEPTH_TEST);
+            ofSetHexColor(0xff0000);
+            for (const auto& instance : _simulationInstances) {
+                glm::vec3 pos = SimUtils::bulletToGlm(instance->getCreature()->getCenterOfMassPosition());
+                glm::vec3 dir = -SimUtils::bulletToGlm(btTransform(instance->getCreature()->getRootNodeRotation()) * btVector3(1, 0, 0));
+                ofDrawArrow(pos, pos + 2.0*dir);
+            }
+            ofSetHexColor(0xffffff);
+            glEnable(GL_DEPTH_TEST);
 
             glDisable(GL_CULL_FACE);
         }

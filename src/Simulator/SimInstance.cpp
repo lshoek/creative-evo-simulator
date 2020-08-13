@@ -22,10 +22,16 @@ void SimInstance::updateTimeStep(double timeStep)
 	}
 }
 
-void SimInstance::update() 
+void SimInstance::updateCreature()
 {
 	_creature->update();
+}
+
+void SimInstance::updateCanvas() 
+{
+	_canvas->setLocalVisionRotation(_creature->getRootNodeRotation());
 	_canvas->update();
+	_canvas->updateConvPixelBuffer();
 }
 
 void SimInstance::terminate()

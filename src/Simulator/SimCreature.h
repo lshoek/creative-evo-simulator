@@ -52,6 +52,7 @@ public:
 
 	btVector3 getSpawnPosition() const;
 	btVector3 getCenterOfMassPosition() const;
+	btQuaternion getRootNodeRotation() const;
 
 	void clearForces();
 
@@ -84,6 +85,8 @@ private:
 	std::vector<SimNode*> m_brushNodes;
 	std::vector<btTypedConstraint*> m_joints;
 
+	SimNode* m_rootNode;
+
 	std::shared_ptr<ofShader> m_shader;
 	std::shared_ptr<ofTexture> m_texture;
 	std::shared_ptr<ofMaterial> m_material;
@@ -110,13 +113,6 @@ private:
 
 	bool m_bAwaitingEffectorUpdate = false;
 	bool m_bHasBrush = false;
-
-	btScalar gRootBodyRadius = 0.25f;
-	btScalar gRootBodyHeight = 0.1f;
-	btScalar gLegRadius = 0.1f;
-	btScalar gLegLength = 0.45f;
-	btScalar gForeLegLength = 0.75f;
-	btScalar gForeLegRadius = 0.08f;
 
 	ofColor m_bodyColor;
 

@@ -21,6 +21,7 @@ public:
 	virtual void removeFromWorld() override;
 
 	void addBrushStroke(btVector3 location, float pressure);
+	void setLocalVisionRotation(btQuaternion rotation);
 
 	glm::ivec2 getCanvasResolution();
 
@@ -45,10 +46,6 @@ private:
 			return sizeof(glm::vec2) + 2*sizeof(float);
 		}
 	};
-	//static void deleteSampler(GLuint* sampler) {
-	//	glDeleteSamplers(1, sampler);
-	//}
-	//std::unique_ptr<GLuint, decltype(&deleteSampler)> samplerId{ new GLuint, &deleteSampler };
 
 	void initPlane(btVector3 position, float size);
 	void swapPbo();
@@ -69,6 +66,8 @@ private:
 	unsigned int _brushQueueSize = 0;
 
 	BrushCoord _cachedBrushCoord;
+	btQuaternion _cachedLocalVisionRotation = btQuaternion::getIdentity();
+	glm::vec4 _localVisionRotationMatrix = glm::vec4();
 
 	// render buffers
 	ofFbo _convFbo;

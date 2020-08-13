@@ -190,6 +190,7 @@ void SimCreature::dfs(
 		simNodePtr->setRigidBody(body);
 		simNodePtr->setMesh(std::make_shared<ofMesh>(ofMesh::box(boxSize.x(), boxSize.y(), boxSize.z())));
 
+		m_rootNode = simNodePtr;
 		m_nodes[segmentIndex] = simNodePtr;
 		m_bodies[segmentIndex] = body;
 		m_bodyTouchSensorIndexMap.insert(btHashPtr(body), segmentIndex);
@@ -431,6 +432,11 @@ btVector3 SimCreature::getCenterOfMassPosition() const
 	}
 	finalPosition /= m_numBodies;
 	return finalPosition;
+}
+
+btQuaternion SimCreature::getRootNodeRotation() const
+{
+	return m_rootNode->getTransform().getRotation();
 }
 
 void SimCreature::clearForces()

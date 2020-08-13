@@ -7,7 +7,7 @@
 
 // Maximum number of contactpoints registered and applied to canvas per frame.
 // This number should be synced with BRUSH_COORD_BUF_MAXSIZE in canvas.frag.
-#define BRUSH_COORD_BUF_MAXSIZE 32
+#define BRUSH_COORD_BUF_MAXSIZE 16
 
 SimCanvasNode::SimCanvasNode(btVector3 position, float size, float extraBounds, int xRes, int yRes, int xConvRes, int yConvRes, bool bLocalVisionMode, bool bDownSample, btDynamicsWorld* ownerWorld) :
     SimNodeBase(CanvasTag, ownerWorld), _canvasSize(size), _margin(extraBounds)
@@ -27,7 +27,14 @@ SimCanvasNode::SimCanvasNode(btVector3 position, float size, float extraBounds, 
     // Single-channel canvas 'height map'
     for (int i = 0; i < 2; i++) {
         _fbo[i].allocate(_canvasRes.x, _canvasRes.y, GL_R8);
+        _fbo[i].getTexture().setTextureWrap(GL_CLAMP_TO_BORDER, GL_CLAMP_TO_BORDER);
+
+        _fbo[i].getTexture().bind();
+        ofFloatColor color(0.0f, 0.0f, 0.0f, 0.0f);
+        glTexParameterfv(GL_TEXTURE_RECTANGLE, GL_TEXTURE_BORDER_COLOR, &color.r);
+        _fbo[i].getTexture().unbind();
     }
+
     // Reduced resolution neural input buffer
     ofFboSettings fboSettings;
     fboSettings.width = _canvasConvRes.x;
@@ -35,21 +42,8 @@ SimCanvasNode::SimCanvasNode(btVector3 position, float size, float extraBounds, 
     fboSettings.internalformat = GL_R8;
     fboSettings.minFilter = GL_NEAREST;
     fboSettings.maxFilter = GL_NEAREST;
-    //fboSettings.wrapModeHorizontal = GL_CLAMP_TO_EDGE;
-    //fboSettings.wrapModeVertical = GL_CLAMP_TO_EDGE;
+
     _convFbo.allocate(fboSettings);
-
-    //glGenSamplers(1, samplerId.get());
-    //glSamplerParameteri(*samplerId, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    //glSamplerParameteri(*samplerId, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    //glSamplerParameteri(*samplerId, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    //glSamplerParameteri(*samplerId, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-    //glSamplerParameteri(*samplerId, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
-    //glSamplerParameteri(*samplerId, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-
-    //float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    //glSamplerParameterfv(*samplerId, GL_TEXTURE_BORDER_COLOR, borderColor);
-
     _convLocalFbo.allocate(fboSettings);
 
     // Canvas color and alpha separated
@@ -117,7 +111,18 @@ void SimCanvasNode::update()
         _brushCoordBuffer.unbindBase(GL_SHADER_STORAGE_BUFFER, 0);
 
         // copy the last brush coord to local vision cache
-        _cachedBrushCoord = _brushCoordQueue[_brushQueueSize-1];
+        if (_cachedBrushCoord.coord != _brushCoordQueue[_brushQueueSize - 1].coord) {
+            _cachedBrushCoord = _brushCoordQueue[_brushQueueSize - 1];
+        }
+
+        btScalar z, y, x;
+        _cachedLocalVisionRotation.getEulerZYX(z, y, x);
+
+        float theta = -y;
+        _localVisionRotationMatrix = glm::vec4(
+            cos(theta), -sin(theta),
+            sin(theta), cos(theta)
+        );
     }
 
     // This is just for visualization so completely optional and can be skipped in headless mode
@@ -151,6 +156,7 @@ void SimCanvasNode::updateConvPixelBuffer()
         _subTextureShader->setUniformTexture("tex", _fbo[iFbo].getTexture(), 0);
         _subTextureShader->setUniform2f("patchLocation", _cachedBrushCoord.coord);
         _subTextureShader->setUniform1f("patchSize", _canvasConvRes.x/float(_canvasRes.x));
+        _subTextureShader->setUniform4f("patchRotationMatrix", _localVisionRotationMatrix);
         _drawQuadConv.draw();
         _subTextureShader->end();
         _convLocalFbo.end();
@@ -244,6 +250,11 @@ void SimCanvasNode::addBrushStroke(btVector3 location, float pressure)
     else {
         ofLog() << "Warning: Brush queue full.";
     }
+}
+
+void SimCanvasNode::setLocalVisionRotation(btQuaternion rotationMatrix)
+{
+    _cachedLocalVisionRotation = rotationMatrix;
 }
 
 void SimCanvasNode::swapPbo()

@@ -9,7 +9,8 @@ public:
     ~SimInstance();
 
     void updateTimeStep(double timeStep);
-    void update();
+    void updateCanvas();
+    void updateCreature();
     void terminate();
 
     bool isEffectorUpdateRequired();
