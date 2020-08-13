@@ -10,7 +10,7 @@ public:
 		_maxReward = width * height * 255.0;
 	};
 
-	virtual double evaluate(cv::Mat im) override 
+	virtual std::vector<double> evaluate(cv::Mat im) override
 	{
 		double total = cv::sum(im)[0];
 		double fitness = total / _maxReward;
@@ -19,7 +19,10 @@ public:
 		sprintf(msg, "Artifact Evaluation Report:\nfitness: %f\n", fitness);
 		ofLog() << msg;
 
-		return fitness;
+		std::vector<double> results(1);
+		results[0] = fitness;
+
+		return results;
 	};
 private:
 	double _maxReward = 255.0;
@@ -46,7 +49,7 @@ public:
 		_cvDebugImage.setFromPixels(_maskMat.ptr<uchar>(), _maskMat.rows, _maskMat.cols);
 	};
 
-	virtual double evaluate(cv::Mat im) override 
+	virtual std::vector<double> evaluate(cv::Mat im) override
 	{
 		cv::bitwise_and(im, _maskMat, _rewardMat);
 		cv::bitwise_and(im, _invMaskMat, _penaltyMat);
@@ -59,7 +62,10 @@ public:
 		double fitness = total / _maxReward;
 		_cvDebugImage.setFromPixels(_rewardMat.ptr<uchar>(), im.cols, im.rows);
 
-		return fitness;
+		std::vector<double> results(1);
+		results[0] = fitness;
+
+		return results;
 	};
 
 private:
@@ -90,7 +96,7 @@ public:
 		_cvDebugImage.setFromPixels(_maskMat.ptr<uchar>(), _maskMat.rows, _maskMat.cols);
 	};
 
-	virtual double evaluate(cv::Mat im) override 
+	virtual std::vector<double> evaluate(cv::Mat im) override
 	{
 		cv::bitwise_and(im, _invMaskMat, _rewardMat);
 		cv::bitwise_and(im, _maskMat, _penaltyMat);
@@ -103,7 +109,10 @@ public:
 		double fitness = total / _maxReward;
 		_cvDebugImage.setFromPixels(_rewardMat.ptr<uchar>(), im.cols, im.rows);
 
-		return fitness;
+		std::vector<double> results(1);
+		results[0] = fitness;
+
+		return results;
 	};
 
 private:

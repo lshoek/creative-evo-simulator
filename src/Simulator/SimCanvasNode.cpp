@@ -2,7 +2,8 @@
 #include "Simulator/SimDefines.h"
 #include "Utils/SimUtils.h"
 #include "Utils/MeshUtils.h"
-#include "Utils/toolbox.h"
+#include "Utils/OFUtils.h"
+#include "ofMaterial.h"
 
 // Maximum number of contactpoints registered and applied to canvas per frame.
 // This number should be synced with BRUSH_COORD_BUF_MAXSIZE in canvas.frag.
@@ -94,14 +95,14 @@ void SimCanvasNode::update()
         _brushCoordBuffer.updateData(0, _brushCoordQueue);
 
         // update shader
-        iFbo = tb::swap(iFbo);
+        iFbo = OFUtils::swap(iFbo);
 
         glEnable(GL_BLEND);
         glBlendEquation(GL_MAX);
         glBlendFunc(GL_ONE, GL_ONE);
         _fbo[iFbo].begin();
 
-        _fbo[tb::swap(iFbo)].draw(0, 0);
+        _fbo[OFUtils::swap(iFbo)].draw(0, 0);
 
         _updateShader->begin();
         _updateShader->setUniform1i("brush_coords_bufsize", _brushQueueSize);

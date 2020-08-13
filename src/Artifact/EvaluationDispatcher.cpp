@@ -1,4 +1,4 @@
-#include "Utils/EvaluationDispatcher.h"
+#include "Artifact/EvaluationDispatcher.h"
 #include "Simulator/SimDefines.h"
 
 EvaluationDispatcher::EvaluationDispatcher() { }
@@ -42,8 +42,8 @@ void EvaluationDispatcher::threadedFunction()
 	ArtifactEntry entry;
 	while (_evalQueue.receive(entry)) {
 		if (entry.response != 1) {
-			double fitness = _evaluator->evaluate(entry.image);
-			entry.fitness = fitness;
+			std::vector<double> results = _evaluator->evaluate(entry.image);
+			entry.results = results;
 		}
 		_updateQueue.send(entry);
 	}
@@ -54,9 +54,9 @@ void EvaluationDispatcher::update(ofEventArgs& a)
 	ArtifactEntry entry;
 	if (_updateQueue.tryReceive(entry)) {
 		if (entry.response != 1) {
-			ofLog() << "Finished evaluating " << entry.generation << ":" << entry.id << "  f:" << entry.fitness;
+			ofLog() << "Finished evaluating " << entry.generation << ":" << entry.id << "  f:" << entry.results[0];
 			if (entry.report) {
-				_fitnessQueue.push_back(entry.fitness);
+				_fitnessQueue.push_back(entry.results);
 			}
 		}
 		else {

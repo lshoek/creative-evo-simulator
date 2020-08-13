@@ -9,7 +9,7 @@
 class EvaluationDispatcher : public ofThread 
 {
 public:
-    ofEvent<const std::vector<double>&> onFitnessResponseReady;
+    ofEvent<const std::vector<std::vector<double>>&> onFitnessResponseReady;
 
     EvaluationDispatcher();
     ~EvaluationDispatcher();
@@ -30,7 +30,7 @@ private:
         ArtifactEntry(cv::Mat im) : image(im) {}
 
         cv::Mat image;
-        double fitness = -1.0;
+        std::vector<double> results;
         int generation = 0;
         int id = 0;
         int report = 1;
@@ -39,6 +39,6 @@ private:
     ofThreadChannel<ArtifactEntry> _evalQueue;
     ofThreadChannel<ArtifactEntry> _updateQueue;
 
-    std::vector<double> _fitnessQueue;
+    std::vector<std::vector<double>> _fitnessQueue;
     bool bSetup = false;
 };

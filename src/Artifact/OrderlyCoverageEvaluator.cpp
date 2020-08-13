@@ -7,7 +7,7 @@ void OrderlyCoverageEvaluator::setup(uint32_t width, uint32_t height)
 	_maxCoverageReward = width * height * 255.0;
 }
 
-double OrderlyCoverageEvaluator::evaluate(cv::Mat im)
+std::vector<double> OrderlyCoverageEvaluator::evaluate(cv::Mat im)
 {
 	if (im.elemSize() != 1) {
 		ofLog() << "[Evaluator] Warning: elemSize of im is not equal to 1.";
@@ -60,7 +60,10 @@ double OrderlyCoverageEvaluator::evaluate(cv::Mat im)
 	ofLog() << "numPixels: " << numPixels << " , numNodes: " << numNodes;
 	ofLog() << "ic: " << imageComplexity << " , pc: " << processingComplexity << " , f: " << fitness;
 
-	return fitness;
+	std::vector<double> result(1);
+	result[0] = fitness;
+
+	return result;
 }
 
 double OrderlyCoverageEvaluator::coverageFunc(double coverage)

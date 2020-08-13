@@ -7,7 +7,7 @@ class AestheticEvaluator : public EvaluatorBase
 {
 public:
 	virtual void setup(uint32_t width, uint32_t height) override;
-	virtual double evaluate(cv::Mat im) override;
+	virtual std::vector<double> evaluate(cv::Mat im) override;
 
 	void setDecodingDepth(int depth);
 
@@ -18,10 +18,22 @@ private:
 
 	FractalCompressor _compressor;
 
-	int _decodingDepth = 4;
-	int _decodingLevelDiff = 2;
-	double _maxCoverage;
+	cv::Size _processingSize = cv::Size(128, 128);
 
-	double pc0LowerBound = 1.0;
-	double pc1Lowerbound = 1.0;
+	int _pcBlockSize = 8;
+	int _decodingDepth = 4;
+	int _decodingLevelDiff = 1;
+
+	double _peakCoverage = 0.125;
+
+	// Aesthetic Fitness Terms (Normal: _a=1.0; High Complexity: _a=1.5)
+	double _a = 1.0;	// (a > 1.0 grants a lot of extra fitness for higher IC)
+	double _b = 0.4;	// 0.4 
+	double _c = 0.2;	// 0.2
+
+	double _pcLowerBound = 1.0;
+	double _fitnessMult = 1000.0;
+
+	bool _bWriteToDisk = true;
+	bool _bWriteEncodingToDisk = false;
 };

@@ -1,7 +1,8 @@
 #include "Simulator/SimulationManager.h"
 #include "Utils/SimUtils.h"
 #include "Utils/MathUtils.h"
-#include "Utils/toolbox.h"
+#include "Utils/VectorUtils.h"
+#include "Utils/OFUtils.h"
 #include "Genome/DirectedGraph.h"
 #include "Simulator/SimDefines.h"
 #include "Networking/OscProtocol.h"
@@ -125,8 +126,8 @@ void SimulationManager::init(SimSettings settings)
     _evaluationDispatcher.setup(_evaluationType, _canvasResolution.x, _canvasResolution.y);
 
     // test
-    //cv::Mat testImage = cv::imread("data/keep/validate_0.bmp", cv::ImreadModes::IMREAD_GRAYSCALE);
-    //_evaluationDispatcher.queue(testImage, 0, 0, false);
+    cv::Mat testImage = cv::imread("data/keep/validate_0.bmp", cv::ImreadModes::IMREAD_GRAYSCALE);
+    _evaluationDispatcher.queue(testImage, 0, 0, false);
 
     _settings = settings;
     bInitialized = true;
@@ -177,8 +178,11 @@ void SimulationManager::startSimulation()
         _fitnessRequestReceivedListener = _networkManager.onFitnessRequestReceived.newListener([this] {
             _evaluationDispatcher.queueResponse();
         });
-        _fitnessResponseReadyListener = _evaluationDispatcher.onFitnessResponseReady.newListener([this](const std::vector<double>& fitness) {
-            _networkManager.send(OSC_FITNESS, fitness);
+        _fitnessResponseReadyListener = _evaluationDispatcher.onFitnessResponseReady.newListener([this](const std::vector<std::vector<double>>& fitness) {
+            int numEntries = fitness.size();
+            int numStats = fitness[0].size();
+            std::vector<double> flatResults = VectorUtils::flatten(fitness);
+            _networkManager.send(OSC_FITNESS + '/' + ofToString(numEntries)  + '/' + ofToString(numStats), flatResults);
         });
         _connectionClosedListener = _networkManager.onConnectionClosed.newListener([this] {
             stopSimulation();

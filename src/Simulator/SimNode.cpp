@@ -3,7 +3,7 @@
 #include "Simulator/SimDefines.h"
 #include "Utils/SimUtils.h"
 #include "Utils/MeshUtils.h"
-#include "Utils/toolbox.h"
+#include "Utils/OFUtils.h"
 
 SimNode::SimNode(int tag, btDynamicsWorld* owner) : SimNodeBase(tag, owner)
 {

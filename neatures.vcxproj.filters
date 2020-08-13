@@ -255,7 +255,7 @@
     <ClCompile Include="src\Artifact\QuadtreeCompressor\main.cpp">
       <Filter>src\Artifact\QuadTreeCompressor</Filter>
     </ClCompile>
-    <ClCompile Include="src\Utils\EvaluationDispatcher.cpp">
+    <ClCompile Include="src\Artifact\EvaluationDispatcher.cpp">
       <Filter>src\Artifact</Filter>
     </ClCompile>
   </ItemGroup>
@@ -446,9 +446,6 @@
     <ClInclude Include="src\Utils\SimUtils.h">
       <Filter>src\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="src\Utils\toolbox.h">
-      <Filter>src\Utils</Filter>
-    </ClInclude>
     <ClInclude Include="src\Networking\BufferSenderThread.h">
       <Filter>src\Networking</Filter>
     </ClInclude>
@@ -530,8 +527,14 @@
     <ClInclude Include="src\Artifact\QuadtreeCompressor\qtree.hpp">
       <Filter>src\Artifact\QuadTreeCompressor</Filter>
     </ClInclude>
-    <ClInclude Include="src\Utils\EvaluationDispatcher.h">
+    <ClInclude Include="src\Artifact\EvaluationDispatcher.h">
       <Filter>src\Artifact</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Utils\VectorUtils.h">
+      <Filter>src\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Utils\OFUtils.h">
+      <Filter>src\Utils</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

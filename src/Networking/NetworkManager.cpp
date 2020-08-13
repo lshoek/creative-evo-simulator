@@ -149,7 +149,6 @@ void NetworkManager::search()
 	if (!_repeatMessageScheduler.isThreadRunning()) {
 		_handshakeListener = _repeatMessageScheduler.tick.newListener([this] {
 			send(OSC_HELLO, "");
-			ofLog() << '.';
 		});
 		_repeatMessageScheduler.setup(1.0f);
 		_repeatMessageScheduler.startThread();

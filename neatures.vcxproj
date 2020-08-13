@@ -234,6 +234,7 @@
     <ClCompile Include="libs\lz4\lz4hc.c" />
     <ClCompile Include="libs\lz4\xxhash.c" />
     <ClCompile Include="src\Artifact\AestheticEvaluator.cpp" />
+    <ClCompile Include="src\Artifact\EvaluationDispatcher.cpp" />
     <ClCompile Include="src\Artifact\FractalCompressor\FractalCompressor.cpp" />
     <ClCompile Include="src\Artifact\OrderlyCoverageEvaluator.cpp" />
     <ClCompile Include="src\Artifact\QuadtreeCompressor\main.cpp" />
@@ -254,7 +255,6 @@
     <ClCompile Include="src\Simulator\SimNodeBase.cpp" />
     <ClCompile Include="src\Simulator\SimulationManager.cpp" />
     <ClCompile Include="src\Simulator\SimWorld.cpp" />
-    <ClCompile Include="src\Utils\EvaluationDispatcher.cpp" />
     <ClCompile Include="src\Utils\ImageSaver.cpp" />
     <ClCompile Include="src\Utils\ImageSaverThread.cpp" />
   </ItemGroup>
@@ -314,6 +314,7 @@
     <ClInclude Include="libs\lz4\lz4hc.h" />
     <ClInclude Include="libs\lz4\xxhash.h" />
     <ClInclude Include="src\Artifact\AestheticEvaluator.h" />
+    <ClInclude Include="src\Artifact\EvaluationDispatcher.h" />
     <ClInclude Include="src\Artifact\EvaluationType.h" />
     <ClInclude Include="src\Artifact\EvaluatorBase.h" />
     <ClInclude Include="src\Artifact\FractalCompressor\EncodingResult.h" />
@@ -341,7 +342,6 @@
     <ClInclude Include="src\Simulator\SimNodeBase.h" />
     <ClInclude Include="src\Simulator\SimulationManager.h" />
     <ClInclude Include="src\Simulator\SimWorld.h" />
-    <ClInclude Include="src\Utils\EvaluationDispatcher.h" />
     <ClInclude Include="src\Utils\FixedQueue.h" />
     <ClInclude Include="src\Utils\ImageSaver.h" />
     <ClInclude Include="src\Utils\ImageSaverThread.h" />
@@ -349,7 +349,8 @@
     <ClInclude Include="src\Utils\MeshUtils.h" />
     <ClInclude Include="src\Utils\Scheduler.h" />
     <ClInclude Include="src\Utils\SimUtils.h" />
-    <ClInclude Include="src\Utils\toolbox.h" />
+    <ClInclude Include="src\Utils\OFUtils.h" />
+    <ClInclude Include="src\Utils\VectorUtils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ProjectExtensions>

@@ -1,21 +1,11 @@
 #pragma once
-#include "ofMain.h"
+#include "ofVectorMath.h"
+#include "ofEvent.h"
+#include "ofLog.h"
 
-class tb 
+class OFUtils
 {
 public:
-	struct bounds
-	{
-		bounds() { min = 0; max = 1.0f; };
-		bounds(float minimum, float maximum)
-		{
-			min = minimum;
-			max = maximum;
-		}
-		float min;
-		float max;
-	};
-
 	static float inv(float v)
 	{
 		return 1.0f - v;

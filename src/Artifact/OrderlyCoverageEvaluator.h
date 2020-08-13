@@ -7,7 +7,7 @@ class OrderlyCoverageEvaluator : public EvaluatorBase
 {
 public:
 	virtual void setup(uint32_t width, uint32_t height) override;
-	virtual double evaluate(cv::Mat im) override;
+	virtual std::vector<double> evaluate(cv::Mat im) override;
 
 	double getLatestCoverageScore();
 	void setDecodingDepth(int depth);
