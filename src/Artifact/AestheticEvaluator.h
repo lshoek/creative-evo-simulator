@@ -18,7 +18,8 @@ private:
 
 	FractalCompressor _compressor;
 
-	int _decodingDepth = 3;
+	int _decodingDepth = 4;
+	int _decodingLevelDiff = 2;
 	double _maxCoverage;
 
 	double pc0LowerBound = 1.0;

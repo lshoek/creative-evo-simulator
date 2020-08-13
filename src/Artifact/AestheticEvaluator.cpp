@@ -45,10 +45,10 @@ double AestheticEvaluator::evaluate(cv::Mat im)
 	size_t encodingSize = _compressor.getEncodingBytes();
 
 	_compressor.encode();
-	_compressor.decode(_decodingDepth - 1);
+	_compressor.decode(_decodingDepth - _decodingLevelDiff);
 	cv::Mat fractalMat_t0 = _compressor.getDecodedImage();
 
-	_compressor.decode(2); // 1
+	_compressor.decode(_decodingLevelDiff);
 	cv::Mat fractalMat_t1 = _compressor.getDecodedImage();
 
 	cv::Mat diff;
@@ -96,7 +96,9 @@ double AestheticEvaluator::evaluate(cv::Mat im)
 		double term_c = std::pow(PCdiff / PCt1, c);
 
 		double result = term_a / (term_b * term_c);
-		aestheticReward = result;
+		if (!isnan(result)) {
+			aestheticReward = result;
+		}
 	}
 	double weightedAestheticReward = aestheticReward * coverageReward;
 

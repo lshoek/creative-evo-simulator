@@ -92,7 +92,7 @@ void ofApp::stop()
 	}
 }
 
-void ofApp::update() 
+void ofApp::update()
 {
 	if (simulationManager.isInitialized()) {
 		uint64_t start = ofGetElapsedTimeMillis();
