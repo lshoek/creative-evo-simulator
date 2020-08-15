@@ -55,9 +55,7 @@ SimCanvasNode::SimCanvasNode(btVector3 position, float size, float extraBounds, 
 
     _brushCoordQueue.resize(BRUSH_COORD_BUF_MAXSIZE);
     for (int i = 0; i < BRUSH_COORD_BUF_MAXSIZE; i++) {
-        _brushCoordQueue[i].coord = glm::vec2(0);
-        _brushCoordQueue[i].pressure = -1.0f;
-        _brushCoordQueue[i].active = 0.0f;
+        _brushCoordQueue[i].reset();
     }
     _brushCoordBuffer.allocate();
     _brushCoordBuffer.setData(BrushCoord::size()*BRUSH_COORD_BUF_MAXSIZE, NULL, GL_DYNAMIC_DRAW);
@@ -141,8 +139,7 @@ void SimCanvasNode::update()
 
     // invalidate values
     for (int i = 0; i < BRUSH_COORD_BUF_MAXSIZE; i++) {
-        _brushCoordQueue[i].pressure = -1.0f;
-        _brushCoordQueue[i].active = 0.0f;
+        _brushCoordQueue[i].reset();
     }
     _brushQueueSize = 0;
 }
@@ -244,7 +241,7 @@ void SimCanvasNode::addBrushStroke(btVector3 location, float pressure)
         // add brushstroke
         _brushCoordQueue[_brushQueueSize].coord = px;
         _brushCoordQueue[_brushQueueSize].pressure = pressure;
-        _brushCoordQueue[_brushQueueSize].active = 1.0f;
+        _brushCoordQueue[_brushQueueSize].active = pressure > 0.0;
         _brushQueueSize++;
     }
     else {

@@ -42,6 +42,11 @@ private:
 		float pressure;
 		float active;
 
+		void reset() {
+			coord = glm::vec2(0);
+			pressure = -1.0f;
+			active = 0.0f;
+		}
 		static int size() {
 			return sizeof(glm::vec2) + 2*sizeof(float);
 		}

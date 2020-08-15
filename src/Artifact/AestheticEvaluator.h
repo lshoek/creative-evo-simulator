@@ -22,7 +22,7 @@ private:
 
 	int _pcBlockSize = 8;
 	int _decodingDepth = 4;
-	int _decodingLevelDiff = 1;
+	int _decodingLevelDiff = 2;
 
 	double _peakCoverage = 0.125;
 
@@ -31,7 +31,7 @@ private:
 	double _b = 0.4;	// 0.4 
 	double _c = 0.2;	// 0.2
 
-	double _pcLowerBound = 1.0;
+	double _pcLowerBound = 0.0001;
 	double _fitnessMult = 1000.0;
 
 	bool _bWriteToDisk = true;

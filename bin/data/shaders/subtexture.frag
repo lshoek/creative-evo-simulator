@@ -29,10 +29,17 @@ void main()
 	);
 
 	//vec2 patch_st = patchLocation + ((st * patchSize) * rot) - patchSize*0.5;
-	vec2 patch_st = patchLocation + st * patchSize;
-	patch_st -= patchSize*0.5;
-	patch_st *= rot;
+	
+	// center the patch and scale
+	vec2 st_scaled = st;
 
+	st_scaled -= vec2(0.5); 
+	st_scaled *= rot;
+	st_scaled *= patchSize;
+	st_scaled += patchLocation;
 
-	fragColor = texture(tex, patch_st);
+	vec2 st_patch = st_scaled;
+	//patch_st += patchLocation * patchSize;
+
+	fragColor = texture(tex, st_patch);
 }

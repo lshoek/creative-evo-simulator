@@ -60,7 +60,7 @@ std::vector<double> AestheticEvaluator::evaluate(cv::Mat im)
 	cv::pow(diffConverted, 2, se);
 
 	double rmsePCt0 = sqrt(cv::mean(se)[0]);
-	double PCt0 = glm::max(rmsePCt0, _pcLowerBound);
+	double PCt0 = glm::max(1.0/rmsePCt0, _pcLowerBound);
 
 	// PCt1
 	cv::absdiff(pcImage, fractalMat_t1, diff);
@@ -68,7 +68,7 @@ std::vector<double> AestheticEvaluator::evaluate(cv::Mat im)
 	cv::pow(diffConverted, 2, se);
 
 	double rmsePCt1 = sqrt(cv::mean(se)[0]);
-	double PCt1 = glm::max(rmsePCt1, _pcLowerBound);
+	double PCt1 = glm::max(1.0/rmsePCt1, _pcLowerBound);
 
 	// Total Fitness
 	bool bDiscard = false;
@@ -77,7 +77,7 @@ std::vector<double> AestheticEvaluator::evaluate(cv::Mat im)
 
 	double PCdiffRaw = PCt1 - PCt0;
 	if (PCt0 > PCt1) {
-		ofLog() << "DISCARDED: PCt0 > PCt1";
+		ofLog() << "DISCARDED: 1.0/rmsePCt0 > 1.0/rmsePCt1";
 		bDiscard = true;
 	}
 
