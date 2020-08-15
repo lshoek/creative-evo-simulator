@@ -13,19 +13,13 @@ std::vector<double> AestheticEvaluator::evaluate(cv::Mat im)
 	if (im.elemSize() != 1) {
 		ofLog() << "[Evaluator] Warning: elemSize of im is not equal to 1.";
 	}
-	cv::Mat procImg;
-	cv::resize(im, procImg, _processingSize);
-
-	double maxCoverage = procImg.total() * 255.0;
-	size_t rawSize = procImg.total();
-
 	cv::Mat diff;
 	cv::Mat diffConverted;
 	cv::Mat se(im.rows, im.cols, CV_64FC1);
 	cv::Mat se_jpeg(im.rows, im.cols, CV_64FC1);
 
 	// Coverage measure
-	double coverage = cv::mean(procImg)[0] / 255.0;
+	double coverage = cv::mean(im)[0] / 255.0;
 	double coverageReward = coverageFunc(coverage);
 
 
@@ -58,7 +52,7 @@ std::vector<double> AestheticEvaluator::evaluate(cv::Mat im)
 
 	cv::pow(diffConverted, 2, se_jpeg);
 	double rmseIC = sqrt(cv::mean(se_jpeg)[0]);
-	double compressionRatioIC = (double)rawSize / jpegBuffer.size();
+	double compressionRatioIC = (double)im.total() / jpegBuffer.size();
 	double IC = rmseIC / compressionRatioIC;
 
 

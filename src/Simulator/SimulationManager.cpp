@@ -126,8 +126,8 @@ void SimulationManager::init(SimSettings settings)
     _evaluationDispatcher.setup(_evaluationType, _canvasResolution.x, _canvasResolution.y);
 
     // test
-    cv::Mat testImage = cv::imread("data/keep/validate_1.bmp", cv::ImreadModes::IMREAD_GRAYSCALE);
-    _evaluationDispatcher.queue(testImage, 0, 0, false);
+    //cv::Mat testImage = cv::imread("data/keep/validate_1.bmp", cv::ImreadModes::IMREAD_GRAYSCALE);
+    //_evaluationDispatcher.queue(testImage, 0, 0, false);
 
     _settings = settings;
     bInitialized = true;
