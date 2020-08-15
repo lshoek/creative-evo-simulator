@@ -19,19 +19,48 @@ std::vector<double> AestheticEvaluator::evaluate(cv::Mat im)
 	double maxCoverage = procImg.total() * 255.0;
 	size_t rawSize = procImg.total();
 
+	cv::Mat diff;
+	cv::Mat diffConverted;
+	cv::Mat se(im.rows, im.cols, CV_64FC1);
+	cv::Mat se_jpeg(im.rows, im.cols, CV_64FC1);
+
 	// Coverage measure
 	double coverage = cv::mean(procImg)[0] / 255.0;
 	double coverageReward = coverageFunc(coverage);
 
-	// Image Complexity
 
-	cv::Mat edges, edges_abs;
-	cv::Laplacian(procImg, edges, CV_64FC1, 3);
-	cv::convertScaleAbs(edges, edges_abs);
-	
-	// The edgeRate of noise would be ~0.5, therefore IC = edgeRate*2.0
-	double edgeRate = cv::sum(edges_abs)[0]/(double)maxCoverage;
-	double IC = std::min(edgeRate, 0.5) * 2.0;
+	// Image Complexity -- JPEG Sobel method
+
+	cv::Mat grad, grad_x, grad_y;
+	cv::Mat abs_grad_x, abs_grad_y;
+
+	cv::Sobel(im, grad_x, CV_16S, 1, 0, 1);
+	cv::Sobel(im, grad_y, CV_16S, 0, 1, 1);
+	cv::convertScaleAbs(grad_x, abs_grad_x);
+	cv::convertScaleAbs(grad_y, abs_grad_y);
+	cv::addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad);
+
+	ofPixels rawPixBuffer;
+	rawPixBuffer.setFromExternalPixels(grad.ptr(), grad.rows, grad.cols, ofPixelFormat::OF_PIXELS_GRAY);
+
+	ofImageLoadSettings settings;
+	settings.grayscale = true;
+
+	ofPixels jpegPixBuffer;
+	ofBuffer jpegBuffer;
+	ofSaveImage(rawPixBuffer, jpegBuffer, ofImageFormat::OF_IMAGE_FORMAT_JPEG, ofImageQualityType::OF_IMAGE_QUALITY_HIGH);
+	ofLoadImage(jpegPixBuffer, jpegBuffer, settings);
+
+	cv::Mat jpegMat(grad.rows, grad.cols, CV_8UC1, jpegPixBuffer.getData());
+
+	cv::absdiff(grad, jpegMat, diff);
+	diff.convertTo(diffConverted, CV_64F);
+
+	cv::pow(diffConverted, 2, se_jpeg);
+	double rmseIC = sqrt(cv::mean(se_jpeg)[0]);
+	double compressionRatioIC = (double)rawSize / jpegBuffer.size();
+	double IC = rmseIC / compressionRatioIC;
+
 
 	// Processing Complexity -- Fractal method
 
@@ -49,10 +78,6 @@ std::vector<double> AestheticEvaluator::evaluate(cv::Mat im)
 
 	_compressor.decode(_decodingLevelDiff);
 	cv::Mat fractalMat_t1 = _compressor.getDecodedImage();
-
-	cv::Mat diff;
-	cv::Mat diffConverted;
-	cv::Mat se(pcImage.rows, pcImage.cols, CV_64FC1);
 
 	// PCt0
 	cv::absdiff(pcImage, fractalMat_t0, diff);
@@ -93,25 +118,26 @@ std::vector<double> AestheticEvaluator::evaluate(cv::Mat im)
 			aestheticReward = result;
 		}
 	}
-	double weightedAestheticReward = aestheticReward * coverageReward;
 
 	// Make aesthetic reward partly proportional to the coverage reward to prevent high rewards for low coverage artifacts
-	double fitness = weightedAestheticReward + coverageReward * _fitnessMult * !bDiscard;
+	double fitness = coverageReward * 100.0 + (aestheticReward * coverageReward) * !bDiscard;
 
 	char msg[512];
 	sprintf(msg,
-		"\nEvaluation Report:\ncoverage: %.4f%% -> %.4f\nIC (laplace): %.4f; PCt0: %.4f; PCt1: %.4f; diff: %.4f\naestheticReward:%.4f -> %.4f\nfitness: %.4f",
+		"\nEvaluation Report:\ncoverage: %.4f%% -> %.4f\nIC (Sobel/JPEG): %.4f; PCt0: %.4f; PCt1: %.4f; diff: %.4f\naestheticReward:%.4f\nfitness: %.4f",
 		coverage*100.0, coverageReward,
 		IC, PCt0, PCt1, PCdiffRaw,
-		aestheticReward, weightedAestheticReward, 
+		aestheticReward, 
 		fitness
 	);
 	ofLog() << msg << std::endl;
 
 	if (_bWriteToDisk) {
+		cv::imwrite("data/keep/eval_out_jpeg.bmp", jpegMat);
+		cv::imwrite("data/keep/eval_out_se_jpeg.bmp", se_jpeg);
 		cv::imwrite("data/keep/eval_out_lvl1.bmp", fractalMat_t0);
 		cv::imwrite("data/keep/eval_out_lvl2.bmp", fractalMat_t1);
-		cv::imwrite("data/keep/eval_out_laplace.bmp", edges);
+		cv::imwrite("data/keep/eval_out_sobel_xy.bmp", grad);
 	}
 
 	std::vector<double> result(6);

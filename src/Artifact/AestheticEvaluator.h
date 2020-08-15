@@ -24,7 +24,7 @@ private:
 	int _decodingDepth = 4;
 	int _decodingLevelDiff = 2;
 
-	double _peakCoverage = 0.125;
+	double _peakCoverage = 0.06125;
 
 	// Aesthetic Fitness Terms (Normal: _a=1.0; High Complexity: _a=1.5)
 	double _a = 1.0;	// (a > 1.0 grants a lot of extra fitness for higher IC)
@@ -32,8 +32,7 @@ private:
 	double _c = 0.2;	// 0.2
 
 	double _pcLowerBound = 0.0001;
-	double _fitnessMult = 1000.0;
 
-	bool _bWriteToDisk = true;
+	bool _bWriteToDisk = false;
 	bool _bWriteEncodingToDisk = false;
 };
