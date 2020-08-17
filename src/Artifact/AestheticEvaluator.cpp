@@ -34,15 +34,15 @@ std::vector<double> AestheticEvaluator::evaluate(cv::Mat im)
 	cv::convertScaleAbs(grad_y, abs_grad_y);
 	cv::addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad);
 
-	ofPixels rawPixBuffer;
-	rawPixBuffer.setFromExternalPixels(grad.ptr(), grad.rows, grad.cols, ofPixelFormat::OF_PIXELS_GRAY);
+	ofPixels sobelPixBuffer;
+	sobelPixBuffer.setFromExternalPixels(grad.ptr(), grad.rows, grad.cols, ofPixelFormat::OF_PIXELS_GRAY);
 
 	ofImageLoadSettings settings;
 	settings.grayscale = true;
 
 	ofPixels jpegPixBuffer;
 	ofBuffer jpegBuffer;
-	ofSaveImage(rawPixBuffer, jpegBuffer, ofImageFormat::OF_IMAGE_FORMAT_JPEG, ofImageQualityType::OF_IMAGE_QUALITY_HIGH);
+	ofSaveImage(sobelPixBuffer, jpegBuffer, ofImageFormat::OF_IMAGE_FORMAT_JPEG, ofImageQualityType::OF_IMAGE_QUALITY_HIGH);
 	ofLoadImage(jpegPixBuffer, jpegBuffer, settings);
 
 	cv::Mat jpegMat(grad.rows, grad.cols, CV_8UC1, jpegPixBuffer.getData());
