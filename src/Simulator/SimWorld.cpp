@@ -103,8 +103,7 @@ void handleCollisions(btDynamicsWorld* worldPtr, bool bCanvasSensors)
                 btManifoldPoint& pt = contactManifold->getContactPoint(j);
                 btVector3 localPt = pt.getPositionWorldOnA() - canvasPtr->getPosition();
 
-                double pressure = brushNodePtr->isBrushActivated();
-                canvasPtr->addBrushStroke(localPt, pressure);
+                canvasPtr->addBrushStroke(localPt, brushNodePtr->getBrushPressure(), brushNodePtr->isBrushActivated());
                 bBrushContact = true;
             }
         }
