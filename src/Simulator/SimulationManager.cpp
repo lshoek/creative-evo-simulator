@@ -126,8 +126,8 @@ void SimulationManager::init(SimSettings settings)
     _evaluationDispatcher.setup(_evaluationType, _canvasResolution.x, _canvasResolution.y);
 
     // test
-    //cv::Mat testImage = cv::imread("data/keep/validate_1.bmp", cv::ImreadModes::IMREAD_GRAYSCALE);
-    //_evaluationDispatcher.queue(testImage, 0, 0, false);
+    cv::Mat testImage = cv::imread("data/keep/noise.bmp", cv::ImreadModes::IMREAD_GRAYSCALE);
+    _evaluationDispatcher.queue(testImage, 0, 0, false);
 
     _settings = settings;
     bInitialized = true;
@@ -720,7 +720,9 @@ void SimulationManager::loadShaders()
         _nodeShader->load("shaders/phong");
         _canvasShader->load("shaders/phong");
     }
-    _canvasUpdateShader->load("shaders/canvas");
+    // QUICK HACK: EITHER USE canvas OR canvas_pressure
+    _canvasUpdateShader->load("shaders/canvas_pressure"); 
+    
     _canvasColorShader->load("shaders/lum2col");
     _canvasSubTextureShader->load("shaders/subtexture");
 }

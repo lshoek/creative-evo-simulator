@@ -97,6 +97,7 @@ void SimCanvasNode::update()
         _fbo[OFUtils::swap(iFbo)].draw(0, 0);
 
         _updateShader->begin();
+        _updateShader->setUniform1f("use_brush_pressure", _bVariableBrushPressure);
         _updateShader->setUniform1i("brush_coords_bufsize", _brushQueueSize);
 
         _drawQuad.draw();
@@ -218,7 +219,7 @@ void SimCanvasNode::drawImmediate()
     ofPopMatrix();
 }
 
-void SimCanvasNode::addBrushStroke(btVector3 location, float pressure)
+void SimCanvasNode::addBrushStroke(btVector3 location, float pressure, bool active)
 {
     if (_brushQueueSize < BRUSH_COORD_BUF_MAXSIZE)
     {
@@ -227,12 +228,6 @@ void SimCanvasNode::addBrushStroke(btVector3 location, float pressure)
         // convert to normalized texture coordinates
         glm::vec2 px = (glm::vec2(loc.x, loc.z) + glm::vec2(_canvasSize)) / glm::vec2(_canvasSize * 2);
 
-        // discard if it already occurs in the bufer
-        //for (int i = 0; i < _brushQueueSize; i++) {
-        //    if (glm::all(glm::epsilonEqual(px, _brushCoordQueue[i].coord, glm::vec2(0.0001f)))) {
-        //        return;
-        //    }
-        //}
         // discard if out of bounds
         if (px.x > 1.0f || px.x < 0 || px.y > 1.0f || px.y < 0) {
             return;
@@ -240,12 +235,9 @@ void SimCanvasNode::addBrushStroke(btVector3 location, float pressure)
         
         // add brushstroke
         _brushCoordQueue[_brushQueueSize].coord = px;
-        _brushCoordQueue[_brushQueueSize].pressure = pressure;
-        _brushCoordQueue[_brushQueueSize].active = pressure > 0.0;
+        _brushCoordQueue[_brushQueueSize].pressure = glm::clamp(pressure, 0.0f, 1.0f);
+        _brushCoordQueue[_brushQueueSize].active = active;
         _brushQueueSize++;
-    }
-    else {
-        ofLog() << "Warning: Brush queue full.";
     }
 }
 

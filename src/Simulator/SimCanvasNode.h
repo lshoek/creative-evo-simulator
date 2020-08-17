@@ -20,7 +20,7 @@ public:
 	virtual void addToWorld() override;
 	virtual void removeFromWorld() override;
 
-	void addBrushStroke(btVector3 location, float pressure);
+	void addBrushStroke(btVector3 location, float pressure, bool active);
 	void setLocalVisionRotation(btQuaternion rotation);
 
 	glm::ivec2 getCanvasResolution();
@@ -82,6 +82,7 @@ private:
 	int iFbo = 0;
 
 	bool _bLocalVisionMode = false;
+	bool _bVariableBrushPressure = true;
 	bool _bDownSample = true;
 
 	ofPixels _convPixelBuffer;
