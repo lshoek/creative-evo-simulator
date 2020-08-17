@@ -28,11 +28,11 @@ private:
 
 	// Aesthetic Fitness Terms (Normal: _a=1.0; High Complexity: _a=1.5)
 	double _a = 1.0;	// (a > 1.0 grants a lot of extra fitness for higher IC)
-	double _b = 0.4;	// 0.4 
-	double _c = 0.2;	// 0.2
+	double _b = 0.6;	// 0.4 
+	double _c = 0.3;	// 0.2
 
 	double _pcLowerBound = 0.0001;
 
-	bool _bWriteToDisk = false;
+	bool _bWriteToDisk = true;
 	bool _bWriteEncodingToDisk = false;
 };
