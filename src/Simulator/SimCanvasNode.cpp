@@ -19,6 +19,10 @@ SimCanvasNode::SimCanvasNode(btVector3 position, float size, float extraBounds, 
     _bLocalVisionMode = bLocalVisionMode;
     _canvasRes = glm::ivec2(xRes, yRes);
     _canvasConvRes = (_bDownSample || _bLocalVisionMode) ? glm::vec2(xConvRes, yConvRes) : _canvasRes;
+    
+    //_patchSize = _canvasConvRes.x / float(_canvasRes.x);
+    _patchSize = 1.0f; // QUICK HACK FOR ADDING POSITIONAL ROTATIONS TO GLOBAL VISION MODE : MAKE NICE LATER (local needs to be flagged in settings.ini for this)
+
     _drawQuad = MeshUtils::rectMesh(0, 0, _canvasRes.x, _canvasRes.y, true);
     _drawQuadConv = MeshUtils::rectMesh(0, 0, _canvasConvRes.x, _canvasConvRes.y, true);
 
@@ -152,7 +156,7 @@ void SimCanvasNode::updateConvPixelBuffer()
         _subTextureShader->begin();
         _subTextureShader->setUniformTexture("tex", _fbo[iFbo].getTexture(), 0);
         _subTextureShader->setUniform2f("patchLocation", _cachedBrushCoord.coord);
-        _subTextureShader->setUniform1f("patchSize", _canvasConvRes.x/float(_canvasRes.x));
+        _subTextureShader->setUniform1f("patchSize", _patchSize);
         _subTextureShader->setUniform4f("patchRotationMatrix", _localVisionRotationMatrix);
         _drawQuadConv.draw();
         _subTextureShader->end();

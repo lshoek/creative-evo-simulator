@@ -60,6 +60,7 @@ private:
 	glm::ivec2 _canvasConvRes;
 
 	float _canvasSize;
+	float _patchSize;
 	float _margin;
 
 	ofMesh _drawQuad;
