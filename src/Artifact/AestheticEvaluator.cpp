@@ -100,14 +100,16 @@ std::vector<double> AestheticEvaluator::evaluate(cv::Mat im)
 		bDiscard = true;
 	}
 
+	double PC = 0.0;
 	if (!bDiscard) {
 		double PCdiff = std::max(PCt1 - PCt0, eps);
 
 		double term_a = std::pow(IC, _a);
 		double term_b = std::pow(PCt0 * PCt1, _b);
 		double term_c = std::pow(PCdiff / PCt1, _c);
+		PC = term_b * term_c;
 
-		double result = term_a / (term_b * term_c);
+		double result = term_a / PC;
 		if (!isnan(result)) {
 			aestheticReward = result;
 		}
@@ -118,9 +120,9 @@ std::vector<double> AestheticEvaluator::evaluate(cv::Mat im)
 
 	char msg[512];
 	sprintf(msg,
-		"\nEvaluation Report:\ncoverage: %.4f%% -> %.4f\nIC (Sobel/JPEG): %.4f; PCt0: %.4f; PCt1: %.4f; diff: %.4f\naestheticReward:%.4f\nfitness: %.4f",
+		"\nEvaluation Report:\ncoverage: %.4f%% -> %.4f\nIC (Sobel/JPEG): %.4f; PC: %.4f; PCdiff: %.4f\naestheticReward:%.4f\nfitness: %.4f",
 		coverage*100.0, coverageReward,
-		IC, PCt0, PCt1, PCdiffRaw,
+		IC, PC, PCdiffRaw,
 		aestheticReward, 
 		fitness
 	);
@@ -134,7 +136,7 @@ std::vector<double> AestheticEvaluator::evaluate(cv::Mat im)
 		cv::imwrite("data/keep/eval_out_sobel_xy.bmp", grad);
 	}
 
-	std::vector<double> result(6);
+	std::vector<double> result(7);
 	if (bDiscard) {
 		result[0] = 0.0;
 		return result;
@@ -143,8 +145,9 @@ std::vector<double> AestheticEvaluator::evaluate(cv::Mat im)
 	result[1] = coverage;
 	result[2] = coverageReward;
 	result[3] = IC;
-	result[4] = PCt0;
-	result[5] = PCt1;
+	result[4] = PC;
+	result[5] = PCt0;
+	result[6] = PCt1;
 
 	return result;
 }
