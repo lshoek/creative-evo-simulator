@@ -101,7 +101,7 @@ std::vector<double> AestheticEvaluator::evaluate(cv::Mat im)
 	}
 
 	if (!bDiscard) {
-		double PCdiff = std::min(PCt1 - PCt0, eps);
+		double PCdiff = std::max(PCt1 - PCt0, eps);
 
 		double term_a = std::pow(IC, _a);
 		double term_b = std::pow(PCt0 * PCt1, _b);
