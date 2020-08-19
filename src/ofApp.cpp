@@ -261,6 +261,9 @@ void ofApp::imGui()
 			if (ImGui::Begin("Overlay", NULL, flags | ImGuiWindowFlags_NoScrollbar)) {
 				ImGui::Text("Meta");
 				ImGui::Separator();
+				if (simulationManager.isInitialized()) {
+					ImGui::Text(&simulationManager.getUniqueSimId()[0]);
+				}
 				ImGui::Dummy(margin);
 
 				glm::vec3 cpos = simulationManager.getCamera()->getPosition();

@@ -113,6 +113,14 @@ std::vector<double> AestheticEvaluator::evaluate(cv::Mat im)
 		if (!isnan(result)) {
 			aestheticReward = result;
 		}
+		else {
+			// for safety
+			IC = 0.0;
+			PC = 0.0;
+			PCt0 = 0.0;
+			PCt1 = 0.0;
+			PCdiffRaw = 0.0;
+		}
 	}
 
 	// Make aesthetic reward partly proportional to the coverage reward to prevent high rewards for low coverage artifacts

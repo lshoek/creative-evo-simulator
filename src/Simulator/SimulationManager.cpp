@@ -165,6 +165,7 @@ void SimulationManager::startSimulation()
             if (!bHasSimulationId) {
                 _uniqueSimId = info.ga_id;
                 _simDir = NTRS_SIMS_DIR + '/' + _uniqueSimId + '/';
+                bHasSimulationId = true;
                 ofLog() << ">> Simulation ID: " << _uniqueSimId;
             }
             else if (_uniqueSimId != info.ga_id) {
