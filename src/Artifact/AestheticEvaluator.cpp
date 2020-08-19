@@ -91,7 +91,7 @@ std::vector<double> AestheticEvaluator::evaluate(cv::Mat im)
 
 	// Total Fitness
 	bool bDiscard = false;
-	double eps = 0.0005;
+	double eps = 0.0001;
 	double aestheticReward = 0.0;
 
 	double PCdiffRaw = PCt1 - PCt0;
