@@ -18,5 +18,4 @@ ofx dependencies:
 - ofxIniSettings (https://github.com/companje/ofxIniSettings)
 - ofxShadowMap (https://github.com/lshoek/ofxShadowMap)
 
-![Preview](preview/preview-app-0.jpg)
-![Preview](preview/preview-app-1.jpg)
+![Preview](preview/action-pose.png.jpg)
