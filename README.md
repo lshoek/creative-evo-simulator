@@ -5,7 +5,7 @@ Master's thesis project (WORK IN PROGRESS)
 
 Lesley van Hoek / Leiden University / Media Technology MSc
 
-
+This project is a simulator application for https://github.com/lshoek/creative-evo-controller
 
 tools/libraries:
 - openFrameworks 0.11
