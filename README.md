@@ -14,7 +14,6 @@ tools/libraries:
 ofx dependencies:
 - ofxOpenCv
 - ofxImGui (https://github.com/jvcleave/ofxImGui)
-- ofxGrabCam (https://github.com/elliotwoods/ofxGrabCam)
 - ofxIniSettings (https://github.com/companje/ofxIniSettings)
 - ofxShadowMap (https://github.com/lshoek/ofxShadowMap)
 

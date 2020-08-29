@@ -12,12 +12,8 @@
 void SimulationManager::init(SimSettings settings)
 {
     // canvas
-    _canvasResolution = glm::ivec2(settings.canvasSize, settings.canvasSize);
-    _canvasConvResolution = glm::ivec2(settings.canvasSizeConv, settings.canvasSizeConv);
-    
-    if (!bCanvasLocalVisionMode) {
-        bCanvasDownSampling = _canvasResolution.x != _canvasConvResolution.x;
-    }
+    _canvasResolution = glm::ivec2(settings.canvasResolution, settings.canvasResolution);
+    _canvasConvResolution = glm::ivec2(settings.canvasConvResolution, settings.canvasConvResolution);
 
     // parallellism
     _simInstanceLimit = settings.maxParallelSims;
@@ -33,7 +29,6 @@ void SimulationManager::init(SimSettings settings)
     cam.setNearClip(0.01f);
     cam.setFarClip(1000.0f);
     cam.setPosition(8.0f, 8.0f, 4.0f);
-    cam.setFixUpDirectionEnabled(true);
     cam.lookAt(glm::vec3(0));
 
     _nodeTexture = std::make_shared<ofTexture>();
@@ -85,6 +80,7 @@ void SimulationManager::init(SimSettings settings)
     _previewWorld = new SimWorld();
     _previewWorld->getTerrainNode()->setAppearance(_terrainShader, _terrainMaterial, _terrainTexture);
     _previewWorld->getTerrainNode()->setLight(_light);
+    _previewWorld->getTerrainNode()->getRigidBody()->setCollisionFlags(btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
 
     // time
     if (ofGetTargetFrameRate()) {
@@ -126,8 +122,9 @@ void SimulationManager::init(SimSettings settings)
     _evaluationDispatcher.setup(_evaluationType, _canvasResolution.x, _canvasResolution.y);
 
     // test
-    //cv::Mat testImage = cv::imread("data/keep/noise2.bmp", cv::ImreadModes::IMREAD_GRAYSCALE);
-    //_evaluationDispatcher.queue(testImage, 0, 0, false);
+    cv::Mat testImage = cv::imread("data/keep/circle.bmp", cv::ImreadModes::IMREAD_GRAYSCALE);
+    _evaluationDispatcher.queue(testImage, 0, 0, false);
+    _evaluationDispatcher.queue(cv::imread("data/keep/pollock2_highcontrast.bmp", cv::ImreadModes::IMREAD_GRAYSCALE), 0, 0, false);
 
     _settings = settings;
     bInitialized = true;
@@ -235,13 +232,13 @@ int SimulationManager::createSimInstance(SimInfo info)
     int grid_x = info.candidate_id % _simInstanceGridSize;
     int grid_z = info.candidate_id / _simInstanceGridSize;
 
-    btScalar spaceExtent = canvasSize/2.0;
-    btScalar stride = canvasSize * 2.0 + spaceExtent * 2.0;
-    btScalar xpos = (grid_x - _simInstanceGridSize / 2) * stride + grid_x * canvasMargin;
-    btScalar zpos = (grid_z - _simInstanceGridSize / 2) * stride + grid_z * canvasMargin;
+    btScalar stride = _settings.canvasSize * 2.0 + _settings.canvasMargin * 2.0;
+    btScalar xpos = (grid_x - _simInstanceGridSize / 2) * stride + grid_x * _settings.canvasMargin;
+    btScalar zpos = (grid_z - _simInstanceGridSize / 2) * stride + grid_z * _settings.canvasMargin;
     btVector3 position = (bMultiEval) ? btVector3(xpos, 0, zpos) : btVector3(0, 0, 0);
 
     SimWorld* world = new SimWorld();
+    world->getTerrainNode()->getRigidBody()->setCollisionFlags(btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
 
     SimCreature* crtr = new SimCreature(position, _selectedGenome, world->getBtWorld());
     crtr->setSensorMode(bCanvasSensors ? SimCreature::Canvas : SimCreature::Touch);
@@ -249,17 +246,17 @@ int SimulationManager::createSimInstance(SimInfo info)
     crtr->setShader(_nodeShader);
     crtr->addToWorld();
 
-    SimCanvasNode* canv = new SimCanvasNode(position, canvasSize, spaceExtent, 
-        _canvasResolution.x, _canvasResolution.y, 
+    SimCanvasNode* canv = new SimCanvasNode(position, _settings.canvasSize, _settings.canvasViewSize, _settings.canvasMargin,
+        _canvasResolution.x, _canvasResolution.y,
         _canvasConvResolution.x, _canvasConvResolution.y, 
-        bCanvasLocalVisionMode, bCanvasDownSampling, world->getBtWorld()
+        world->getBtWorld()
     );
     canv->setMaterial(_canvasMaterial);
     canv->setShader(_canvasShader);
     canv->setCanvasUpdateShader(_canvasUpdateShader);
     canv->setCanvasColorizeShader(_canvasColorShader);
     canv->setSubTextureShader(_canvasSubTextureShader);
-    canv->enableBounds();
+    canv->spawnBounds(true);
     canv->addToWorld();
 
     SimInstance* instance = new SimInstance(info.candidate_id, info.generation, world, crtr, canv, info.duration);
@@ -280,9 +277,6 @@ void SimulationManager::lateUpdate()
     else {
         _light->setGlobalPosition(lightPosition);
         _light->lookAt(glm::vec3(0));
-    }
-    if (bCameraSnapFocus) {
-        cam.lookAt(getFocusOrigin());
     }
     setLightUniforms(_nodeShader);
     setLightUniforms(_terrainShader);
@@ -352,19 +346,19 @@ void SimulationManager::update()
     for (auto& instance : _simulationInstances) {
         if (instance->isFinished() || instance->isTerminated()) {
 
-            _imageSaver.copyToBuffer(instance->getCanvas()->getCanvasRawFbo()->getTexture(), [&](uint8_t* p) {
+            _imageSaver.copyToBuffer(instance->getCanvas()->getPaintMap()->getTexture(), [&](uint8_t* p) {
                 _artifactMat = cv::Mat(_canvasResolution.x, _canvasResolution.y, CV_8UC1, p);
             });
             _evaluationDispatcher.queue(_artifactMat, instance->getGeneration(), instance->getID());
 
             if (bSaveArtifactsToDisk) {
                 std::string path = _simDir + '/' + NTRS_ARTIFACTS_PREFIX + ofToString(instance->getGeneration()) + '_' + ofToString(instance->getID());
-                _imageSaver.save(instance->getCanvas()->getCanvasFbo()->getTexture(), path);
+                _imageSaver.save(instance->getCanvas()->getPaintMapRGBA()->getTexture(), path);
             }
             _networkManager.send(OSC_END_ROLLOUT + '/' + ofToString(instance->getID()));
 
             if (bStoreLastArtifact) {
-                instance->getCanvas()->getCanvasFbo()->getTexture().copyTo(_artifactCopyBuffer);
+                instance->getCanvas()->getPaintMapRGBA()->getTexture().copyTo(_artifactCopyBuffer);
                 _prevArtifactTexture.loadData(_artifactCopyBuffer, GL_RGBA, GL_UNSIGNED_BYTE);
             }
 
@@ -535,7 +529,7 @@ const std::string& SimulationManager::getStatus()
     return _status;
 }
 
-ofxGrabCam* SimulationManager::getCamera()
+ofEasyCam* SimulationManager::getCamera()
 {
     return &cam;
 }

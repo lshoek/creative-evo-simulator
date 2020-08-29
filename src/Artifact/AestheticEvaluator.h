@@ -18,7 +18,7 @@ private:
 
 	FractalCompressor _compressor;
 
-	cv::Size _processingSize = cv::Size(128, 128);
+	cv::Size _processingSize = cv::Size(256, 256);
 
 	int _pcBlockSize = 8;
 	int _decodingDepth = 4;

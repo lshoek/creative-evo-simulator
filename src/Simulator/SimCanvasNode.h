@@ -7,7 +7,7 @@
 class SimCanvasNode : public SimNodeBase
 {
 public:
-	SimCanvasNode(btVector3 position, float size, float extraBounds, int xRes, int yRes, int xNeuralInput, int yNeuralInput, bool bLocalVisionMode, bool bDownSample, btDynamicsWorld* ownerWorld);
+	SimCanvasNode(btVector3 position, float size, float viewSize, float boundsMargin, int xRes, int yRes, int xNeuralInput, int yNeuralInput, btDynamicsWorld* ownerWorld);
 	~SimCanvasNode();
 
 	void update();
@@ -23,18 +23,24 @@ public:
 	void addBrushStroke(btVector3 location, float pressure, bool active);
 	void setLocalVisionRotation(btQuaternion rotation);
 
-	glm::ivec2 getCanvasResolution();
-
-	ofFbo* getCanvasRawFbo();
-	ofFbo* getCanvasFbo();
-
-	ofFbo* getConvFbo();
-	const ofPixels& getConvPixelBuffer();
-
 	void setCanvasUpdateShader(std::shared_ptr<ofShader> shader);
 	void setCanvasColorizeShader(std::shared_ptr<ofShader> shader);
 	void setSubTextureShader(std::shared_ptr<ofShader> shader);
-	void enableBounds();
+	void spawnBounds(bool bDebugRender = true);
+
+	glm::ivec2 getCanvasResolution();
+
+	// Full-resolution single-channel paint map
+	const ofFbo* getPaintMap() const;
+
+	// Full-resolution RGBA paint map
+	const ofFbo* getPaintMapRGBA() const;
+
+	// Downsampled single-channel paint map
+	const ofFbo* getViewMap() const;
+
+	// Downsampled single-channel paint map buffer
+	const ofPixels& getConvPixelBuffer();
 
 private:
 	struct BrushCoord {
@@ -59,6 +65,7 @@ private:
 	glm::ivec2 _canvasRes;
 	glm::ivec2 _canvasConvRes;
 
+	float _areaSize; // canvas + margin
 	float _canvasSize;
 	float _patchSize;
 	float _margin;
@@ -82,9 +89,7 @@ private:
 	ofFbo _fbo[2];
 	int iFbo = 0;
 
-	bool _bLocalVisionMode = false;
 	bool _bVariableBrushPressure = true;
-	bool _bDownSample = true;
 
 	ofPixels _convPixelBuffer;
 	ofBufferObject _pixelWriteBuffers[2];

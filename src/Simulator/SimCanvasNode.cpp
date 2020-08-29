@@ -9,19 +9,14 @@
 // This number should be synced with BRUSH_COORD_BUF_MAXSIZE in canvas.frag.
 #define BRUSH_COORD_BUF_MAXSIZE 16
 
-SimCanvasNode::SimCanvasNode(btVector3 position, float size, float extraBounds, int xRes, int yRes, int xConvRes, int yConvRes, bool bLocalVisionMode, bool bDownSample, btDynamicsWorld* ownerWorld) :
-    SimNodeBase(CanvasTag, ownerWorld), _canvasSize(size), _margin(extraBounds)
+SimCanvasNode::SimCanvasNode(btVector3 position, float size, float viewSize, float boundsMargin, int xRes, int yRes, int xConvRes, int yConvRes, btDynamicsWorld* ownerWorld) :
+    SimNodeBase(CanvasTag, ownerWorld), _canvasSize(size), _patchSize(viewSize), _margin(boundsMargin), _areaSize(size + boundsMargin)
 {
     _color = ofColor::white;
     _brushColor = ofColor::black;
 
-    _bDownSample = bDownSample;
-    _bLocalVisionMode = bLocalVisionMode;
     _canvasRes = glm::ivec2(xRes, yRes);
-    _canvasConvRes = (_bDownSample || _bLocalVisionMode) ? glm::vec2(xConvRes, yConvRes) : _canvasRes;
-    
-    //_patchSize = _canvasConvRes.x / float(_canvasRes.x);
-    _patchSize = 1.0f; // QUICK HACK FOR ADDING POSITIONAL ROTATIONS TO GLOBAL VISION MODE : MAKE NICE LATER (local needs to be flagged in settings.ini for this)
+    _canvasConvRes = glm::vec2(xConvRes, yConvRes);
 
     _drawQuad = MeshUtils::rectMesh(0, 0, _canvasRes.x, _canvasRes.y, true);
     _drawQuadConv = MeshUtils::rectMesh(0, 0, _canvasConvRes.x, _canvasConvRes.y, true);
@@ -48,7 +43,6 @@ SimCanvasNode::SimCanvasNode(btVector3 position, float size, float extraBounds, 
     fboSettings.maxFilter = GL_NEAREST;
 
     _convFbo.allocate(fboSettings);
-    _convLocalFbo.allocate(fboSettings);
 
     // Canvas color and alpha separated
     _colorFbo.allocate(_canvasRes.x, _canvasRes.y, GL_RGBA);
@@ -72,6 +66,8 @@ SimCanvasNode::SimCanvasNode(btVector3 position, float size, float extraBounds, 
 
     iPbo = 0;
     _pboPtr = &_pixelWriteBuffers[iPbo];
+
+    getRigidBody()->setCollisionFlags(btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
 }
 
 void SimCanvasNode::initPlane(btVector3 position, float size)
@@ -152,26 +148,17 @@ void SimCanvasNode::update()
 void SimCanvasNode::updateConvPixelBuffer()
 {
     // Sample local patch from full-size canvas fbo
-    if (_bLocalVisionMode) {
-        _convLocalFbo.begin();
-        _subTextureShader->begin();
-        _subTextureShader->setUniformTexture("tex", _fbo[iFbo].getTexture(), 0);
-        _subTextureShader->setUniform2f("patchLocation", _cachedBrushCoord.coord);
-        _subTextureShader->setUniform1f("patchSize", _patchSize);
-        _subTextureShader->setUniform4f("patchRotationMatrix", _localVisionRotationMatrix);
-        _drawQuadConv.draw();
-        _subTextureShader->end();
-        _convLocalFbo.end();
-    }
-    // Reduce height map resolution for neural inputs
-    if (_bDownSample) {
-        _convFbo.begin();
-        _fbo[iFbo].draw(0, 0, _canvasConvRes.x, _canvasConvRes.y);
-        _convFbo.end();
-    }
-    ofFbo* fboPtr = _bLocalVisionMode ? &_convLocalFbo : (_bDownSample ? &_convFbo : &_fbo[iFbo]);
+    _convFbo.begin();
+    _subTextureShader->begin();
+    _subTextureShader->setUniformTexture("tex", _fbo[iFbo].getTexture(), 0);
+    _subTextureShader->setUniform2f("patchLocation", _cachedBrushCoord.coord);
+    _subTextureShader->setUniform1f("patchSize", _patchSize);
+    _subTextureShader->setUniform4f("patchRotationMatrix", _localVisionRotationMatrix);
+    _drawQuadConv.draw();
+    _subTextureShader->end();
+    _convFbo.end();
 
-    fboPtr->copyTo(*_pboPtr);
+    _convFbo.copyTo(*_pboPtr);
     _pboPtr->bind(GL_PIXEL_UNPACK_BUFFER);
 
     ofBufferObject* backBufPtr = &_pixelWriteBuffers[(iPbo + 1) % 2];
@@ -187,10 +174,7 @@ void SimCanvasNode::updateConvPixelBuffer()
 
 void SimCanvasNode::clearConvPixelBuffer()
 {
-    ofFbo* fboPtr = _bLocalVisionMode ? &_convLocalFbo : &_convFbo;
-    fboPtr->begin();
-    ofClear(0, 0);
-    fboPtr->end();
+    _convFbo.clearColorBuffer(ofFloatColor(0,0,0,0));
 }
 
 void SimCanvasNode::draw()
@@ -231,11 +215,6 @@ void SimCanvasNode::addBrushStroke(btVector3 location, float pressure, bool acti
 
         // convert to normalized texture coordinates
         glm::vec2 px = (glm::vec2(loc.x, loc.z) + glm::vec2(_canvasSize)) / glm::vec2(_canvasSize * 2);
-
-        // discard if out of bounds
-        if (px.x > 1.0f || px.x < 0 || px.y > 1.0f || px.y < 0) {
-            return;
-        }
         
         // add brushstroke
         _brushCoordQueue[_brushQueueSize].coord = px;
@@ -256,29 +235,29 @@ void SimCanvasNode::swapPbo()
     _pboPtr = &_pixelWriteBuffers[iPbo];
 }
 
-const ofPixels& SimCanvasNode::getConvPixelBuffer()
+glm::ivec2 SimCanvasNode::getCanvasResolution()
 {
-    return _convPixelBuffer;
+    return _canvasRes;
 }
 
-ofFbo* SimCanvasNode::getConvFbo()
+const ofFbo* SimCanvasNode::getViewMap() const
 {
-    return _bLocalVisionMode ? &_convLocalFbo : &_convFbo;
+    return &_convFbo;
 }
 
-ofFbo* SimCanvasNode::getCanvasRawFbo()
+const ofFbo* SimCanvasNode::getPaintMap() const
 {
     return &_fbo[iFbo];
 }
 
-ofFbo* SimCanvasNode::getCanvasFbo()
+const ofFbo* SimCanvasNode::getPaintMapRGBA() const
 {
     return &_colorFbo;
 }
 
-glm::ivec2 SimCanvasNode::getCanvasResolution()
+const ofPixels& SimCanvasNode::getConvPixelBuffer()
 {
-    return _canvasRes;
+    return _convPixelBuffer;
 }
 
 void SimCanvasNode::setCanvasUpdateShader(std::shared_ptr<ofShader> shader) {
@@ -293,7 +272,7 @@ void SimCanvasNode::setSubTextureShader(std::shared_ptr<ofShader> shader) {
     _subTextureShader = shader;
 }
 
-void SimCanvasNode::enableBounds()
+void SimCanvasNode::spawnBounds(bool bDebugRender)
 {
     if (_bBounds) {
         return;
@@ -311,6 +290,10 @@ void SimCanvasNode::enableBounds()
             _bounds[i]->setRotation(SimUtils::glmToBullet(rot));
             _bounds[i]->setPosition((getPosition() + SimUtils::glmToBullet(glm::vec3(0, _canvasSize, 0) + rot * fromCenter)));
             _bounds[i]->bRender = false;
+
+            if (!bDebugRender) {
+                _bounds[i]->getRigidBody()->setCollisionFlags(btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
+            }
         }
         _bBounds = true;
     }

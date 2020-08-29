@@ -38,9 +38,9 @@ void SimWorld::init()
 
     _dbgDrawer = new SimDebugDrawer();
     _dbgDrawer->setDebugMode(
-        btIDebugDraw::DBG_DrawWireframe |
+        btIDebugDraw::DBG_DrawWireframe /*|
         btIDebugDraw::DBG_DrawConstraints |
-        btIDebugDraw::DBG_DrawConstraintLimits
+        btIDebugDraw::DBG_DrawConstraintLimits*/
     );
 
     _world->setGravity(btVector3(0, -9.81, 0));

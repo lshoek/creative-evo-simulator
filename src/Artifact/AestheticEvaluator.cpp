@@ -10,16 +10,24 @@ void AestheticEvaluator::setup(uint32_t width, uint32_t height)
 
 std::vector<double> AestheticEvaluator::evaluate(cv::Mat im)
 {
+	cv::Mat srcIm;
 	if (im.elemSize() != 1) {
 		ofLog() << "[Evaluator] Warning: elemSize of im is not equal to 1.";
 	}
+	if (im.total() != _processingSize.area()) {
+		cv::resize(im, srcIm, cv::Size(_processingSize));
+	}
+	else {
+		srcIm = im;
+	}
+
 	cv::Mat diff;
 	cv::Mat diffConverted;
-	cv::Mat se(im.rows, im.cols, CV_64FC1);
-	cv::Mat se_jpeg(im.rows, im.cols, CV_64FC1);
+	cv::Mat se(srcIm.rows, srcIm.cols, CV_64FC1);
+	cv::Mat se_jpeg(srcIm.rows, srcIm.cols, CV_64FC1);
 
 	// Coverage measure
-	double coverage = cv::mean(im)[0] / 255.0;
+	double coverage = cv::mean(srcIm)[0] / 255.0;
 	double coverageReward = coverageFunc(coverage);
 
 
@@ -28,8 +36,8 @@ std::vector<double> AestheticEvaluator::evaluate(cv::Mat im)
 	cv::Mat grad, grad_x, grad_y;
 	cv::Mat abs_grad_x, abs_grad_y;
 
-	cv::Sobel(im, grad_x, CV_16S, 1, 0, 1);
-	cv::Sobel(im, grad_y, CV_16S, 0, 1, 1);
+	cv::Sobel(srcIm, grad_x, CV_16S, 1, 0, 1);
+	cv::Sobel(srcIm, grad_y, CV_16S, 0, 1, 1);
 	cv::convertScaleAbs(grad_x, abs_grad_x);
 	cv::convertScaleAbs(grad_y, abs_grad_y);
 	cv::addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad);
@@ -52,7 +60,7 @@ std::vector<double> AestheticEvaluator::evaluate(cv::Mat im)
 
 	cv::pow(diffConverted, 2, se_jpeg);
 	double rmseIC = sqrt(cv::mean(se_jpeg)[0]);
-	double compressionRatioIC = (double)im.total() / jpegBuffer.size();
+	double compressionRatioIC = (double)srcIm.total() / jpegBuffer.size();
 	double IC = rmseIC / compressionRatioIC;
 
 
@@ -60,7 +68,7 @@ std::vector<double> AestheticEvaluator::evaluate(cv::Mat im)
 
 	// Lower contrast to improve the reliability of the fractal compression algorithm (alpha[1.0-3.0], beta[0-100])
 	cv::Mat pcImage, pcBlur;
-	cv::blur(im, pcBlur, cv::Size(3, 3));
+	cv::blur(srcIm, pcBlur, cv::Size(3, 3));
 	pcBlur.convertTo(pcImage, CV_8UC1, 0.9, 20.0);
 
 	_compressor.allocate(pcImage);
@@ -77,6 +85,7 @@ std::vector<double> AestheticEvaluator::evaluate(cv::Mat im)
 	cv::absdiff(pcImage, fractalMat_t0, diff);
 	diff.convertTo(diffConverted, CV_64FC1);
 	cv::pow(diffConverted, 2, se);
+	cv::imwrite("data/keep/eval_out_se_pct0.bmp", se);
 
 	double rmsePCt0 = sqrt(cv::mean(se)[0]);
 	double PCt0 = glm::max(1.0/rmsePCt0, _pcLowerBound);
@@ -85,6 +94,7 @@ std::vector<double> AestheticEvaluator::evaluate(cv::Mat im)
 	cv::absdiff(pcImage, fractalMat_t1, diff);
 	diff.convertTo(diffConverted, CV_64FC1);
 	cv::pow(diffConverted, 2, se);
+	cv::imwrite("data/keep/eval_out_se_pct1.bmp", se);
 
 	double rmsePCt1 = sqrt(cv::mean(se)[0]);
 	double PCt1 = glm::max(1.0/rmsePCt1, _pcLowerBound);
@@ -128,9 +138,10 @@ std::vector<double> AestheticEvaluator::evaluate(cv::Mat im)
 
 	char msg[512];
 	sprintf(msg,
-		"\nEvaluation Report:\ncoverage: %.4f%% -> %.4f\nIC (Sobel/JPEG): %.4f; PC: %.4f; PCdiff: %.4f\naestheticReward:%.4f\nfitness: %.4f",
+		"\nEvaluation Report:\ncoverage: %.4f%% -> %.4f\nIC (Sobel/JPEG): %.4f; PC: %.4f; PCdiff: %.4f\nPCt0: %.4f; PCt1: %.4f;\naestheticReward:%.4f\nfitness: %.4f",
 		coverage*100.0, coverageReward,
 		IC, PC, PCdiffRaw,
+		PCt0, PCt1,
 		aestheticReward, 
 		fitness
 	);

@@ -16,7 +16,6 @@
 #include "Networking/BufferSender.h"
 #include "Networking/NetworkManager.h"
 #include "ofMain.h"
-#include "ofxGrabCam.h"
 #include "ofxShadowMap.h"
 #include "ofxOpenCv.h"
 
@@ -28,8 +27,13 @@ public:
     struct SimSettings
     {
         EvaluationType evalType = EvaluationType::Coverage;
-        uint32_t canvasSize = 256;
-        uint32_t canvasSizeConv = 128;
+        uint32_t canvasResolution = 128;
+        uint32_t canvasConvResolution = 64;
+
+        float canvasSize = 4.0f;
+        float canvasViewSize = 1.0f;
+        float canvasMargin = 4.0f;
+
         uint32_t maxParallelSims = 1;
         std::string genomeFile = "";
         std::string host = "localhost";
@@ -61,7 +65,7 @@ public:
     bool isSimulationActive();
     bool isSimulationInstanceActive();
 
-    ofxGrabCam* getCamera();
+    ofEasyCam* getCamera();
     ofTexture* getPrevArtifactTexture();
 
     SimCreature* getFocusCreature();
@@ -87,10 +91,8 @@ public:
     bool bMouseLight = false;
     bool bViewLightSpaceDepth = false;
     bool bViewCanvasEvaluationMask = false;
-    bool bCameraSnapFocus = true;
     bool bFeasibilityChecks = false;
     bool bCanvasSensors = false;
-    bool bCanvasLocalVisionMode = false;
     bool bAxisAlignedAttachments = false;
     bool bSaveArtifactsToDisk = false;
     bool bStoreLastArtifact = false;
@@ -128,7 +130,7 @@ private:
     // preview world
     SimWorld* _previewWorld;
 
-    ofxGrabCam cam;
+    ofEasyCam cam;
     ofxShadowMap _shadowMap;
 
     // time
@@ -160,14 +162,10 @@ private:
     std::shared_ptr<ofLight> _light;
     float _lightDistanceFromFocus = 32.0f;
 
-    btScalar canvasSize = 4.0;
-    btScalar canvasMargin = 4.0;
-
     bool bInitialized = false;
     bool bHasSimulationId = false;
     bool bSimulationActive = false;
     bool bStopSimulationQueued = false;
-    bool bCanvasDownSampling = false;
     bool bGenomeLoaded = false;
 
     int _simInstanceIdCounter = 0;

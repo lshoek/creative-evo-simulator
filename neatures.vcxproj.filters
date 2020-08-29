@@ -28,9 +28,6 @@
     <Filter Include="addons\ofxIniSettings">
       <UniqueIdentifier>{ee056c37-1aae-4474-b836-fe057e0095ed}</UniqueIdentifier>
     </Filter>
-    <Filter Include="addons\ofxGrabCam">
-      <UniqueIdentifier>{91f9dc10-9745-480c-9244-cbb1d6bf7520}</UniqueIdentifier>
-    </Filter>
     <Filter Include="src\Utils">
       <UniqueIdentifier>{c04f159c-5a9d-470d-af65-fdabb0e6b4f4}</UniqueIdentifier>
     </Filter>
@@ -116,9 +113,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\addons\ofxIniSettings\src\ofxIniSettings.cpp">
       <Filter>addons\ofxIniSettings</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\addons\ofxGrabCam\src\ofxGrabCam.cpp">
-      <Filter>addons\ofxGrabCam</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\addons\ofxShadowMap\src\ofxShadowMap.cpp">
       <Filter>addons\ofxShadowMap</Filter>
@@ -313,9 +307,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\addons\ofxIniSettings\src\ofxIniSettings.h">
       <Filter>addons\ofxIniSettings</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\addons\ofxGrabCam\src\ofxGrabCam.h">
-      <Filter>addons\ofxGrabCam</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\addons\ofxShadowMap\src\ofxShadowMap.h">
       <Filter>addons\ofxShadowMap</Filter>

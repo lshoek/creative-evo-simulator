@@ -11,11 +11,12 @@
 
 void ofApp::setup()
 {
+	ofEnableAntiAliasing();
+	ofEnableSmoothing();
 	ofSetWindowTitle(APP_ID);
 	ofSetVerticalSync(false);
 	ofDisableArbTex();
 	ofSetWindowPosition(32, 128);
-	ofBackground(0x222222);
 	ofNoFill();
 
 	ofSetLogLevel("ofThread", OF_LOG_VERBOSE);
@@ -39,8 +40,19 @@ void ofApp::setup()
 		hwnd, ofGetScreenWidth() - CONSOLE_SIZE, CONSOLE_MARGIN, 
 		CONSOLE_SIZE, CONSOLE_SIZE, TRUE
 	);
-	viewRect = ofRectangle(0, 0, ofGetWindowWidth(), ofGetWindowHeight());
-	frameFbo.allocate(ofGetWindowWidth(), ofGetWindowHeight(), GL_RGBA);
+
+	bwindowRenderResolution = settings.get("rendering.window", true);
+	int renderWidth = settings.get("rendering.width", ofGetWindowWidth());
+	int renderHeight = settings.get("rendering.height", ofGetWindowHeight());
+
+	windowRect = ofRectangle(0, 0, ofGetWindowWidth(), ofGetWindowHeight());
+
+	frameFboSettings.width = bwindowRenderResolution ? windowRect.width : renderWidth;
+	frameFboSettings.height = bwindowRenderResolution ? windowRect.height : renderHeight;
+	frameFboSettings.internalformat = GL_RGBA;
+	frameFboSettings.useDepth = true;
+	frameFboSettings.numSamples = 8;
+	frameFbo.allocate(frameFboSettings);
 
 	gui.setup();
 
@@ -51,18 +63,19 @@ void ofApp::initSim()
 {
 	if (!simulationManager.isInitialized()) {
 		simulationManager.bDebugDraw = settings.get("mode.debugdraw", true);
-		simulationManager.bCameraSnapFocus = settings.get("mode.snapfocus", true);
 		simulationManager.bAutoLoadGenome = settings.get("genome.autoload", true);
 		simulationManager.bAxisAlignedAttachments = settings.get("genome.axis_aligned_attachments", false);
 		simulationManager.bFeasibilityChecks = settings.get("genome.feasibility_checks", true);
 		simulationManager.bCanvasSensors = settings.get("sensors.type", "canvas").compare("canvas") == 0;
-		simulationManager.bCanvasLocalVisionMode = settings.get("sensors.perception", "local").compare("local") == 0;
 		simulationManager.bSaveArtifactsToDisk = settings.get("canvas.save", true);
 
 		SimulationManager::SimSettings simSettings;
 		simSettings.evalType = evalType(settings.get("eval.type", "Coverage"));
-		simSettings.canvasSize = settings.get("canvas.size", 256);
-		simSettings.canvasSizeConv = settings.get("canvas.size_conv", 128);
+		simSettings.canvasSize = settings.get("canvas.size", 4.0f);
+		simSettings.canvasResolution = settings.get("canvas.resolution", 256);
+		simSettings.canvasConvResolution = settings.get("canvas.resolution_conv", 64);
+		simSettings.canvasViewSize = settings.get("canvas.viewsize", 1.0f);
+		simSettings.canvasMargin = settings.get("canvas.margin", 4.0f);
 		simSettings.maxParallelSims = settings.get("evolution.max_parallel_sims", 1);
 		simSettings.genomeFile = settings.get("genome.id", "0");
 		simSettings.host = settings.get("controller.host", "localhost");
@@ -107,7 +120,7 @@ void ofApp::draw()
 	if (bDraw) {
 		uint64_t start = ofGetElapsedTimeMillis();
 
-		ofBackground(0x222222);
+		ofBackground(0x000000); //0x222222
 		ofSetHexColor(0xffffff);
 
 		glEnable(GL_BLEND);
@@ -123,7 +136,7 @@ void ofApp::draw()
 			simulationManager.draw();
 			frameFbo.end();
 
-			frameFbo.draw(viewRect);
+			frameFbo.draw(windowRect);
 		}
 		glDisable(GL_BLEND);
 		glDisable(GL_DEPTH_TEST);
@@ -326,12 +339,12 @@ void ofApp::imGui()
 						if (simulationManager.getFocusCanvas()) {
 							ImGui::Text("Creature Artifact:");
 							ImGui::Image(
-								(void*)(intptr_t)simulationManager.getFocusCanvas()->getCanvasFbo()->getTexture().getTextureData().textureID, 
+								(void*)(intptr_t)simulationManager.getFocusCanvas()->getPaintMapRGBA()->getTexture().getTextureData().textureID, 
 								ImVec2(windowSize.x-margin.x, windowSize.x-margin.x)
 							);
 							ImGui::Text("Neural Input:");
 							ImGui::Image(
-								(void*)(intptr_t)simulationManager.getFocusCanvas()->getConvFbo()->getTexture().getTextureData().textureID, 
+								(void*)(intptr_t)simulationManager.getFocusCanvas()->getViewMap()->getTexture().getTextureData().textureID, 
 								ImVec2(windowSize.x-margin.x, windowSize.x-margin.x)
 							);
 							ImGui::Separator();
@@ -361,9 +374,14 @@ void ofApp::imGui()
 
 void ofApp::windowResized(int w, int h)
 {
-	viewRect = ofRectangle(0, 0, w, h);
-	frameFbo.allocate(w, h, GL_RGBA8);
+	windowRect = ofRectangle(0, 0, w, h);
 	previewRect = ofRectangle(w*0.75f, h*0.75f, w*0.2f, h*0.2f);
+
+	if (bwindowRenderResolution) {
+		frameFboSettings.width = windowRect.width;
+		frameFboSettings.height = windowRect.height;
+		frameFbo.allocate(frameFboSettings);
+	}
 }
 
 void ofApp::keyPressed(int key)
@@ -377,6 +395,9 @@ void ofApp::keyPressed(int key)
 		}
 		if (key == 'm') {
 			bMonitor = !bMonitor;
+		}
+		if (key == 'o') {
+			bMetaOverlay = !bMetaOverlay;
 		}
 		if (simulationManager.isInitialized()) {
 			if (key == 'd') {

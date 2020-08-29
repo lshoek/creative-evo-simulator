@@ -1,5 +1,4 @@
 ofxImGui
 ofxOpenCv
 ofxIniSettings
-ofxGrabCam
 ofxShadowMap

@@ -3,7 +3,6 @@
 #include "ofMain.h"
 #include "Simulator/SimulationManager.h"
 #include "Artifact/EvaluationType.h"
-#include "ofxGrabCam.h"
 #include "ofxImGui.h"
 #include "ofxIniSettings.h"
 
@@ -31,9 +30,10 @@ private:
 	ofEventListener evolutionStoppedListener;
 
 	ofRectangle previewRect;
-	ofRectangle viewRect;
+	ofRectangle windowRect;
 
 	ofFbo frameFbo;
+	ofFboSettings frameFboSettings;
 
 	ofxImGui::Gui gui;
 	ofxIniSettings settings;
@@ -52,6 +52,7 @@ private:
 	bool bShadows = true;
 	bool bGui = true;
 	bool bLockFrameRate = true;
+	bool bwindowRenderResolution = false;
 
 	std::string evalTypeStr(EvaluationType evalType)
 	{
