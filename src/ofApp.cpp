@@ -51,7 +51,7 @@ void ofApp::setup()
 	frameFboSettings.height = bwindowRenderResolution ? windowRect.height : renderHeight;
 	frameFboSettings.internalformat = GL_RGBA;
 	frameFboSettings.useDepth = true;
-	frameFboSettings.numSamples = 8;
+	frameFboSettings.numSamples = 4;
 	frameFbo.allocate(frameFboSettings);
 
 	gui.setup();
@@ -86,8 +86,6 @@ void ofApp::initSim()
 	}
 }
 
-// Note: the simulator and evolution module don't wait for each other to finish, 
-// which can cause problems on certain user-input.
 void ofApp::start()
 {
 	// Start simulator first so it can await evaluation requests
@@ -226,6 +224,9 @@ void ofApp::imGui()
 				if (ImGui::MenuItem("Monitor", "m", bMonitor)) {
 					bMonitor = !bMonitor;
 				}
+				if (ImGui::MenuItem("Meta Overlay", "o", bMetaOverlay)) {
+					bMetaOverlay = !bMetaOverlay;
+				}
 				ImGui::EndMenu();
 			}
 			if (ImGui::BeginMenu("Settings"))
@@ -242,6 +243,7 @@ void ofApp::imGui()
 			}
 			if (ImGui::BeginMenu("Debug"))
 			{
+				ImGui::SliderFloat("Light Intensity", &simulationManager.lightIntensity, 0.0f, 5000.0f);
 				if (ImGui::MenuItem("Debug Renderer", "d", simulationManager.bDebugDraw)) {
 					simulationManager.bDebugDraw = !simulationManager.bDebugDraw;
 				}
@@ -297,6 +299,7 @@ void ofApp::imGui()
 					ImGui::Text("nodes: %d", simulationManager.getSelectedGenome()->getNumNodesUnfolded());
 					ImGui::Text("joints: %d", simulationManager.getSelectedGenome()->getNumJointsUnfolded());
 					ImGui::Text("brushes: %d", simulationManager.getSelectedGenome()->getNumBrushes());
+					ImGui::Text("viewsize: %.4f", simulationManager.getSettings().canvasViewSize);
 					ImGui::Dummy(margin);
 				}
 				ImGui::Text("Eval");
@@ -311,15 +314,15 @@ void ofApp::imGui()
 			}	
 			ImGui::End();
 
-			ImGui::SetNextWindowPos(ImVec2(0, ofGetWindowHeight() - offset));
-			ImGui::SetNextWindowSize(ImVec2(ofGetWindowWidth(), offset));
-			ImGui::SetNextWindowBgAlpha(0.5f);
-
-			if (ImGui::Begin("Footer", NULL, flags | ImGuiWindowFlags_NoScrollbar)) {
-				ImGui::Text("%s", simulationManager.getStatus().c_str());
-			}
-			ImGui::End();
 		}
+		ImGui::SetNextWindowPos(ImVec2(0, ofGetWindowHeight() - offset));
+		ImGui::SetNextWindowSize(ImVec2(ofGetWindowWidth(), offset));
+		ImGui::SetNextWindowBgAlpha(0.5f);
+
+		if (ImGui::Begin("Footer", NULL, flags | ImGuiWindowFlags_NoScrollbar)) {
+			ImGui::Text("%s", simulationManager.getStatus().c_str());
+		}
+		ImGui::End();
 
 		if (bMonitor) {
 			ImGui::SetNextWindowPos(ImVec2(0, menuBarSize.y));

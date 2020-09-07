@@ -4,6 +4,7 @@
 #include "ofShader.h"
 #include "ofMesh.h"
 #include "ofTypes.h"
+#include "Graphics/MaterialBase.h"
 
 class SimNodeBase
 {
@@ -41,11 +42,11 @@ public:
 	void setShader(std::shared_ptr<ofShader> shader);
 	std::shared_ptr<ofShader> getShader();
 
-	void setAppearance(std::shared_ptr<ofShader> shader, std::shared_ptr<ofMaterial> mtl, std::shared_ptr<ofTexture> tex);
+	void setAppearance(std::shared_ptr<ofShader> shader, std::shared_ptr<MaterialBase> mtl);
 
 	virtual void setColor(ofColor c);
 	void setTexture(std::shared_ptr<ofTexture> texture);
-	void setMaterial(std::shared_ptr<ofMaterial> mtl);
+	void setMaterial(std::shared_ptr<MaterialBase> mtl);
 	void setLight(std::shared_ptr<ofLight> light);
 	void setMesh(std::shared_ptr<ofMesh> mesh);
 
@@ -64,7 +65,7 @@ protected:
 
 	std::shared_ptr<ofShader> _shader;
 	std::shared_ptr<ofTexture> _texture;
-	std::shared_ptr<ofMaterial> _material;
+	std::shared_ptr<MaterialBase> _material;
 	std::shared_ptr<ofLight> _light;
 	std::shared_ptr<ofMesh> _mesh;
 };

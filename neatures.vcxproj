@@ -241,6 +241,8 @@
     <ClCompile Include="src\Genome\DirectedGraph.cpp" />
     <ClCompile Include="src\Genome\DirectedGraphConnection.cpp" />
     <ClCompile Include="src\Genome\DirectedGraphNode.cpp" />
+    <ClCompile Include="src\Graphics\PBRMaterial.cpp" />
+    <ClCompile Include="src\Graphics\PhongMaterial.cpp" />
     <ClCompile Include="src\Networking\BufferSender.cpp" />
     <ClCompile Include="src\Networking\BufferSenderThread.cpp" />
     <ClCompile Include="src\Networking\NetworkManager.cpp" />
@@ -324,6 +326,9 @@
     <ClInclude Include="src\Genome\DirectedGraph.h" />
     <ClInclude Include="src\Genome\DirectedGraphConnection.h" />
     <ClInclude Include="src\Genome\DirectedGraphNode.h" />
+    <ClInclude Include="src\Graphics\MaterialBase.h" />
+    <ClInclude Include="src\Graphics\PBRMaterial.h" />
+    <ClInclude Include="src\Graphics\PhongMaterial.h" />
     <ClInclude Include="src\Networking\BufferSender.h" />
     <ClInclude Include="src\Networking\BufferSenderThread.h" />
     <ClInclude Include="src\Networking\NetworkManager.h" />

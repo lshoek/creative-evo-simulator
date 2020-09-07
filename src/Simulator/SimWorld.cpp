@@ -10,7 +10,7 @@ void worldUpdateCallback(btDynamicsWorld* world, btScalar timeStep)
 {
     if (world->getWorldUserInfo()) {
         SimWorld* userWorld = (SimWorld*)world->getWorldUserInfo();
-
+ 
         if (userWorld->getSimInstance()) {
             SimInstance* instance = userWorld->getSimInstance();
             handleCollisions(world, instance->getCreature()->_sensorMode == SimCreature::Canvas);

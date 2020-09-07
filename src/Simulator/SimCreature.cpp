@@ -448,7 +448,7 @@ void SimCreature::clearForces()
 	}
 }
 
-void SimCreature::setAppearance(std::shared_ptr<ofShader> shader, std::shared_ptr<ofMaterial> mtl, std::shared_ptr<ofTexture> tex)
+void SimCreature::setAppearance(std::shared_ptr<ofShader> shader, std::shared_ptr<MaterialBase> mtl, std::shared_ptr<ofTexture> tex)
 {
 	m_shader = shader;
 	m_material = mtl;
@@ -470,7 +470,7 @@ void SimCreature::setShader(std::shared_ptr<ofShader> shader)
 	}
 }
 
-void SimCreature::setMaterial(std::shared_ptr<ofMaterial> mtl)
+void SimCreature::setMaterial(std::shared_ptr<MaterialBase> mtl)
 {
 	m_material = mtl;
 

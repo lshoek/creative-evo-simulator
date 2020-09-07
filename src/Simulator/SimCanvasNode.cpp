@@ -186,11 +186,7 @@ void SimCanvasNode::draw()
         _shader->begin();
         _shader->setUniformTexture("tex", _colorFbo.getTexture(), 0);
         _shader->setUniform4f("color", ofColor::white);
-        _shader->setUniform4f("mtl.ambient", _material->getAmbientColor());
-        _shader->setUniform4f("mtl.diffuse", _material->getDiffuseColor());
-        _shader->setUniform4f("mtl.specular", _material->getSpecularColor());
-        _shader->setUniform4f("mtl.emission", _material->getEmissiveColor());
-        _shader->setUniform1f("mtl.shininess", _material->getShininess());
+        _material->setShaderUniforms(_shader);
 
         _mesh->draw();
         _shader->end();

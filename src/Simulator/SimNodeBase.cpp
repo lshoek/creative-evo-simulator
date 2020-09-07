@@ -114,12 +114,10 @@ void SimNodeBase::removeFromWorld() {
 void SimNodeBase::setShader(std::shared_ptr<ofShader> shader) { _shader = shader; }
 std::shared_ptr<ofShader> SimNodeBase::getShader() { return _shader; }
 
-void SimNodeBase::setAppearance(std::shared_ptr<ofShader> shader, std::shared_ptr<ofMaterial> mtl, std::shared_ptr<ofTexture> tex)
+void SimNodeBase::setAppearance(std::shared_ptr<ofShader> shader, std::shared_ptr<MaterialBase> mtl)
 {
     _shader = shader;
     _material = mtl;
-    _texture = tex;
-    bUseTexture = true;
 }
 void SimNodeBase::setColor(ofColor c) {
     _color = c;
@@ -128,7 +126,7 @@ void SimNodeBase::setTexture(std::shared_ptr<ofTexture> texture) {
     _texture = texture;
     bUseTexture = true;
 }
-void SimNodeBase::setMaterial(std::shared_ptr<ofMaterial> mtl) { _material = mtl; }
+void SimNodeBase::setMaterial(std::shared_ptr<MaterialBase> mtl) { _material = mtl; }
 void SimNodeBase::setLight(std::shared_ptr<ofLight> light) { _light = light; }
 void SimNodeBase::setMesh(std::shared_ptr<ofMesh> mesh) { _mesh = mesh; }
 

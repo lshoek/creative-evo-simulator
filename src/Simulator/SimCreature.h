@@ -4,6 +4,7 @@
 #include "Simulator/SimCanvasNode.h"
 #include "ofGraphics.h"
 #include "ofMaterial.h"
+#include "Graphics/MaterialBase.h"
 #include "ofMesh.h"
 #include "Genome/DirectedGraph.h"
 
@@ -57,10 +58,10 @@ public:
 	void clearForces();
 
 	void setShader(std::shared_ptr<ofShader> shader);
-	void setMaterial(std::shared_ptr<ofMaterial> mtl);
+	void setMaterial(std::shared_ptr<MaterialBase> mtl);
 	void setLight(std::shared_ptr<ofLight> light);
 	void setTexture(std::shared_ptr<ofTexture> tex);
-	void setAppearance(std::shared_ptr<ofShader> shader, std::shared_ptr<ofMaterial> mtl, std::shared_ptr<ofTexture> tex);
+	void setAppearance(std::shared_ptr<ofShader> shader, std::shared_ptr<MaterialBase> mtl, std::shared_ptr<ofTexture> tex);
 
 	float m_motorStrength;
 	uint32_t m_targetFrequency;
@@ -89,7 +90,7 @@ private:
 
 	std::shared_ptr<ofShader> m_shader;
 	std::shared_ptr<ofTexture> m_texture;
-	std::shared_ptr<ofMaterial> m_material;
+	std::shared_ptr<MaterialBase> m_material;
 	std::shared_ptr<ofLight> m_light;
 
 	uint32_t m_numBodies;

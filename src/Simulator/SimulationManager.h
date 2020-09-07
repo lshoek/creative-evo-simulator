@@ -9,6 +9,8 @@
 #include "Artifact/SimpleEvaluators.h"
 #include "Artifact/AestheticEvaluator.h"
 #include "Artifact/EvaluationDispatcher.h"
+#include "Graphics/PBRMaterial.h"
+#include "Graphics/PhongMaterial.h"
 #include "Utils/Scheduler.h"
 #include "Utils/ImageSaverThread.h"
 #include "Utils/ImageSaver.h"
@@ -54,6 +56,7 @@ public:
 
     std::string getUniqueSimId();
     const std::string& getStatus();
+    const SimSettings& getSettings();
 
     // Returns ticket that listener can use to check when sim is finished and genome fitness is updated
     int queueSimInstance(SimInfo info);
@@ -95,11 +98,14 @@ public:
     bool bCanvasSensors = false;
     bool bAxisAlignedAttachments = false;
     bool bSaveArtifactsToDisk = false;
-    bool bStoreLastArtifact = false;
+    bool bStoreLastArtifact = true;
     bool bMultiEval = false;
 
-    glm::vec3 lightPosition;
     uint32_t simulationSpeed = 1;
+
+    glm::vec3 lightPosition;
+    float lightIntensity = 2000.0f;
+
     int genomeGenMinNumNodes = 6;
     int genomeGenMinNumConns = 4;
 
@@ -126,6 +132,7 @@ private:
 
     std::shared_ptr<DirectedGraph> _selectedGenome;
     std::shared_ptr<SimCreature> _previewCreature;
+    std::unique_ptr<SimCanvasNode> _previewCanvas;
 
     // preview world
     SimWorld* _previewWorld;
@@ -153,11 +160,9 @@ private:
     std::shared_ptr<ofShader> _canvasColorShader;
     std::shared_ptr<ofShader> _canvasUpdateShader;
 
-    std::shared_ptr<ofTexture> _nodeTexture;
-    std::shared_ptr<ofTexture> _terrainTexture;
-    std::shared_ptr<ofMaterial> _terrainMaterial;
-    std::shared_ptr<ofMaterial> _nodeMaterial;
-    std::shared_ptr<ofMaterial> _canvasMaterial;
+    std::shared_ptr<MaterialBase> _terrainMaterial;
+    std::shared_ptr<MaterialBase> _nodeMaterial;
+    std::shared_ptr<MaterialBase> _canvasMaterial;
 
     std::shared_ptr<ofLight> _light;
     float _lightDistanceFromFocus = 32.0f;

@@ -6,3 +6,11 @@ struct Material
 	vec4 emission;
 	float shininess;
 }; 
+
+struct PBRMaterial
+{
+	vec4 albedo;
+	float metallic;
+	float roughness;
+	float ao;
+};

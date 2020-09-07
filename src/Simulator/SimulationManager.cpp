@@ -31,46 +31,61 @@ void SimulationManager::init(SimSettings settings)
     cam.setPosition(8.0f, 8.0f, 4.0f);
     cam.lookAt(glm::vec3(0));
 
-    _nodeTexture = std::make_shared<ofTexture>();
-    _terrainTexture = std::make_shared<ofTexture>();
-    ofLoadImage(*_nodeTexture, "textures/white.png");
-    ofLoadImage(*_terrainTexture, "textures/checkers_64.png");
+    // Load terrain material
+    _terrainMaterial = std::make_shared<PBRMaterial>(ofFloatColor::white, 0.0625f, 0.125f, 1.0f);
+    std::shared_ptr<PBRMaterial> _terrainMtlAccessPtr = std::dynamic_pointer_cast<PBRMaterial>(_terrainMaterial);
+    _terrainMtlAccessPtr->setup(
+        "materials/wood/WoodFloor024_1K_Color.jpg",
+        "materials/wood/WoodFloor024_1K_Normal.jpg",
+        "",
+        "materials/wood/WoodFloor024_1K_Roughness.jpg",
+        "materials/wood/WoodFloor024_1K_AmbientOcclusion.jpg"
+    );
+    _terrainMtlAccessPtr->setNormalMapMult(0.5f);
+    _terrainMtlAccessPtr->setMetallic(0.0f);
 
-    // rendering -- configure appearance
-    _nodeTexture->generateMipmap();
-    _nodeTexture->setTextureMinMagFilter(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
-    _terrainTexture->generateMipmap();
-    _terrainTexture->setTextureMinMagFilter(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
-    _terrainTexture->setTextureWrap(GL_REPEAT, GL_REPEAT);
+    // Load canvas material
+    _canvasMaterial = std::make_shared<PBRMaterial>(ofFloatColor::white, 0.125f, 0.75f, 1.0f);
+    std::shared_ptr<PBRMaterial> _canvasMtlAccessPtr = std::dynamic_pointer_cast<PBRMaterial>(_canvasMaterial);
+    
+    _canvasMtlAccessPtr->setup(
+        "materials/paper/paper001_1K_Color.png",
+        "materials/paper/paper002_1K_Normal.png",
+        "",
+        "materials/paper/paper002_1K_Roughness.png",
+        ""
+    );
+    _canvasMtlAccessPtr->setNormalMapMult(1.0f);
+    _canvasMtlAccessPtr->setMetallic(0.0f);
 
-    ofMaterialSettings mtlSettings;
-    mtlSettings.ambient = ofFloatColor(0.375f, 1.0f);
-    mtlSettings.diffuse = ofFloatColor(0.8f, 1.0f);
-    mtlSettings.specular = ofFloatColor(1.0f, 1.0f);
-    mtlSettings.emissive = ofFloatColor(0.0f, 1.0f);
-    mtlSettings.shininess = 24;
+    // Load node material
+    _nodeMaterial = std::make_shared<PBRMaterial>(ofFloatColor::white, 0.125f, 0.5f, 1.0f);
+    std::shared_ptr<PBRMaterial> _nodeMtlAccessPtr = std::dynamic_pointer_cast<PBRMaterial>(_nodeMaterial);
 
-    _nodeMaterial = std::make_shared<ofMaterial>();
-    _nodeMaterial->setup(mtlSettings);
+    _nodeMtlAccessPtr->setup(
+        "",
+        "materials/bevel/Bevel_Normal.png",
+        "",
+        "materials/bevel/Bevel_Roughness.png",
+        ""
+    );
+    _nodeMtlAccessPtr->setNormalMapMult(1.0f);
+    _nodeMtlAccessPtr->setMetallic(0.0f);
 
-    mtlSettings.shininess = 16;
-    _canvasMaterial = std::make_shared<ofMaterial>();
-    _canvasMaterial->setup(mtlSettings);
-
-    mtlSettings.shininess = 64;
-    _terrainMaterial = std::make_shared<ofMaterial>();
-    _terrainMaterial->setup(mtlSettings);
-
-    lightPosition = MathUtils::randomPointOnSphere() * 16.0f;
-    lightPosition.y = _lightDistanceFromFocus;
-
+    // Light
     _light = std::make_shared<ofLight>();
+
+    float lon = ofRandom(-1.0f, 1.0f) * glm::pi<float>();
+    float lat = ofMap(ofRandom(1.0f), 0.0f, 1.0f, glm::pi<float>(), glm::two_pi<float>());
+    _light->orbitRad(lon, lat, _lightDistanceFromFocus);
+
     _light->setDirectional();
     _light->setAmbientColor(ofFloatColor(1.0f, 1.0f));
     _light->setDiffuseColor(ofFloatColor(1.0f, 1.0f));
     _light->setSpecularColor(ofFloatColor(1.0f, 1.0f));
-    _light->setPosition(lightPosition);
     _light->lookAt(glm::vec3(0));
+
+    lightPosition = _light->getPosition();
     //ofColor::fromHex(ofHexToInt());
 
     //  shadows
@@ -78,9 +93,23 @@ void SimulationManager::init(SimSettings settings)
 
     // preview world
     _previewWorld = new SimWorld();
-    _previewWorld->getTerrainNode()->setAppearance(_terrainShader, _terrainMaterial, _terrainTexture);
+    _previewWorld->getTerrainNode()->setAppearance(_terrainShader, _terrainMaterial);
     _previewWorld->getTerrainNode()->setLight(_light);
     _previewWorld->getTerrainNode()->getRigidBody()->setCollisionFlags(btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
+
+    // preview canvas
+    _previewCanvas = std::make_unique<SimCanvasNode>(btVector3(0, 0, 0), 
+        _settings.canvasSize, _settings.canvasViewSize, _settings.canvasMargin,
+        _canvasResolution.x, _canvasResolution.y,
+        _canvasConvResolution.x, _canvasConvResolution.y,
+        _previewWorld->getBtWorld()
+    );
+    _previewCanvas->setMaterial(_canvasMaterial);
+    _previewCanvas->setShader(_canvasShader);
+    _previewCanvas->setCanvasUpdateShader(_canvasUpdateShader);
+    _previewCanvas->setCanvasColorizeShader(_canvasColorShader);
+    _previewCanvas->setSubTextureShader(_canvasSubTextureShader);
+    _previewCanvas->addToWorld();
 
     // time
     if (ofGetTargetFrameRate()) {
@@ -122,9 +151,9 @@ void SimulationManager::init(SimSettings settings)
     _evaluationDispatcher.setup(_evaluationType, _canvasResolution.x, _canvasResolution.y);
 
     // test
-    cv::Mat testImage = cv::imread("data/keep/circle.bmp", cv::ImreadModes::IMREAD_GRAYSCALE);
-    _evaluationDispatcher.queue(testImage, 0, 0, false);
-    _evaluationDispatcher.queue(cv::imread("data/keep/pollock2_highcontrast.bmp", cv::ImreadModes::IMREAD_GRAYSCALE), 0, 0, false);
+    //cv::Mat testImage = cv::imread("data/keep/circle.bmp", cv::ImreadModes::IMREAD_GRAYSCALE);
+    //_evaluationDispatcher.queue(testImage, 0, 0, false);
+    //_evaluationDispatcher.queue(cv::imread("data/keep/pollock2_highcontrast.bmp", cv::ImreadModes::IMREAD_GRAYSCALE), 0, 0, false);
 
     _settings = settings;
     bInitialized = true;
@@ -137,6 +166,7 @@ void SimulationManager::startSimulation()
 
         if (_previewCreature) {
             _previewCreature->removeFromWorld();
+            _previewCanvas->removeFromWorld();
         }
         simulationSpeed = 1.0;
 
@@ -292,6 +322,7 @@ void SimulationManager::setLightUniforms(const std::shared_ptr<ofShader>& shader
     shader->setUniform4f("light.diffuse", _light->getDiffuseColor());
     shader->setUniform4f("light.specular", _light->getSpecularColor());
     shader->setUniform3f("eyePos", cam.getPosition());
+    shader->setUniform1f("lightIntensity", lightIntensity);
     shader->end();
 }
 
@@ -380,6 +411,7 @@ void SimulationManager::update()
         simulationSpeed = 0;
         if (_previewCreature) {
             _previewCreature->addToWorld();
+            _previewCanvas->addToWorld();
         }
     }
 }
@@ -418,7 +450,7 @@ void SimulationManager::updateSimInstance(SimInstance* instance, double timeStep
 void SimulationManager::shadowPass()
 {
     if (!bDebugDraw && bShadows) {
-        _shadowMap.begin(*_light, 64.0f, -32.0f, 64.0f);
+        _shadowMap.begin(*_light, 32.0f, -32.0f, 64.0f);
 
         // make an exception for the terrain
         glDisable(GL_CULL_FACE);
@@ -454,7 +486,6 @@ void SimulationManager::draw()
         if (bSimulationActive) {
 
             glDisable(GL_DEPTH_TEST);
-
             glEnable(GL_CULL_FACE);
             glCullFace(GL_BACK);
             for (const auto& instance : _simulationInstances)
@@ -479,8 +510,12 @@ void SimulationManager::draw()
             glDisable(GL_CULL_FACE);
         }
         else if (_previewCreature) {
+            glDisable(GL_DEPTH_TEST);
             glEnable(GL_CULL_FACE);
             glCullFace(GL_BACK);
+            _previewCanvas->draw();
+
+            glEnable(GL_DEPTH_TEST);
             _previewCreature->draw();
             glDisable(GL_CULL_FACE);
         }
@@ -519,14 +554,19 @@ std::string SimulationManager::getUniqueSimId()
     return "NA";
 }
 
+const std::string& SimulationManager::getStatus()
+{
+    return _status;
+}
+
 void SimulationManager::setStatus(std::string msg)
 {
     _status = msg;
 }
 
-const std::string& SimulationManager::getStatus()
+const SimulationManager::SimSettings& SimulationManager::getSettings()
 {
-    return _status;
+    return _settings;
 }
 
 ofEasyCam* SimulationManager::getCamera()
@@ -706,18 +746,16 @@ void SimulationManager::loadShaders()
     _canvasSubTextureShader = std::make_shared<ofShader>();
 
     if (bShadows) {
-        _terrainShader->load("shaders/checkersPhongShadow");
-        _nodeShader->load("shaders/framePhongShadow");
-        _canvasShader->load("shaders/texturePhongShadow");
+        _terrainShader->load("shaders/checkersPhongShadowPBR");
+        _nodeShader->load("shaders/framePhongShadowPBR");
+        _canvasShader->load("shaders/texturePhongShadowPBR");
     }
     else {
         _terrainShader->load("shaders/checkers");
         _nodeShader->load("shaders/phong");
         _canvasShader->load("shaders/phong");
     }
-    // QUICK HACK: EITHER USE canvas OR canvas_pressure
     _canvasUpdateShader->load("shaders/canvas_pressure"); 
-    
     _canvasColorShader->load("shaders/lum2col");
     _canvasSubTextureShader->load("shaders/subtexture");
 }

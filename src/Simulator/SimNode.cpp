@@ -53,11 +53,7 @@ void SimNode::draw()
             _shader->setUniform4f("brush_color", _inkColor);
             _shader->setUniform1f("brush", isBrush());
             _shader->setUniform1f("brush_active", isBrushActivated());
-            _shader->setUniform4f("mtl.ambient", _material->getAmbientColor());
-            _shader->setUniform4f("mtl.diffuse", _material->getDiffuseColor());
-            _shader->setUniform4f("mtl.specular", _material->getSpecularColor());
-            _shader->setUniform4f("mtl.emission", _material->getEmissiveColor());
-            _shader->setUniform1f("mtl.shininess", _material->getShininess());
+            _material->setShaderUniforms(_shader);
 
             _mesh->draw();
             _shader->end();

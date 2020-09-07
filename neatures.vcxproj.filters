@@ -64,6 +64,9 @@
     <Filter Include="src\Artifact\QuadTreeCompressor">
       <UniqueIdentifier>{760ca42e-c2cd-46ff-b54e-26510e587b5a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\Graphics">
+      <UniqueIdentifier>{9b19da77-9210-476f-a3a6-cc4ede09a443}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="icon.rc" />
@@ -251,6 +254,12 @@
     </ClCompile>
     <ClCompile Include="src\Artifact\EvaluationDispatcher.cpp">
       <Filter>src\Artifact</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\PBRMaterial.cpp">
+      <Filter>src\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\PhongMaterial.cpp">
+      <Filter>src\Graphics</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -526,6 +535,15 @@
     </ClInclude>
     <ClInclude Include="src\Utils\OFUtils.h">
       <Filter>src\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\PBRMaterial.h">
+      <Filter>src\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\MaterialBase.h">
+      <Filter>src\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\PhongMaterial.h">
+      <Filter>src\Graphics</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
