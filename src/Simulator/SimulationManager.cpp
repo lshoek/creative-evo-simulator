@@ -304,10 +304,10 @@ void SimulationManager::lateUpdate()
         float latitude = ofMap(ofGetMouseY(), 0, ofGetHeight(), -HALF_PI, HALF_PI*0.25f);
         _light->orbitRad(longitude, latitude, _lightDistanceFromFocus);
     }
-    else {
-        _light->setGlobalPosition(lightPosition);
-        _light->lookAt(glm::vec3(0));
-    }
+    //else {
+    //    _light->setGlobalPosition(lightPosition);
+    //    _light->lookAt(glm::vec3(0));
+    //}
     setLightUniforms(_nodeShader);
     setLightUniforms(_terrainShader);
     setLightUniforms(_canvasShader);

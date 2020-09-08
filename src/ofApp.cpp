@@ -27,7 +27,7 @@ void ofApp::setup()
 	uint32_t frameRate = (bLockFrameRate) ? 60 : 0;
 	ofSetFrameRate(frameRate);
 
-	uint64_t seed = GetTickCount();
+	int seed = GetTickCount();
 	ofLog() << "seed: " << seed;
 	ofSeedRandom(seed);
 
@@ -247,7 +247,7 @@ void ofApp::imGui()
 				if (ImGui::MenuItem("Debug Renderer", "d", simulationManager.bDebugDraw)) {
 					simulationManager.bDebugDraw = !simulationManager.bDebugDraw;
 				}
-				if (ImGui::MenuItem("Debug Light", NULL, simulationManager.bMouseLight)) {
+				if (ImGui::MenuItem("Debug Light", "l", simulationManager.bMouseLight)) {
 					simulationManager.bMouseLight = !simulationManager.bMouseLight;
 				}
 				if (ImGui::MenuItem("View Lightspace Depth", NULL, simulationManager.bViewLightSpaceDepth)) {
@@ -411,6 +411,9 @@ void ofApp::keyPressed(int key)
 			}
 			if (key == 'r') {
 				simulationManager.loadShaders();
+			}
+			if (key == 'l') {
+				simulationManager.bMouseLight = !simulationManager.bMouseLight;
 			}
 			if (key == 'c') {
 				simulationManager.shiftFocus();

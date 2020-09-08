@@ -21,7 +21,7 @@ SimCreature::SimCreature(btVector3 position, const std::shared_ptr<DirectedGraph
 	m_targetFrequency = 3;
 	m_targetAccumulator = 0;
 
-	m_bodyColor = ofColor::fromHsb(ofRandom(255), 0.7f * 255, 255, 255);
+	m_bodyColor = ofFloatColor::fromHsb(ofRandom(1.0f), 0.7f, 1.0f, 1.0f);
 
 	buildPhenome(m_bodyGenome);
 }

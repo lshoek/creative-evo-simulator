@@ -98,7 +98,7 @@ public:
     bool bCanvasSensors = false;
     bool bAxisAlignedAttachments = false;
     bool bSaveArtifactsToDisk = false;
-    bool bStoreLastArtifact = true;
+    bool bStoreLastArtifact = false;
     bool bMultiEval = false;
 
     uint32_t simulationSpeed = 1;
