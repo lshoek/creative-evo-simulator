@@ -1,5 +1,4 @@
-# neatures
-## Evolving arbitrary virtual embodied agents using external artifact evaluations 
+# Neatures: Evolving arbitrary virtual embodied agents using external artifact evaluations
 
 Master's thesis project
 
