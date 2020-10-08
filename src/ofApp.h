@@ -51,7 +51,9 @@ private:
 	bool bDraw = true;
 	bool bShadows = true;
 	bool bGui = true;
+	bool bFullScreen = true;
 	bool bLockFrameRate = true;
+	bool bFirstFrame = false;
 	bool bwindowRenderResolution = false;
 
 	std::string evalTypeStr(EvaluationType evalType)

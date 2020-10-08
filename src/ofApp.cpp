@@ -34,6 +34,7 @@ void ofApp::setup()
 	settings = ofxIniSettings("settings.ini");
 	bDraw = settings.get("mode.draw", true);
 	bMonitor = settings.get("mode.monitor", true);
+	bFullScreen = settings.get("mode.fullscreen", false);
 
 	HWND hwnd = GetConsoleWindow();
 	MoveWindow(
@@ -144,6 +145,12 @@ void ofApp::draw()
 	if (bGui) {
 		imGui();
 	}
+
+	// FullScreen setting
+	if (bFirstFrame && bFullScreen) {
+		ofSetFullscreen(bFullScreen);
+	}
+	bFirstFrame = false;
 }
 
 void ofApp::imGui()
@@ -221,6 +228,9 @@ void ofApp::imGui()
 			}
 			if (ImGui::BeginMenu("Window"))
 			{
+				if (ImGui::MenuItem("FullScreen", "f", bFullScreen)) {
+					bFullScreen = !bFullScreen;
+				}
 				if (ImGui::MenuItem("Monitor", "m", bMonitor)) {
 					bMonitor = !bMonitor;
 				}
@@ -401,6 +411,10 @@ void ofApp::keyPressed(int key)
 		}
 		if (key == 'o') {
 			bMetaOverlay = !bMetaOverlay;
+		}
+		if (key == 'f') {
+			bFullScreen = !bFullScreen;
+			ofSetFullscreen(bFullScreen);
 		}
 		if (simulationManager.isInitialized()) {
 			if (key == 'd') {

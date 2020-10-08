@@ -26,6 +26,7 @@ void BufferSender::allocate(uint32_t w, uint32_t h, ofPixelFormat type)
 
     for (int i = 0; i < 2; i++) {
         _pixelBuffer[i].allocate(_width, _height, _pixelFormat);
+        _pixelBufferObject[i].allocate(_bufSize, GL_DYNAMIC_DRAW);
         _writeBuffer[i].allocate(_compressBound);
     }
     swapBuffers();
