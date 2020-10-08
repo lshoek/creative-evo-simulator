@@ -25,6 +25,7 @@ bld/
 [Ll]og/
 
 bin/data/sims/
+bin/data/keep/
 
 # Exclude binaries and etc
 *.exe
