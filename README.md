@@ -1,7 +1,6 @@
-# neatures
-## Evolving arbitrary virtual embodied agents using external artifact evaluations 
+# Neatures: Evolving arbitrary virtual embodied agents using external artifact evaluations
 
-Master's thesis project (WORK IN PROGRESS)
+Master's thesis project
 
 Lesley van Hoek / Leiden University / Media Technology MSc
 
@@ -17,5 +16,10 @@ ofx dependencies:
 - ofxIniSettings (https://github.com/companje/ofxIniSettings)
 - ofxShadowMap (https://github.com/lshoek/ofxShadowMap)
 
+# Preview
 ![Preview](preview/screenshot.jpg)
 ![Preview](preview/action-pose.png)
+
+# License
+This work is licensed under a MIT License.
+Copyright (c) 2020 Lesley van Hoek
