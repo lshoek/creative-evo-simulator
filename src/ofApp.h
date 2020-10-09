@@ -5,6 +5,8 @@
 #include "Artifact/EvaluationType.h"
 #include "ofxImGui.h"
 #include "ofxIniSettings.h"
+#include "ofxFFmpegRecorder.h"
+#include "ofxFastFboReader.h"
 
 class ofApp : public ofBaseApp
 {
@@ -31,12 +33,20 @@ private:
 
 	ofRectangle previewRect;
 	ofRectangle windowRect;
+	ofRectangle renderRect;
+	ofRectangle renderRectFlipped;
 
 	ofFbo frameFbo;
+	ofFbo guiFbo;
 	ofFboSettings frameFboSettings;
 
 	ofxImGui::Gui gui;
 	ofxIniSettings settings;
+
+	ofxFFmpegRecorder recorder;
+	ofxFastFboReader fboReader;
+	ofFbo recordFbo;
+	ofPixels recordPixels;
 
 	uint64_t perf_update = 0;
 	uint64_t perf_draw = 0;
@@ -53,8 +63,14 @@ private:
 	bool bGui = true;
 	bool bFullScreen = true;
 	bool bLockFrameRate = true;
+	bool bAutoCam = false;
 	bool bFirstFrame = false;
+	bool bRecording = false;
 	bool bwindowRenderResolution = false;
+
+	const std::string FFMPEG_PATH = "c:/ffmpeg/bin/ffmpeg.exe";
+	const std::string RECORDINGS_DIR = "recordings/";
+	const std::string RECORDINGS_EXT = ".mp4";
 
 	std::string evalTypeStr(EvaluationType evalType)
 	{

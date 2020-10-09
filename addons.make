@@ -2,3 +2,6 @@ ofxImGui
 ofxOpenCv
 ofxIniSettings
 ofxShadowMap
+ofxFastFboReader
+ofxFFmpegRecorder
+ 

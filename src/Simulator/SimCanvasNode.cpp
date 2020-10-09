@@ -43,6 +43,7 @@ SimCanvasNode::SimCanvasNode(btVector3 position, float size, float viewSize, flo
     fboSettings.maxFilter = GL_NEAREST;
 
     _convFbo.allocate(fboSettings);
+    _convFbo.getTexture().setRGToRGBASwizzles(true);
 
     // Canvas color and alpha separated
     _colorFbo.allocate(_canvasRes.x, _canvasRes.y, GL_RGBA);

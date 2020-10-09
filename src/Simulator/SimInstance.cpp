@@ -13,7 +13,7 @@ void SimInstance::updateTimeStep(double timeStep)
 		// prevent updates if an effector vector is required
 		if (!_creature->isAwaitingEffectorUpdate()) {
 			_creature->updateTimeStep(timeStep);
-			_world->getBtWorld()->stepSimulation(timeStep, 1, FixedTimeStep);
+			_world->getBtWorld()->stepSimulation(timeStep, 1, FIXED_TIMESTEP);
 			_elapsed += timeStep;
 		}
 		if (_elapsed >= _duration) {

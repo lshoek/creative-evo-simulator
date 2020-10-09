@@ -116,7 +116,7 @@ void SimulationManager::init(SimSettings settings)
         _targetFrameTimeMillis = 1000.0f/ofGetTargetFrameRate();
     }
     else {
-        _targetFrameTimeMillis = FixedTimeStepMillis;
+        _targetFrameTimeMillis = FIXED_TIMESTEP_MILLIS;
     }
     simulationSpeed = 0;
 
@@ -171,7 +171,7 @@ void SimulationManager::startSimulation()
         simulationSpeed = 1.0;
 
         // Reset timing
-        _startTime = _clock.getTimeMilliseconds();
+        _startTimeMillis = _clock.getTimeMilliseconds();
         _frameTimeAccumulator = 0.0;
         _clock.reset();
 
@@ -328,36 +328,36 @@ void SimulationManager::setLightUniforms(const std::shared_ptr<ofShader>& shader
 
 void SimulationManager::update()
 {
+    _timeMillis = _clock.getTimeMilliseconds();
+    _frameTimeMillis = _timeMillis - _prevTime;
+    _prevTime = _timeMillis;
+
     _networkManager.receive();
 
     if (bSimulationActive) {
-        _time = _clock.getTimeMilliseconds();
-        _frameTime = _time - _prevTime;
-        _prevTime = _time;
-
-        _runTime = _time - _startTime;
+        _runTimeMillis = _timeMillis - _startTimeMillis;
         _simulationSpeed = simulationSpeed;
 
         // prevents physics time accumulator from summing up too much time (i.e. when debugging)
-        if (_frameTime > _targetFrameTimeMillis) {
-            _frameTime = _targetFrameTimeMillis;
+        if (_frameTimeMillis > _targetFrameTimeMillis) {
+            _frameTimeMillis = _targetFrameTimeMillis;
         }
-        else if (_frameTime < .0) {
-            _frameTime = .0;
+        else if (_frameTimeMillis < .0) {
+            _frameTimeMillis = .0;
         }
-        _frameTimeAccumulator += _frameTime;
-        int steps = floor((_frameTimeAccumulator / FixedTimeStepMillis) + 0.5);
+        _frameTimeAccumulator += _frameTimeMillis;
+        int steps = floor((_frameTimeAccumulator / FIXED_TIMESTEP_MILLIS) + 0.5);
 
         _timeStepsPerUpdate = 0;
         if (steps > 0) {
-            btScalar timeToProcess = steps * _frameTime * _simulationSpeed;
+            btScalar timeToProcess = steps * _frameTimeMillis * _simulationSpeed;
             while (timeToProcess >= 0.01) {
-                performTrueSteps(FixedTimeStep);
-                timeToProcess -= FixedTimeStepMillis;
+                performTrueSteps(FIXED_TIMESTEP);
+                timeToProcess -= FIXED_TIMESTEP_MILLIS;;
                 _timeStepsPerUpdate++;
             }
             // Residual value carries over to next frame
-            _frameTimeAccumulator -= _frameTime * steps;
+            _frameTimeAccumulator -= _frameTimeMillis * steps;
         }
     }
 
@@ -401,10 +401,20 @@ void SimulationManager::update()
         }
     }
 
-    // quick and dirty
+    // Quick and dirty
     if (bInstanceDestroyed && !bStopSimulationQueued) {
         _networkManager.search();
     }
+
+    //  AutoCam
+    if (bAutoCam) {
+        float delta = (_frameTimeMillis / 1000.0f);
+        float timeScale = 0.125f;
+        cam.rotateAround(glm::angleAxis(timeScale*delta, glm::vec3(0, 1, 0)), glm::zero<glm::vec3>());
+        cam.lookAt(glm::zero<glm::vec3>());
+    }
+
+    // Stopping simulation
     if (bStopSimulationQueued && !isSimulationInstanceActive()) {
         bSimulationActive = false;
         bStopSimulationQueued = false;
@@ -616,6 +626,17 @@ void SimulationManager::shiftFocus()
 {
     if (!_simulationInstances.empty() && _focusIndex < _simulationInstances.size()) {
         _focusIndex = (_focusIndex + 1) % _simulationInstances.size();
+    }
+}
+
+void SimulationManager::setAutoCam(bool enable)
+{
+    bAutoCam = enable;
+    if (enable) {
+        cam.disableMouseInput();
+    }
+    else {
+        cam.enableMouseInput();
     }
 }
 

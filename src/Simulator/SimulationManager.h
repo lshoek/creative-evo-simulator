@@ -76,6 +76,7 @@ public:
     glm::vec3 getFocusOrigin();
     std::string getFocusInfo();
     void shiftFocus();
+    void setAutoCam(bool enable);
 
     glm::ivec2 getCanvasResolution();
     glm::ivec2 getCanvasConvResolution();
@@ -142,14 +143,14 @@ private:
 
     // time
     btClock _clock;
-    btScalar _startTime = 0;            // clock time that simulation started (ms)
-    btScalar _runTime = 0;              // clock time simulation has run (ms)
+    btScalar _startTimeMillis = 0;      // clock time that simulation started (ms)
+    btScalar _runTimeMillis = 0;        // clock time simulation has run (ms)
     btScalar _simulationSpeed = 0.0;    // speed of simulation relative to clock time
     btScalar _targetFrameTimeMillis;
 
-    btScalar _time = 0;
+    btScalar _timeMillis = 0;
     btScalar _prevTime = 0;
-    btScalar _frameTime = 0;
+    btScalar _frameTimeMillis = 0;
     btScalar _frameTimeAccumulator = 0;
 
     // graphics
@@ -172,6 +173,7 @@ private:
     bool bSimulationActive = false;
     bool bStopSimulationQueued = false;
     bool bGenomeLoaded = false;
+    bool bAutoCam = false;
 
     int _simInstanceIdCounter = 0;
     int _simInstanceGridSize = 2;

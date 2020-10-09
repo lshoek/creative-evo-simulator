@@ -15,6 +15,8 @@ ofx dependencies:
 - ofxImGui (https://github.com/jvcleave/ofxImGui)
 - ofxIniSettings (https://github.com/companje/ofxIniSettings)
 - ofxShadowMap (https://github.com/lshoek/ofxShadowMap)
+- ofxFastFboReader (https://github.com/satoruhiga/ofxFastFboReader)
+- ofxFFmpegRecorder (https://github.com/Furkanzmc/ofxFFmpegRecorder)
 
 # Preview
 ![Preview](preview/screenshot.jpg)

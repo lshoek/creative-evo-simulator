@@ -67,6 +67,18 @@
     <Filter Include="src\Graphics">
       <UniqueIdentifier>{9b19da77-9210-476f-a3a6-cc4ede09a443}</UniqueIdentifier>
     </Filter>
+    <Filter Include="addons\ofxFastFBOReader">
+      <UniqueIdentifier>{189cdd56-9cbe-4629-8966-0e4281a31929}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="addons\ofxFastFBOReader\src">
+      <UniqueIdentifier>{eb33a8f6-02aa-4cbd-bfcc-2c0e634a94ce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="addons\ofxFFmpegRecorder">
+      <UniqueIdentifier>{c2a52673-d911-454f-9e7a-8b225459f92b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="addons\ofxFFmpegRecorder\src">
+      <UniqueIdentifier>{5f970907-a39b-405d-bda9-8aa7829ac434}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="icon.rc" />
@@ -260,6 +272,12 @@
     </ClCompile>
     <ClCompile Include="src\Graphics\PhongMaterial.cpp">
       <Filter>src\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\addons\ofxFastFboReader\src\ofxFastFboReader.cpp">
+      <Filter>addons\ofxFastFBOReader\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\addons\ofxFFmpegRecorder\src\ofxFFmpegRecorder.cpp">
+      <Filter>addons\ofxFFmpegRecorder\src</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -544,6 +562,12 @@
     </ClInclude>
     <ClInclude Include="src\Graphics\PhongMaterial.h">
       <Filter>src\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\addons\ofxFastFboReader\src\ofxFastFboReader.h">
+      <Filter>addons\ofxFastFBOReader\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\addons\ofxFFmpegRecorder\src\ofxFFmpegRecorder.h">
+      <Filter>addons\ofxFFmpegRecorder\src</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

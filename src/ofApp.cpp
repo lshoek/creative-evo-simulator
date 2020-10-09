@@ -34,6 +34,7 @@ void ofApp::setup()
 	settings = ofxIniSettings("settings.ini");
 	bDraw = settings.get("mode.draw", true);
 	bMonitor = settings.get("mode.monitor", true);
+	bMetaOverlay = settings.get("mode.meta", false);
 	bFullScreen = settings.get("mode.fullscreen", false);
 
 	HWND hwnd = GetConsoleWindow();
@@ -43,17 +44,30 @@ void ofApp::setup()
 	);
 
 	bwindowRenderResolution = settings.get("rendering.window", true);
-	int renderWidth = settings.get("rendering.width", ofGetWindowWidth());
-	int renderHeight = settings.get("rendering.height", ofGetWindowHeight());
+	int renderWidth = bwindowRenderResolution ? ofGetWindowWidth() : settings.get("rendering.width", ofGetWindowWidth());
+	int renderHeight = bwindowRenderResolution ? ofGetWindowHeight() : settings.get("rendering.height", ofGetWindowHeight());
+	renderRect = ofRectangle(0, 0, renderWidth, renderHeight);
+	renderRectFlipped = ofRectangle(0, renderHeight, renderWidth, -renderHeight);
 
-	windowRect = ofRectangle(0, 0, ofGetWindowWidth(), ofGetWindowHeight());
-
-	frameFboSettings.width = bwindowRenderResolution ? windowRect.width : renderWidth;
-	frameFboSettings.height = bwindowRenderResolution ? windowRect.height : renderHeight;
+	frameFboSettings.width = renderWidth;
+	frameFboSettings.height = renderHeight;
 	frameFboSettings.internalformat = GL_RGBA;
 	frameFboSettings.useDepth = true;
 	frameFboSettings.numSamples = 4;
 	frameFbo.allocate(frameFboSettings);
+	guiFbo.allocate(renderWidth, renderHeight, GL_RGBA);
+
+	// Recorder
+	recordFbo.allocate(frameFboSettings.width, frameFboSettings.height, GL_RGB);
+	recordPixels.allocate(recordFbo.getWidth(), recordFbo.getHeight(), OF_IMAGE_COLOR);
+
+	recorder.setup(true, false, glm::vec2(recordFbo.getWidth(), recordFbo.getHeight()));
+	recorder.setFFmpegPath(FFMPEG_PATH);
+	recorder.setFps(30);
+
+	std::vector<std::string> inputArgs;
+	inputArgs.push_back("-vcodec libx264 -crf 0"); //inputArgs.push_back("-q:v 10");
+	recorder.setAdditionalOutputArguments(inputArgs);
 
 	gui.setup();
 
@@ -130,9 +144,18 @@ void ofApp::draw()
 		{
 			simulationManager.shadowPass();
 
+			if (bGui) {
+				guiFbo.begin();
+				glClearColor(0.f, 0.f, 0.f, 0.f);
+				glClear(GL_COLOR_BUFFER_BIT);
+				imGui();
+				guiFbo.end();
+			}
 			frameFbo.begin();
-			ofClear(0, 0);
+			glClearColor(0.f, 0.f, 0.f, 0.f);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			simulationManager.draw();
+			guiFbo.draw(renderRectFlipped);
 			frameFbo.end();
 
 			frameFbo.draw(windowRect);
@@ -140,11 +163,22 @@ void ofApp::draw()
 		glDisable(GL_BLEND);
 		glDisable(GL_DEPTH_TEST);
 
+		// Recorder
+		if (recorder.isRecording()) {
+			recordFbo.begin();
+			frameFbo.draw(renderRect);
+			recordFbo.end();
+			fboReader.readToPixels(recordFbo, recordPixels, OF_IMAGE_COLOR);
+			if (recordPixels.getWidth() > 0 && recordPixels.getHeight() > 0) {
+				recorder.addFrame(recordPixels);
+			}
+		}
+
 		perf_draw = ofGetElapsedTimeMillis() - start;
 	}
-	if (bGui) {
-		imGui();
-	}
+	//if (bGui) {
+	//	imGui();
+	//}
 
 	// FullScreen setting
 	if (bFirstFrame && bFullScreen) {
@@ -168,7 +202,8 @@ void ofApp::imGui()
 			ImGuiWindowFlags_AlwaysAutoResize |
 			ImGuiWindowFlags_NoSavedSettings |
 			ImGuiWindowFlags_NoFocusOnAppearing |
-			ImGuiWindowFlags_NoNav;
+			ImGuiWindowFlags_NoNav |
+			ImGuiWindowFlags_NoScrollbar;
 
 		if (ImGui::BeginMainMenuBar())
 		{
@@ -230,6 +265,7 @@ void ofApp::imGui()
 			{
 				if (ImGui::MenuItem("FullScreen", "f", bFullScreen)) {
 					bFullScreen = !bFullScreen;
+					ofSetFullscreen(bFullScreen);
 				}
 				if (ImGui::MenuItem("Monitor", "m", bMonitor)) {
 					bMonitor = !bMonitor;
@@ -249,6 +285,10 @@ void ofApp::imGui()
 					uint32_t frameRate = (bLockFrameRate) ? 60 : 0;
 					ofSetFrameRate(frameRate);
 				}
+				if (ImGui::MenuItem("Auto Cam", NULL, bAutoCam)) {
+					bAutoCam = !bAutoCam;
+					simulationManager.setAutoCam(bAutoCam);
+				}
 				ImGui::EndMenu();
 			}
 			if (ImGui::BeginMenu("Debug"))
@@ -263,9 +303,9 @@ void ofApp::imGui()
 				if (ImGui::MenuItem("View Lightspace Depth", NULL, simulationManager.bViewLightSpaceDepth)) {
 					simulationManager.bViewLightSpaceDepth = !simulationManager.bViewLightSpaceDepth;
 				}
-				if (ImGui::MenuItem("View Canvas Evaluation Mask", NULL, simulationManager.bViewCanvasEvaluationMask)) {
-					simulationManager.bViewCanvasEvaluationMask = !simulationManager.bViewCanvasEvaluationMask;
-				}
+				//if (ImGui::MenuItem("View Canvas Evaluation Mask", NULL, simulationManager.bViewCanvasEvaluationMask)) {
+				//	simulationManager.bViewCanvasEvaluationMask = !simulationManager.bViewCanvasEvaluationMask;
+				//}
 				if (ImGui::MenuItem("Canvas Sensors", NULL, simulationManager.bCanvasSensors)) {
 					simulationManager.bCanvasSensors = !simulationManager.bCanvasSensors;
 				}
@@ -390,10 +430,14 @@ void ofApp::windowResized(int w, int h)
 	windowRect = ofRectangle(0, 0, w, h);
 	previewRect = ofRectangle(w*0.75f, h*0.75f, w*0.2f, h*0.2f);
 
-	if (bwindowRenderResolution) {
+	if (bwindowRenderResolution && !recorder.isRecording()) {
 		frameFboSettings.width = windowRect.width;
 		frameFboSettings.height = windowRect.height;
 		frameFbo.allocate(frameFboSettings);
+
+		renderRect = ofRectangle(0, 0, w, h);
+		recordFbo.allocate(w, h, GL_RGB);
+		recorder.setup(true, false, glm::vec2(recordFbo.getWidth(), recordFbo.getHeight()));
 	}
 }
 
@@ -403,36 +447,56 @@ void ofApp::keyPressed(int key)
 		if (key == 'e') {
 			start();
 		}
-		if (key == 'g') {
+		else if (key == 'g') {
 			bGui = !bGui;
 		}
-		if (key == 'm') {
+		else if (key == 'm') {
 			bMonitor = !bMonitor;
 		}
-		if (key == 'o') {
+		else if (key == 'o') {
 			bMetaOverlay = !bMetaOverlay;
 		}
-		if (key == 'f') {
+		else if (key == 'f') {
 			bFullScreen = !bFullScreen;
 			ofSetFullscreen(bFullScreen);
+		}
+		else if (key == 'R') {
+			bRecording = !bRecording;
+
+			std::ostringstream ss;
+			if (bRecording) {
+				recorder.setOutputPath(ofToDataPath(RECORDINGS_DIR + ofGetTimestampString() + RECORDINGS_EXT, true));
+				//recorder.setManualRecording(true);
+				recorder.startCustomRecord();
+				ss << "Recording started.";
+			}
+			else {
+				recorder.stop();
+				ss << "Recording saved to " << ofToDataPath(RECORDINGS_DIR + ofGetTimestampString() + RECORDINGS_EXT, true);
+			}
+			ofLog() << ss.str();
 		}
 		if (simulationManager.isInitialized()) {
 			if (key == 'd') {
 				simulationManager.bDebugDraw = !simulationManager.bDebugDraw;
 			}
-			if (key == 'D') {
+			else if (key == 'D') {
 				bDraw = !bDraw;
 			}
-			if (key == 'r') {
+			else if (key == 'c') {
+				bAutoCam = !bAutoCam;
+				simulationManager.setAutoCam(bAutoCam);
+			}
+			else if (key == 'r') {
 				simulationManager.loadShaders();
 			}
-			if (key == 'l') {
+			else if (key == 'l') {
 				simulationManager.bMouseLight = !simulationManager.bMouseLight;
 			}
-			if (key == 'c') {
+			else if (key == 'c') {
 				simulationManager.shiftFocus();
 			}
-			if (key == 'x') {
+			else if (key == 'x') {
 				simulationManager.terminateSimInstances();
 			}
 		}
