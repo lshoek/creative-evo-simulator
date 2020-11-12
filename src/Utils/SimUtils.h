@@ -56,22 +56,23 @@ public:
 		return btVector3(v.x() > 0 ? 0. : 1., v.y() > 0 ? 0. : 1., v.z() > 0 ? 0. : 1.);
 	}
 
-	static btVector3 minAbsDotAxis(const btVector3& v)
+	// Return a vector that is perpendicular to v and lies on its nearest axis. 
+	// This is a simple solution to overcome cross product singularities with axis-aligned vectors.
+	static btVector3 getPerpOnNearestAxis(const btVector3& v)
 	{
-		//float xDot = abs(v.dot(btVector3(1, 0, 0)));
-		//float yDot = abs(v.dot(btVector3(0, 1, 0)));
-		//float zDot = abs(v.dot(btVector3(0, 0, 1)));
+		btScalar Ax = btFabs(v.dot(btVector3(1, 0, 0)));
+		btScalar Ay = btFabs(v.dot(btVector3(0, 1, 0)));
+		btScalar Az = btFabs(v.dot(btVector3(0, 0, 1)));
 
-		btVector3 p;
-		double Ax = abs(v.x()), Ay = abs(v.y()), Az = abs(v.z());
-		if (Ax < Ay) {
-			p = Ax < Az ? btVector3(0, -v.z(), v.y()) : btVector3(-v.y(), v.x(), 0);
+		if (Ax < Ay && Ax < Az) {
+			return btVector3(0, -v.z(), v.y());
+		}
+		else if (Ay < Ax && Ay < Az) {
+			return btVector3(v.z(), 0, -v.x());
 		}
 		else {
-			p = Ay < Az ? btVector3(v.z(), 0, -v.x()) : btVector3(-v.y(), v.x(), 0);
+			return btVector3(-v.y(), v.x(), 0);
 		}
-		return p;
-		//return (xDot < yDot && xDot < zDot) ? btVector3(1, 0, 0) : (yDot < zDot) ? btVector3(0, 1, 0) : btVector3(0, 0, 1);
 	}
 
 	// Origin lies inside the box so there is always an intersection

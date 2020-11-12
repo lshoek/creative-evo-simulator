@@ -26,6 +26,10 @@ SimCreature::SimCreature(btVector3 position, const std::shared_ptr<DirectedGraph
 	buildPhenome(m_bodyGenome);
 }
 
+/// <summary>
+/// Initializes a creature phenome from a given genome.
+/// </summary>
+/// <param name="graph">The data structure for the creature genome.</param>
 void SimCreature::buildPhenome(DirectedGraph* graph)
 {
 	m_numBodies = graph->getNumNodesUnfolded();
@@ -49,6 +53,18 @@ void SimCreature::buildPhenome(DirectedGraph* graph)
 	dfs(graph->getRootNode(), nullptr, nullptr, graph, btVector3(1., 1., 1.), 1.0, 0.0, recursionLimits, segmentIndex);
 }
 
+/// <summary>
+/// Recursive function that traverses the genome graph using dfs to fully initialize the creature phenome.
+/// </summary>
+/// <param name="graphNode">The current node to process.</param>
+/// <param name="incoming">The incoming graph connection. This must be nullptr if graphNode is the root node.</param>
+/// <param name="parentSimNode">The phenome SimNode object associated with the parent node. This must be nullptr if it graphNode is the root node.</param>
+/// <param name="graph">The data structure for the creature genome.</param>
+/// <param name="parentDims">The dimensions of the parent object.</param>
+/// <param name="cascadingScale">The scaling factor of the current SimNode. This may be 1.0 if it graphNode is the root node.</param>
+/// <param name="attachment">The attachment coefficient of the current node [0..1]. Used to determined where a new node should be pointed on a parent attachment plane. This is always ci/nc where ci is the index of the outgoing connection and nc is the number of outgoing connections.</param>
+/// <param name="recursionLimits">A vector of recusrion limits for each graph node.</param>
+/// <param name="segmentIndex">The segment index of the current SimNode. This must be 0 if it graphNode is the root node.</param>
 void SimCreature::dfs(
 	GraphNode* graphNode, GraphConnection* incoming, SimNode* parentSimNode, DirectedGraph* graph, 
 	btVector3 parentDims, btScalar cascadingScale, btScalar attachment, std::vector<int> recursionLimits, int& segmentIndex)
@@ -78,7 +94,8 @@ void SimCreature::dfs(
 
 		// Calculate parent attachment point from plane
 		btVector3 planeForward = incoming->parent->primitiveInfo.parentAttachmentPlane.normalize();
-		btVector3 planeRight = SimUtils::minAbsDotAxis(planeForward);
+		btVector3 planeRight = SimUtils::getPerpOnNearestAxis(planeForward);
+		//ofLog() << "VERIFY planeForward . planeRight = " << planeForward.dot(planeRight) << std::endl;
 
 		// Calculate local anchor points
 		btVector3 parentAnchorNormalLocal = planeRight.rotate(planeForward, SIMD_2_PI * attachment).normalize();
@@ -128,9 +145,9 @@ void SimCreature::dfs(
 		}
 		parentChildForward.normalize();
 
-		if (abs(btDot(jointAxis, parentChildForward)) > btScalar(1.) - SIMD_EPSILON) {
-			jointAxis = SimUtils::minAbsDotAxis(jointAxis);
-		}
+		//if (abs(btDot(jointAxis, parentChildForward)) > btScalar(1.) - SIMD_EPSILON) {
+		//	jointAxis = SimUtils::getPerpOnNearestAxis(jointAxis);
+		//}
 		btVector3 rotAxis = (jointAxis.cross(parentChildForward)).normalize();
 		btScalar theta = acos(jointAxis.dot(parentChildForward));
 		btQuaternion qq = btQuaternion(rotAxis, theta);
