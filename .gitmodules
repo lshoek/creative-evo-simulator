@@ -1,3 +1,0 @@
-[submodule "src/Artifact/QuadtreeCompressor"]
-	path = src/Artifact/QuadtreeCompressor
-	url = https://github.com/maxwellreynolds/Quadtree-Image-Program.git

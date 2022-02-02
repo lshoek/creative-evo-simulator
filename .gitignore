@@ -27,6 +27,8 @@ bld/
 bin/data/sims/
 bin/data/keep/
 
+imgui.ini
+
 # Exclude binaries and etc
 *.exe
 *.exp
